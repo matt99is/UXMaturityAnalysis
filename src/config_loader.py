@@ -8,7 +8,7 @@ without changing this code.
 
 import yaml
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -40,9 +40,9 @@ class InteractionConfig(BaseModel):
     """Configuration for human-in-the-loop interaction."""
     requires_interaction: bool = False
     mode: str = "headless"  # "visible" or "headless"
-    prompt: str = None
+    prompt: Optional[str] = None
     timeout: int = 0  # seconds
-    instructions: str = None
+    instructions: Optional[str] = None
 
 
 class AnalysisType(BaseModel):

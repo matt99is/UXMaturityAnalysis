@@ -217,7 +217,7 @@ analysis_types:
         - name: "mobile"
           width: 375
           height: 812
-      full_page: true
+      full_page: false  # Use viewport-only to avoid exceeding Claude's 8000px limit
       capture_states:
         - "initial"
 
