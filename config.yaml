@@ -10,6 +10,20 @@ analysis_types:
     name: "E-commerce Basket Page Analysis"
     description: "Comprehensive UX analysis of shopping basket/cart pages"
 
+    # Human-in-the-loop interaction settings
+    # Set requires_interaction: true for pages that need manual setup (e.g., adding items to basket)
+    interaction:
+      requires_interaction: true  # Launch visible browser and wait for user
+      mode: "visible"  # "visible" or "headless"
+      prompt: "🛒 Please add 1-2 items to the basket, then press Enter to continue..."
+      timeout: 120  # Maximum seconds to wait for user input
+      instructions: |
+        Instructions for basket page setup:
+        1. Navigate through the site and add 1-2 items to your basket
+        2. Go to the basket/cart page
+        3. Ensure the basket has items visible
+        4. Press Enter in this terminal when ready to capture
+
     # EXTENSIBILITY NOTE: navigation can be extended to support multi-step journeys
     # Example future format:
     # navigation:
@@ -179,17 +193,78 @@ analysis_types:
         - actionable_recommendations
         - screenshots_reference
 
-# EXTENSIBILITY NOTE: Future page type example structure (commented out)
-# product_pages:
-#   name: "Product Page Analysis"
-#   criteria:
-#     - id: "product_imagery"
-#       name: "Product Image Quality"
-#       ...
+# EXTENSIBILITY NOTE: Homepage analysis - fully automated, no human interaction needed
+  homepage_pages:
+    name: "E-commerce Homepage Analysis"
+    description: "UX analysis of homepage and landing pages"
 
-# checkout_pages:
-#   name: "Checkout Flow Analysis"
-#   criteria:
-#     - id: "form_design"
-#       name: "Form Field Design"
-#       ...
+    # No interaction needed - fully automated
+    interaction:
+      requires_interaction: false  # Run in headless mode, no pauses
+      mode: "headless"  # Faster execution
+      prompt: null
+      timeout: 0
+
+    navigation:
+      target_url: "direct"
+      fallback_strategy: "capture_current_state"
+
+    screenshot_config:
+      viewports:
+        - name: "desktop"
+          width: 1920
+          height: 1080
+        - name: "mobile"
+          width: 375
+          height: 812
+      full_page: true
+      capture_states:
+        - "initial"
+
+    # Homepage-specific criteria (simplified example)
+    criteria:
+      - id: "value_proposition"
+        name: "Value Proposition Clarity"
+        weight: 10
+        description: "Clarity and prominence of value proposition"
+        evaluation_points:
+          - "Is the main value proposition immediately visible?"
+          - "Is it clear what the business offers?"
+          - "Does it differentiate from competitors?"
+        benchmarks:
+          - "Nielsen Norman: Users should understand your value in 5 seconds"
+
+      - id: "navigation"
+        name: "Primary Navigation"
+        weight: 9
+        description: "Navigation structure and usability"
+        evaluation_points:
+          - "Is navigation clearly visible?"
+          - "Are categories well organized?"
+          - "Is search functionality prominent?"
+        benchmarks:
+          - "Baymard: Good navigation reduces bounce rate by 20%"
+
+      - id: "cta_visibility"
+        name: "Call-to-Action Visibility"
+        weight: 8
+        description: "Prominence of primary CTAs"
+        evaluation_points:
+          - "Are primary CTAs clearly visible?"
+          - "Is there good visual hierarchy?"
+          - "Are CTAs action-oriented?"
+        benchmarks:
+          - "Best practice: Primary CTA should be above the fold"
+
+    output_template:
+      format: "structured_json"
+      sections:
+        - overall_score
+        - criterion_scores
+        - strengths
+        - weaknesses
+        - key_findings
+        - actionable_recommendations
+
+# EXTENSIBILITY NOTE: Additional page type templates available
+# Simply copy and modify the structure above for new analysis types

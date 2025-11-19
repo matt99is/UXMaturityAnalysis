@@ -85,20 +85,36 @@ class UXAnalysisOrchestrator:
 
         try:
             # Step 1: Capture screenshots
-            self.console.print("  [yellow]Capturing screenshots...[/yellow]")
-
             screenshot_config = self.analysis_type_config.screenshot_config
+            interaction_config = self.analysis_type_config.interaction
+
             viewports = [
                 {"name": vp.name, "width": vp.width, "height": vp.height}
                 for vp in screenshot_config.viewports
             ]
 
-            screenshot_results = await self.screenshot_capturer.capture_multiple_viewports(
-                url=url,
-                site_name=site_name,
-                viewports=viewports,
-                full_page=screenshot_config.full_page
-            )
+            # Check if human interaction is required
+            if interaction_config.requires_interaction:
+                # Interactive mode - browser is already open in visible mode
+                self.console.print(f"  [cyan]Interactive mode enabled[/cyan]")
+                screenshot_results = await self.screenshot_capturer.capture_with_interaction(
+                    url=url,
+                    site_name=site_name,
+                    viewports=viewports,
+                    interaction_prompt=interaction_config.prompt,
+                    interaction_instructions=interaction_config.instructions,
+                    timeout=interaction_config.timeout,
+                    full_page=screenshot_config.full_page
+                )
+            else:
+                # Automated mode - standard screenshot capture
+                self.console.print("  [yellow]Capturing screenshots (automated)...[/yellow]")
+                screenshot_results = await self.screenshot_capturer.capture_multiple_viewports(
+                    url=url,
+                    site_name=site_name,
+                    viewports=viewports,
+                    full_page=screenshot_config.full_page
+                )
 
             # Check for capture failures
             failed_captures = [r for r in screenshot_results if not r.get("success")]
@@ -184,15 +200,25 @@ class UXAnalysisOrchestrator:
         EXTENSIBILITY NOTE: This could be extended to analyze competitors
         in parallel for faster execution, or to implement rate limiting.
         """
-        # Initialize browser once for all captures
-        await self.screenshot_capturer.initialize_browser()
+        # Initialize browser with appropriate mode (visible for interaction, headless for automation)
+        interaction_mode = self.analysis_type_config.interaction
+        headless = not interaction_mode.requires_interaction  # Visible if interaction required
+
+        if interaction_mode.requires_interaction:
+            self.console.print(f"[cyan]🔧 Interactive mode enabled - browser will be visible[/cyan]")
+            self.console.print(f"[dim]You'll be prompted to interact with each competitor's page[/dim]\n")
+        else:
+            self.console.print(f"[green]⚡ Automated mode - running headless for speed[/green]\n")
+
+        await self.screenshot_capturer.initialize_browser(headless=headless)
 
         results = []
         total = len(competitors)
 
         try:
             for i, competitor in enumerate(competitors, 1):
-                self.console.print(f"\n[bold]Progress: {i}/{total}[/bold]")
+                mode_indicator = "interactive" if interaction_mode.requires_interaction else "automated"
+                self.console.print(f"\n[bold]Progress: {i}/{total}[/bold] [dim]({mode_indicator})[/dim]")
 
                 result = await self.analyze_competitor(
                     url=competitor["url"],

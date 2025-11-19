@@ -36,10 +36,20 @@ class ScreenshotConfig(BaseModel):
     capture_states: List[str] = ["initial"]
 
 
+class InteractionConfig(BaseModel):
+    """Configuration for human-in-the-loop interaction."""
+    requires_interaction: bool = False
+    mode: str = "headless"  # "visible" or "headless"
+    prompt: str = None
+    timeout: int = 0  # seconds
+    instructions: str = None
+
+
 class AnalysisType(BaseModel):
     """Configuration for a specific analysis type (e.g., basket pages, product pages)."""
     name: str
     description: str
+    interaction: InteractionConfig = InteractionConfig()  # Default to no interaction
     navigation: Dict[str, Any]
     screenshot_config: ScreenshotConfig
     criteria: List[EvaluationCriterion]

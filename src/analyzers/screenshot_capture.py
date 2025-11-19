@@ -166,6 +166,150 @@ class ScreenshotCapture:
 
         return results
 
+    async def capture_with_interaction(
+        self,
+        url: str,
+        site_name: str,
+        viewports: List[Dict[str, int]],
+        interaction_prompt: str,
+        interaction_instructions: str = None,
+        timeout: int = 120,
+        full_page: bool = True
+    ) -> List[Dict[str, any]]:
+        """
+        Capture screenshots with human-in-the-loop interaction.
+
+        Opens browser in visible mode, navigates to URL, waits for user
+        to interact (e.g., add items to basket), then captures screenshots.
+
+        Args:
+            url: URL to navigate to
+            site_name: Name/identifier for the site
+            viewports: List of viewport configs
+            interaction_prompt: Message to display to user
+            interaction_instructions: Detailed instructions for user
+            timeout: Maximum seconds to wait for user input
+            full_page: Whether to capture full page
+
+        Returns:
+            List of capture results
+
+        EXTENSIBILITY NOTE: This enables manual setup for pages that need it
+        (e.g., adding items to basket, logging in, etc.)
+        """
+        import sys
+        from rich.console import Console
+        from rich.panel import Panel
+
+        console = Console()
+
+        # Browser should already be initialized in visible mode by caller
+        if not self.browser:
+            raise RuntimeError("Browser not initialized. Call initialize_browser() first.")
+
+        # Create a persistent context (won't close between viewports)
+        context = await self.browser.new_context(
+            viewport={"width": viewports[0]["width"], "height": viewports[0]["height"]},
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        )
+
+        page = await context.new_page()
+
+        try:
+            # Navigate to URL
+            await page.goto(url, wait_until="networkidle", timeout=30000)
+            await asyncio.sleep(2)  # Let page settle
+
+            # Display instructions to user
+            console.print()
+            console.print(Panel.fit(
+                f"[bold cyan]{interaction_prompt}[/bold cyan]\n\n"
+                + (f"{interaction_instructions}\n\n" if interaction_instructions else "")
+                + "[yellow]Browser window is open - interact with the page as needed.[/yellow]\n"
+                + f"[dim]Timeout: {timeout} seconds[/dim]",
+                title=f"🔧 Interactive Mode: {site_name}",
+                border_style="cyan"
+            ))
+
+            # Wait for user to press Enter
+            def wait_for_enter():
+                try:
+                    input("\n[Press Enter when ready to capture screenshots...] ")
+                    return True
+                except (EOFError, KeyboardInterrupt):
+                    return False
+
+            # Run input in thread to not block async
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(wait_for_enter)
+                try:
+                    user_confirmed = await asyncio.wait_for(
+                        asyncio.wrap_future(future),
+                        timeout=timeout
+                    )
+                    if not user_confirmed:
+                        console.print("[yellow]⚠ Input cancelled[/yellow]")
+                        return []
+                except asyncio.TimeoutError:
+                    console.print(f"[yellow]⚠ Timeout ({timeout}s) - capturing current state[/yellow]")
+
+            console.print("[green]✓ Proceeding with capture...[/green]")
+
+            # Capture screenshots in all viewports
+            results = []
+
+            for i, viewport in enumerate(viewports):
+                # Set viewport size
+                await page.set_viewport_size({
+                    "width": viewport["width"],
+                    "height": viewport["height"]
+                })
+                await asyncio.sleep(1)  # Let page adjust
+
+                # Generate filename
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                viewport_suffix = viewport["name"]
+                filename = f"{site_name}_{viewport_suffix}_{timestamp}.png"
+                filepath = self.output_dir / filename
+
+                # Capture screenshot
+                await page.screenshot(path=str(filepath), full_page=full_page)
+
+                # Get metadata
+                title = await page.title()
+                final_url = page.url
+
+                result = {
+                    "success": True,
+                    "filepath": str(filepath),
+                    "filename": filename,
+                    "url": url,
+                    "final_url": final_url,
+                    "title": title,
+                    "viewport": {"width": viewport["width"], "height": viewport["height"]},
+                    "viewport_name": viewport["name"],
+                    "timestamp": timestamp,
+                    "interactive_mode": True
+                }
+
+                results.append(result)
+                console.print(f"  [green]✓[/green] Captured {viewport['name']} ({viewport['width']}x{viewport['height']})")
+
+            return results
+
+        except Exception as e:
+            console.print(f"[red]✗ Error during interactive capture: {e}[/red]")
+            return [{
+                "success": False,
+                "error": str(e),
+                "url": url,
+                "interactive_mode": True
+            }]
+
+        finally:
+            await context.close()
+
     def get_screenshot_base64(self, filepath: str) -> str:
         """
         Convert screenshot to base64 for API transmission.

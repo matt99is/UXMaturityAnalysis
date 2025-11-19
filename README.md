@@ -81,11 +81,78 @@ python main.py --config competitors.json
 python main.py --model claude-sonnet-4-5-20250929 --urls https://example.com/cart
 ```
 
-### Analyze different page types (future extensibility)
+### Analyze different page types
 ```bash
-# Once additional page types are configured in config.yaml
-python main.py --analysis-type product_pages --urls https://example.com/product/123
+# Basket pages (interactive mode - browser opens for you to add items)
+python main.py --analysis-type basket_pages --urls https://shop.com/cart
+
+# Homepage analysis (automated mode - runs headless, no interaction)
+python main.py --analysis-type homepage_pages --urls https://shop1.com https://shop2.com
 ```
+
+## Interactive vs Automated Mode
+
+The tool supports **smart human-in-the-loop interaction** based on page type:
+
+### Interactive Mode (Basket Pages)
+- **When:** Analyzing basket/cart pages that need items added
+- **How it works:**
+  1. Browser opens in **visible mode**
+  2. You manually add 1-2 items to the basket
+  3. Navigate to the basket page
+  4. Press Enter to capture screenshots
+  5. Tool continues with AI analysis
+- **Use case:** Pages requiring setup (baskets, checkouts, logged-in states)
+
+Example output:
+```
+🔧 Interactive mode enabled - browser will be visible
+You'll be prompted to interact with each competitor's page
+
+Progress: 1/3 (interactive)
+🛒 Please add 1-2 items to the basket, then press Enter to continue...
+[Press Enter when ready to capture screenshots...]
+```
+
+### Automated Mode (Homepages, Product Pages)
+- **When:** Analyzing pages that don't need interaction
+- **How it works:**
+  1. Runs in **headless mode** (faster)
+  2. No pauses or prompts
+  3. Fully automated screenshot + analysis
+- **Use case:** Homepages, product pages, about pages, landing pages
+
+Example output:
+```
+⚡ Automated mode - running headless for speed
+
+Progress: 1/20 (automated)
+Analyzing: competitor1
+Capturing screenshots (automated)...
+```
+
+### Configuration
+Configure interaction behavior in `config.yaml`:
+
+```yaml
+analysis_types:
+  basket_pages:
+    interaction:
+      requires_interaction: true  # Interactive mode
+      mode: "visible"
+      prompt: "🛒 Please add 1-2 items to the basket..."
+      timeout: 120  # seconds
+
+  homepage_pages:
+    interaction:
+      requires_interaction: false  # Automated mode
+      mode: "headless"
+```
+
+**Benefits:**
+- Run 20 homepage analyses unattended (grab coffee ☕)
+- Pause at basket pages when manual setup is needed
+- Mix both in future workflows
 
 ## Configuration
 
