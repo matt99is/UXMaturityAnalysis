@@ -16,7 +16,7 @@ class EvaluationCriterion(BaseModel):
     """Represents a single UX evaluation criterion."""
     id: str
     name: str
-    weight: int = Field(ge=1, le=10)
+    weight: float = Field(ge=0.1, le=10.0)
     description: str
     evaluation_points: List[str]
     benchmarks: List[str]
@@ -65,17 +65,84 @@ class AnalysisConfig:
     they'll automatically be available through get_analysis_type().
     """
 
-    def __init__(self, config_path: str = "config.yaml"):
+    def __init__(self, config_path: str = "config.yaml", criteria_config_dir: str = "criteria_config"):
         self.config_path = Path(config_path)
+        self.criteria_config_dir = Path(criteria_config_dir)
         self.config = self._load_config()
 
     def _load_config(self) -> Dict[str, Any]:
-        """Load configuration from YAML file."""
-        if not self.config_path.exists():
-            raise FileNotFoundError(f"Config file not found: {self.config_path}")
+        """Load configuration from YAML file and criteria config directory."""
+        config = {}
 
-        with open(self.config_path, 'r') as f:
-            return yaml.safe_load(f)
+        # Load main config.yaml if it exists (for backward compatibility)
+        if self.config_path.exists():
+            with open(self.config_path, 'r') as f:
+                config = yaml.safe_load(f) or {}
+
+        # Load criteria configs from criteria_config directory
+        if self.criteria_config_dir.exists() and self.criteria_config_dir.is_dir():
+            if "analysis_types" not in config:
+                config["analysis_types"] = {}
+
+            for yaml_file in self.criteria_config_dir.glob("*.yaml"):
+                analysis_type_name = yaml_file.stem  # e.g., "homepage_pages"
+                with open(yaml_file, 'r') as f:
+                    criteria_config = yaml.safe_load(f)
+
+                # Process criteria to convert benchmark dicts to strings
+                criteria = criteria_config.get("criteria", [])
+                for criterion in criteria:
+                    if "benchmarks" in criterion:
+                        benchmarks = criterion["benchmarks"]
+                        # Convert dict benchmarks to string format
+                        converted_benchmarks = []
+                        for benchmark in benchmarks:
+                            if isinstance(benchmark, dict):
+                                source = benchmark.get("source", "Unknown")
+                                finding = benchmark.get("finding", "")
+                                converted_benchmarks.append(f"{source}: {finding}")
+                            else:
+                                converted_benchmarks.append(str(benchmark))
+                        criterion["benchmarks"] = converted_benchmarks
+
+                # Convert criteria config to full analysis type format
+                analysis_config = {
+                    "name": criteria_config.get("name", analysis_type_name),
+                    "description": f"Analysis for {criteria_config.get('name', analysis_type_name)}",
+                    "navigation": {},
+                    "screenshot_config": {
+                        "viewports": criteria_config.get("viewports", []),
+                        "full_page": True
+                    },
+                    "criteria": criteria,
+                    "output_template": {}
+                }
+
+                # Add interaction config if present
+                if criteria_config.get("requires_interaction", False):
+                    analysis_config["interaction"] = {
+                        "requires_interaction": True,
+                        "mode": "visible",
+                        "prompt": criteria_config.get("interaction_prompt", ""),
+                        "timeout": criteria_config.get("interaction_timeout", 300),
+                        "instructions": "Navigate through the page as needed"
+                    }
+                else:
+                    analysis_config["interaction"] = {
+                        "requires_interaction": False,
+                        "mode": "headless",
+                        "timeout": 0
+                    }
+
+                # Add to config
+                config["analysis_types"][analysis_type_name] = analysis_config
+
+        if not config:
+            raise FileNotFoundError(
+                f"No configuration found. Checked: {self.config_path} and {self.criteria_config_dir}"
+            )
+
+        return config
 
     def get_analysis_type(self, analysis_type: str) -> AnalysisType:
         """

@@ -2,15 +2,15 @@
   "competitors": [
     {
       "name": "asos",
-      "url": "https://www.asos.com/bag"
+      "url": "https://www.asos.com/"
     },
     {
       "name": "zara",
-      "url": "https://www.zara.com/cart"
+      "url": "https://www.zara.com/"
     },
     {
       "name": "hm",
-      "url": "https://www2.hm.com/en_us/shopping-bag"
+      "url": "https://www2.hm.com/en_us/"
     }
   ]
 }

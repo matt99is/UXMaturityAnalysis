@@ -24,6 +24,7 @@ import os
 import sys
 from pathlib import Path
 from typing import List, Dict, Any
+from datetime import datetime
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -37,6 +38,17 @@ from src.config_loader import AnalysisConfig
 from src.analyzers.screenshot_capture import ScreenshotCapture
 from src.analyzers.claude_analyzer import ClaudeUXAnalyzer
 from src.utils.report_generator import ReportGenerator
+from src.utils.audit_organizer import (
+    extract_competitor_name,
+    create_audit_directory_structure,
+    get_screenshot_path,
+    get_analysis_path,
+    get_comparison_report_path,
+    get_audit_summary_path,
+    generate_audit_summary
+)
+from src.utils.page_type_detector import detect_page_type, get_page_type_display_name
+from src.version import __version__, __title__
 
 
 class UXAnalysisOrchestrator:
@@ -52,7 +64,9 @@ class UXAnalysisOrchestrator:
         api_key: str,
         model: str = "claude-sonnet-4-5-20250929",
         analysis_type: str = "basket_pages",
-        config_path: str = "config.yaml"
+        config_path: str = "config.yaml",
+        manual_mode: bool = False,
+        screenshots_dir: str = None
     ):
         self.console = Console()
         self.analysis_config = AnalysisConfig(config_path)
@@ -60,31 +74,31 @@ class UXAnalysisOrchestrator:
         self.screenshot_capturer = ScreenshotCapture()
         self.claude_analyzer = ClaudeUXAnalyzer(api_key=api_key, model=model)
         self.report_generator = ReportGenerator()
+        self.manual_mode = manual_mode
+        self.screenshots_dir = screenshots_dir
 
-    async def analyze_competitor(
+    async def capture_competitor_screenshots(
         self,
         url: str,
-        site_name: str
+        site_name: str,
+        competitor_paths: Dict[str, Any] = None
     ) -> Dict[str, Any]:
         """
-        Analyze a single competitor's page.
+        Capture screenshots for a single competitor.
 
         Args:
             url: URL to analyze
             site_name: Identifier for the competitor
+            competitor_paths: Optional dict with screenshot and analysis paths
 
         Returns:
-            Analysis result dictionary
-
-        EXTENSIBILITY NOTE: This method follows the workflow defined
-        in the analysis type config, making it adaptable to different
-        page types and capture strategies.
+            Dictionary with screenshot paths and metadata, or error info
         """
-        self.console.print(f"\n[bold cyan]Analyzing:[/bold cyan] {site_name}")
+        self.console.print(f"\n[bold cyan]Capturing:[/bold cyan] {site_name}")
         self.console.print(f"[dim]URL: {url}[/dim]")
 
         try:
-            # Step 1: Capture screenshots
+            # Get screenshots (capture or load from directory)
             screenshot_config = self.analysis_type_config.screenshot_config
             interaction_config = self.analysis_type_config.interaction
 
@@ -93,49 +107,145 @@ class UXAnalysisOrchestrator:
                 for vp in screenshot_config.viewports
             ]
 
-            # Check if human interaction is required
-            if interaction_config.requires_interaction:
-                # Interactive mode - browser is already open in visible mode
-                self.console.print(f"  [cyan]Interactive mode enabled[/cyan]")
-                screenshot_results = await self.screenshot_capturer.capture_with_interaction(
-                    url=url,
-                    site_name=site_name,
-                    viewports=viewports,
-                    interaction_prompt=interaction_config.prompt,
-                    interaction_instructions=interaction_config.instructions,
-                    timeout=interaction_config.timeout,
-                    full_page=screenshot_config.full_page
-                )
-            else:
-                # Automated mode - standard screenshot capture
-                self.console.print("  [yellow]Capturing screenshots (automated)...[/yellow]")
-                screenshot_results = await self.screenshot_capturer.capture_multiple_viewports(
-                    url=url,
-                    site_name=site_name,
-                    viewports=viewports,
-                    full_page=screenshot_config.full_page
-                )
+            # Determine output directory for screenshots
+            screenshots_dir = None
+            if competitor_paths:
+                screenshots_dir = competitor_paths['screenshots']
 
-            # Check for capture failures
-            failed_captures = [r for r in screenshot_results if not r.get("success")]
-            if failed_captures:
-                self.console.print(f"  [red]Warning: {len(failed_captures)} screenshot(s) failed[/red]")
+            # Screenshot capture with retry loop
+            screenshot_retry = True
+            screenshot_results = None
+            successful_captures = None
 
-            successful_captures = [r for r in screenshot_results if r.get("success")]
-            if not successful_captures:
-                return {
-                    "success": False,
-                    "site_name": site_name,
-                    "url": url,
-                    "error": "All screenshot captures failed"
-                }
+            while screenshot_retry:
+                # Manual mode: Load pre-captured screenshots
+                if self.manual_mode:
+                    self.console.print(f"  [magenta]📁 Manual mode: Loading screenshots from {self.screenshots_dir}[/magenta]")
+                    screenshot_results = self.screenshot_capturer.load_screenshots_from_directory(
+                        screenshots_dir=self.screenshots_dir,
+                        site_name=site_name,
+                        viewports=viewports
+                    )
+                else:
+                    # Interactive mode - always use visible browser with user control
+                    prompt_text = f"Navigate to the {self.analysis_type_config.name.lower()} and prepare for screenshot"
+                    screenshot_results = await self.screenshot_capturer.capture_with_interaction(
+                        url=url,
+                        site_name=site_name,
+                        viewports=viewports,
+                        interaction_prompt=prompt_text,
+                        interaction_instructions="Close popups, accept cookies, and ensure page is fully loaded",
+                        timeout=300,  # 5 minutes
+                        full_page=screenshot_config.full_page,
+                        custom_output_dir=screenshots_dir
+                    )
 
-            screenshot_paths = [r["filepath"] for r in successful_captures]
-            self.console.print(f"  [green]Captured {len(screenshot_paths)} screenshot(s)[/green]")
+                # Check for capture failures
+                failed_captures = [r for r in screenshot_results if not r.get("success")]
+                blocked_captures = [r for r in failed_captures if r.get("blocked")]
 
-            # Step 2: Analyze with Claude
-            self.console.print("  [yellow]Analyzing with Claude AI...[/yellow]")
+                if blocked_captures:
+                    # Site was blocked by bot detection
+                    block_reason = blocked_captures[0].get("block_reason", "Unknown")
+                    self.console.print(f"  [yellow]⚠ Bot detection: {block_reason}[/yellow]")
 
+                if failed_captures:
+                    self.console.print(f"  [red]Warning: {len(failed_captures)} screenshot(s) failed[/red]")
+
+                successful_captures = [r for r in screenshot_results if r.get("success")]
+
+                if not successful_captures:
+                    error_msg = "All screenshot captures failed"
+                    if blocked_captures:
+                        error_msg = f"Site blocked by bot detection: {blocked_captures[0].get('block_reason', 'Unknown')}"
+
+                    return {
+                        "success": False,
+                        "site_name": site_name,
+                        "url": url,
+                        "error": error_msg,
+                        "blocked": bool(blocked_captures)
+                    }
+
+                screenshot_paths = [r["filepath"] for r in successful_captures]
+                self.console.print(f"  [green]✓ Captured {len(screenshot_paths)} screenshot(s)[/green]")
+
+                # Prompt user: Continue, Retry, or Skip
+                if not self.manual_mode:
+                    self.console.print()
+                    while True:
+                        try:
+                            response = input("  Continue? ([Y]es / [r]etry / [s]kip): ").strip().lower()
+                            if response in ['', 'y', 'yes']:
+                                screenshot_retry = False
+                                break
+                            elif response in ['r', 'retry']:
+                                self.console.print("  [yellow]↻ Retrying screenshot capture...[/yellow]\n")
+                                break  # Continue retry loop
+                            elif response in ['s', 'skip']:
+                                self.console.print("  [yellow]⊘ Skipping this competitor[/yellow]")
+                                return {
+                                    "success": False,
+                                    "site_name": site_name,
+                                    "url": url,
+                                    "error": "Skipped by user",
+                                    "skipped": True
+                                }
+                            else:
+                                self.console.print("  [red]Please enter 'y', 'r', or 's'[/red]")
+                        except (EOFError, KeyboardInterrupt):
+                            self.console.print("\n  [yellow]⊘ Skipping this competitor[/yellow]")
+                            return {
+                                "success": False,
+                                "site_name": site_name,
+                                "url": url,
+                                "error": "Skipped by user (Ctrl+C)",
+                                "skipped": True
+                            }
+                else:
+                    # Manual mode doesn't need retry
+                    screenshot_retry = False
+
+            # Return capture data for later analysis
+            return {
+                "success": True,
+                "site_name": site_name,
+                "url": url,
+                "screenshot_paths": screenshot_paths,
+                "screenshot_metadata": successful_captures,
+                "competitor_paths": competitor_paths
+            }
+
+        except Exception as e:
+            self.console.print(f"  [red]Error: {str(e)}[/red]")
+            return {
+                "success": False,
+                "site_name": site_name,
+                "url": url,
+                "error": str(e)
+            }
+
+    async def analyze_competitor_from_screenshots(
+        self,
+        capture_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Analyze a competitor using previously captured screenshots.
+
+        Args:
+            capture_data: Dictionary with screenshot paths and metadata from capture phase
+
+        Returns:
+            Analysis result dictionary
+        """
+        site_name = capture_data["site_name"]
+        url = capture_data["url"]
+        screenshot_paths = capture_data["screenshot_paths"]
+        competitor_paths = capture_data.get("competitor_paths")
+
+        self.console.print(f"\n[bold cyan]Analyzing:[/bold cyan] {site_name}")
+
+        try:
             # Convert criteria to dict format for analyzer
             criteria_dicts = [
                 {
@@ -167,11 +277,11 @@ class UXAnalysisOrchestrator:
                     "screenshots": screenshot_paths
                 }
 
-            self.console.print(f"  [green]Analysis complete![/green]")
+            self.console.print(f"  [green]✓ Analysis complete![/green]")
 
             # Add screenshot metadata to result
             result = analysis_result.copy()
-            result["screenshot_metadata"] = successful_captures
+            result["screenshot_metadata"] = capture_data.get("screenshot_metadata", [])
 
             return result
 
@@ -181,18 +291,21 @@ class UXAnalysisOrchestrator:
                 "success": False,
                 "site_name": site_name,
                 "url": url,
-                "error": str(e)
+                "error": str(e),
+                "screenshots": screenshot_paths
             }
 
     async def analyze_competitors(
         self,
-        competitors: List[Dict[str, str]]
+        competitors: List[Dict[str, str]],
+        audit_structure: Dict[str, Any] = None
     ) -> List[Dict[str, Any]]:
         """
-        Analyze multiple competitors.
+        Analyze multiple competitors with organized output structure.
 
         Args:
             competitors: List of dicts with 'name' and 'url' keys
+            audit_structure: Optional audit directory structure from audit_organizer
 
         Returns:
             List of analysis results
@@ -200,62 +313,142 @@ class UXAnalysisOrchestrator:
         EXTENSIBILITY NOTE: This could be extended to analyze competitors
         in parallel for faster execution, or to implement rate limiting.
         """
-        # Initialize browser with appropriate mode (visible for interaction, headless for automation)
-        interaction_mode = self.analysis_type_config.interaction
-        headless = not interaction_mode.requires_interaction  # Visible if interaction required
+        # Initialize browser in visible mode for interactive capture
+        # Skip browser initialization if in manual mode
+        if not self.manual_mode:
+            await self.screenshot_capturer.initialize_browser(headless=False)
 
-        if interaction_mode.requires_interaction:
-            self.console.print(f"[cyan]🔧 Interactive mode enabled - browser will be visible[/cyan]")
-            self.console.print(f"[dim]You'll be prompted to interact with each competitor's page[/dim]\n")
-        else:
-            self.console.print(f"[green]⚡ Automated mode - running headless for speed[/green]\n")
-
-        await self.screenshot_capturer.initialize_browser(headless=headless)
-
-        results = []
         total = len(competitors)
+
+        # PHASE 1: Capture all screenshots
+        self.console.print("\n[bold cyan]═══ Phase 1: Screenshot Capture ═══[/bold cyan]")
+        self.console.print("[dim]You'll interact with each competitor site to capture screenshots[/dim]\n")
+
+        captured_data = []
 
         try:
             for i, competitor in enumerate(competitors, 1):
-                mode_indicator = "interactive" if interaction_mode.requires_interaction else "automated"
-                self.console.print(f"\n[bold]Progress: {i}/{total}[/bold] [dim]({mode_indicator})[/dim]")
+                mode_str = "manual" if self.manual_mode else "interactive"
+                self.console.print(f"\n[bold]Progress: {i}/{total}[/bold] [dim]({mode_str})[/dim]")
 
-                result = await self.analyze_competitor(
+                # Get competitor-specific paths if audit structure provided
+                competitor_paths = None
+                if audit_structure:
+                    comp_name = competitor['name']
+                    if comp_name in audit_structure['competitors']:
+                        competitor_paths = audit_structure['competitors'][comp_name]
+
+                # Capture screenshots
+                capture_result = await self.capture_competitor_screenshots(
                     url=competitor["url"],
-                    site_name=competitor["name"]
+                    site_name=competitor["name"],
+                    competitor_paths=competitor_paths
                 )
-                results.append(result)
+
+                captured_data.append(capture_result)
+
+            # Close browser after all captures complete
+            if not self.manual_mode:
+                await self.screenshot_capturer.close_browser()
+
+            # PHASE 2: Analyze all screenshots
+            self.console.print("\n[bold cyan]═══ Phase 2: AI Analysis ═══[/bold cyan]")
+            self.console.print("[dim]Claude will now analyze all captured screenshots[/dim]\n")
+
+            results = []
+            successful_captures = [d for d in captured_data if d.get("success")]
+
+            for i, capture_data in enumerate(captured_data, 1):
+                if not capture_data.get("success"):
+                    # Capture failed/skipped - add to results as-is
+                    results.append(capture_data)
+                    continue
+
+                self.console.print(f"[bold]Analyzing {i}/{len(captured_data)}...[/bold]")
+
+                # Analyze this competitor's screenshots
+                analysis_result = await self.analyze_competitor_from_screenshots(capture_data)
+                results.append(analysis_result)
+
+                # Save individual competitor analysis if audit structure provided
+                if audit_structure and analysis_result.get("success"):
+                    try:
+                        analysis_path = get_analysis_path(
+                            audit_structure['competitors'],
+                            capture_data['site_name']
+                        )
+                        self.report_generator.save_competitor_analysis(
+                            analysis_result.get('analysis', analysis_result),
+                            analysis_path
+                        )
+                    except Exception as e:
+                        self.console.print(f"  [yellow]Warning: Could not save competitor analysis: {e}[/yellow]")
 
         finally:
-            # Cleanup browser
-            await self.screenshot_capturer.close_browser()
+            # Ensure browser is closed
+            if not self.manual_mode:
+                try:
+                    await self.screenshot_capturer.close_browser()
+                except:
+                    pass
 
         return results
 
-    def generate_reports(self, results: List[Dict[str, Any]]) -> Dict[str, str]:
+    def generate_reports(
+        self,
+        results: List[Dict[str, Any]],
+        audit_structure: Dict[str, Any] = None,
+        audit_summary: Dict[str, Any] = None
+    ) -> Dict[str, str]:
         """
-        Generate JSON and markdown reports.
+        Generate JSON and markdown reports with new audit structure.
 
         Args:
             results: List of analysis results
+            audit_structure: Optional audit directory structure
+            audit_summary: Optional audit summary data
 
         Returns:
             Dictionary with paths to generated reports
         """
         self.console.print("\n[bold cyan]Generating reports...[/bold cyan]")
 
-        # Generate JSON report
-        json_path = self.report_generator.save_json_report(results)
-        self.console.print(f"[green]JSON report saved:[/green] {json_path}")
+        # If audit structure provided, use new organized format
+        if audit_structure:
+            audit_root = audit_structure['audit_root']
 
-        # Generate Markdown report
-        md_path = self.report_generator.generate_markdown_report(results)
-        self.console.print(f"[green]Markdown report saved:[/green] {md_path}")
+            # Generate comparison markdown report
+            md_path = self.report_generator.generate_markdown_report(
+                results,
+                filepath=get_comparison_report_path(audit_root)
+            )
+            self.console.print(f"[green]Comparison report:[/green] {md_path}")
 
-        return {
-            "json": json_path,
-            "markdown": md_path
-        }
+            # Save audit summary
+            if audit_summary:
+                summary_path = self.report_generator.save_audit_summary(
+                    audit_summary,
+                    get_audit_summary_path(audit_root)
+                )
+                self.console.print(f"[green]Audit summary:[/green] {summary_path}")
+
+            return {
+                "markdown": md_path,
+                "summary": summary_path if audit_summary else None,
+                "audit_root": str(audit_root)
+            }
+        else:
+            # Legacy flat structure (backward compatibility)
+            json_path = self.report_generator.save_json_report(results)
+            self.console.print(f"[green]JSON report saved:[/green] {json_path}")
+
+            md_path = self.report_generator.generate_markdown_report(results)
+            self.console.print(f"[green]Markdown report saved:[/green] {md_path}")
+
+            return {
+                "json": json_path,
+                "markdown": md_path
+            }
 
     def display_summary(self, results: List[Dict[str, Any]]):
         """Display summary table in console."""
@@ -298,17 +491,22 @@ class UXAnalysisOrchestrator:
 async def main():
     """Main entry point for the UX analysis tool."""
     parser = argparse.ArgumentParser(
-        description="E-commerce Basket Page UX Analysis Agent",
+        description=f"{__title__} v{__version__}",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   python main.py --urls https://shop1.com/basket https://shop2.com/cart
   python main.py --config competitors.json
-  python main.py --analysis-type basket_pages --urls https://example.com/cart
+  python main.py --analysis-type homepage_pages --urls https://example.com
 
-EXTENSIBILITY NOTE: Use --analysis-type to specify different page type
-analyses defined in config.yaml (e.g., product_pages, checkout_pages).
+For more examples and documentation, see README.md
         """
+    )
+
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"{__title__} v{__version__}"
     )
 
     parser.add_argument(
@@ -324,14 +522,26 @@ analyses defined in config.yaml (e.g., product_pages, checkout_pages).
 
     parser.add_argument(
         "--analysis-type",
-        default="basket_pages",
-        help="Type of analysis from config.yaml (default: basket_pages)"
+        default=None,
+        help="Type of analysis (prompt if not specified). Options: homepage_pages, product_pages, basket_pages, checkout_pages"
     )
 
     parser.add_argument(
         "--model",
         default="claude-sonnet-4-5-20250929",
         help="Claude model to use (default: claude-sonnet-4-5-20250929)"
+    )
+
+    parser.add_argument(
+        "--manual-mode",
+        action="store_true",
+        help="Manual mode: Load pre-captured screenshots instead of browser automation"
+    )
+
+    parser.add_argument(
+        "--screenshots-dir",
+        default="./manual-screenshots",
+        help="Directory containing manually captured screenshots (used with --manual-mode)"
     )
 
     args = parser.parse_args()
@@ -355,12 +565,9 @@ analyses defined in config.yaml (e.g., product_pages, checkout_pages).
             competitors = config_data.get("competitors", [])
 
     elif args.urls:
-        # Create from URLs
+        # Create from URLs using improved name extraction
         for url in args.urls:
-            # Extract site name from URL
-            from urllib.parse import urlparse
-            parsed = urlparse(url)
-            site_name = parsed.netloc.replace("www.", "").split(".")[0]
+            site_name = extract_competitor_name(url)
 
             competitors.append({
                 "name": site_name,
@@ -382,32 +589,140 @@ analyses defined in config.yaml (e.g., product_pages, checkout_pages).
         print("Error: No competitors to analyze")
         sys.exit(1)
 
-    # Create orchestrator and run analysis
+    # Always prompt user for analysis type (auto-detection removed for reliability)
     console = Console()
+    analysis_type = args.analysis_type
+
+    # Function to prompt user for analysis type
+    def prompt_for_analysis_type(config: AnalysisConfig) -> str:
+        """Display interactive menu to select analysis type."""
+        available_types = config.list_available_analysis_types()
+
+        console.print()
+        console.print("[bold cyan]📋 Select Analysis Type:[/bold cyan]\n")
+
+        # Create table of options
+        table = Table(show_header=True, header_style="bold cyan", box=None)
+        table.add_column("#", style="dim", width=3)
+        table.add_column("Analysis Type", style="cyan")
+        table.add_column("Description", style="dim")
+
+        type_map = {
+            "homepage_pages": ("Homepage", "Analyze homepage UX and layout"),
+            "product_pages": ("Product Pages", "Analyze product detail pages"),
+            "basket_pages": ("Basket/Cart", "Analyze shopping cart pages"),
+            "checkout_pages": ("Checkout Flow", "Analyze checkout process")
+        }
+
+        for idx, analysis_type_key in enumerate(available_types, 1):
+            display_name, description = type_map.get(
+                analysis_type_key,
+                (get_page_type_display_name(analysis_type_key), "Custom analysis type")
+            )
+            table.add_row(str(idx), display_name, description)
+
+        console.print(table)
+        console.print()
+
+        # Get user input
+        while True:
+            try:
+                choice = input("Select analysis type (1-{}): ".format(len(available_types)))
+                choice_idx = int(choice) - 1
+
+                if 0 <= choice_idx < len(available_types):
+                    selected = available_types[choice_idx]
+                    display_name = get_page_type_display_name(selected)
+                    console.print(f"[green]✓ Selected:[/green] {display_name}\n")
+                    return selected
+                else:
+                    console.print(f"[red]Please enter a number between 1 and {len(available_types)}[/red]")
+            except ValueError:
+                console.print("[red]Please enter a valid number[/red]")
+            except KeyboardInterrupt:
+                console.print("\n[yellow]Analysis cancelled[/yellow]")
+                sys.exit(0)
+
+    # Always prompt for analysis type unless explicitly provided via CLI
+    if not analysis_type:
+        temp_config = AnalysisConfig()
+        analysis_type = prompt_for_analysis_type(temp_config)
+
+    # Create orchestrator and run analysis
+    mode_desc = "Manual Screenshots" if args.manual_mode else "Interactive Mode"
     console.print(Panel.fit(
         "[bold cyan]E-commerce UX Analysis Agent[/bold cyan]\n\n"
-        f"Analysis Type: {args.analysis_type}\n"
+        f"Analysis Type: {get_page_type_display_name(analysis_type)}\n"
         f"Competitors: {len(competitors)}\n"
-        f"Model: {args.model}",
+        f"Mode: {mode_desc}\n"
+        f"Model: {args.model}"
+        + (f"\n[magenta]Screenshots Dir: {args.screenshots_dir}[/magenta]" if args.manual_mode else ""),
         title="Starting Analysis"
     ))
+
+    if not args.manual_mode:
+        console.print("[cyan]🌐 Interactive Mode:[/cyan] Browser will open for each site")
+        console.print("[dim]Navigate to the page, close popups, then press Enter to capture[/dim]\n")
+
+    if args.manual_mode:
+        console.print(f"\n[magenta]📁 Manual Mode Enabled:[/magenta]")
+        console.print(f"[dim]Loading screenshots from: {args.screenshots_dir}[/dim]")
+        console.print(f"[dim]Expected files: {{competitor}}_desktop.png, {{competitor}}_mobile.png[/dim]\n")
 
     orchestrator = UXAnalysisOrchestrator(
         api_key=api_key,
         model=args.model,
-        analysis_type=args.analysis_type
+        analysis_type=analysis_type,
+        manual_mode=args.manual_mode,
+        screenshots_dir=args.screenshots_dir
+    )
+
+    # Create audit directory structure
+    start_time = datetime.now()
+    audit_structure = create_audit_directory_structure(
+        base_dir="output",
+        analysis_type=analysis_type,
+        competitors=competitors
     )
 
     # Run analysis
-    results = await orchestrator.analyze_competitors(competitors)
+    results = await orchestrator.analyze_competitors(competitors, audit_structure)
+
+    # Calculate timing for audit summary
+    end_time = datetime.now()
+    successful = [r for r in results if r.get("success")]
+    failed = [r for r in results if not r.get("success")]
+
+    # Generate audit summary metadata
+    audit_summary = generate_audit_summary(
+        analysis_type=analysis_type,
+        analysis_type_name=orchestrator.analysis_type_config.name,
+        competitors=competitors,
+        successful_count=len(successful),
+        failed_count=len(failed),
+        start_time=start_time,
+        end_time=end_time
+    )
 
     # Generate reports
-    report_paths = orchestrator.generate_reports(results)
+    report_paths = orchestrator.generate_reports(results, audit_structure, audit_summary)
 
     # Display summary
     orchestrator.display_summary(results)
 
-    console.print(f"\n[bold green]All reports saved to:[/bold green] {Path('output').absolute()}")
+    # Show new organized output structure
+    audit_root = audit_structure['audit_root']
+    console.print(f"\n[bold green]✅ Analysis complete![/bold green]\n")
+    console.print(f"[bold]Results saved to:[/bold] [cyan]{audit_root}[/cyan]\n")
+
+    if successful:
+        console.print("[bold]Competitors analyzed:[/bold]")
+        for comp in successful:
+            comp_name = comp.get('site_name', 'unknown')
+            comp_path = audit_root / comp_name
+            console.print(f"  • {comp_name} [dim]({comp_path})[/dim]")
+
+    console.print(f"\n[bold]Comparison report:[/bold] [cyan]{audit_root / '_comparison_report.md'}[/cyan]")
 
 
 if __name__ == "__main__":

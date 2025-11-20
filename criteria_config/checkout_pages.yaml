@@ -1,0 +1,132 @@
+name: "Checkout Flow Analysis"
+requires_interaction: true
+interaction_prompt: "Please navigate through the checkout process to the final payment step (do not submit payment)"
+interaction_timeout: 300
+viewports:
+  - name: "desktop"
+    width: 1920
+    height: 1080
+  - name: "mobile"
+    width: 375
+    height: 812
+
+criteria:
+  - id: "form_design"
+    name: "Form Design & Usability"
+    weight: 1.6
+    description: "Clarity, simplicity, and usability of checkout form fields"
+    evaluation_points:
+      - "Minimal required fields"
+      - "Clear field labels and placeholders"
+      - "Logical field ordering"
+      - "Smart defaults and auto-fill support"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "Average checkout has 14.88 form fields, optimal is 7-8 fields"
+      - source: "Nielsen Norman Group"
+        finding: "Inline form validation reduces errors by 42%"
+
+  - id: "progress_indicators"
+    name: "Progress Indication"
+    weight: 1.2
+    description: "Clear indication of checkout steps and user progress through the funnel"
+    evaluation_points:
+      - "Step indicator visible"
+      - "Number of steps clearly shown"
+      - "Current step highlighted"
+      - "Ability to navigate between steps"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "Progress indicators reduce abandonment by 14%"
+      - source: "Nielsen Norman Group"
+        finding: "Users prefer knowing total steps upfront"
+
+  - id: "guest_checkout"
+    name: "Guest Checkout Option"
+    weight: 1.5
+    description: "Availability and prominence of guest checkout without forced account creation"
+    evaluation_points:
+      - "Guest checkout clearly offered"
+      - "No forced account creation"
+      - "Optional account creation after purchase"
+      - "Social login options available"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "24% of users abandon checkout due to forced account creation"
+      - source: "Nielsen Norman Group"
+        finding: "Guest checkout can increase conversion by 45%"
+
+  - id: "payment_options"
+    name: "Payment Method Variety"
+    weight: 1.3
+    description: "Range of payment options and clarity of payment information"
+    evaluation_points:
+      - "Multiple payment methods offered"
+      - "Digital wallet options (Apple Pay, Google Pay)"
+      - "Buy now, pay later options"
+      - "Payment security clearly communicated"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "8% of users abandon due to lack of preferred payment method"
+      - source: "Nielsen Norman Group"
+        finding: "Offering 5+ payment methods increases conversion by 22%"
+
+  - id: "error_handling"
+    name: "Error Prevention & Recovery"
+    weight: 1.4
+    description: "Quality of error messages, validation, and error recovery mechanisms"
+    evaluation_points:
+      - "Inline validation feedback"
+      - "Clear, actionable error messages"
+      - "Errors highlighted and easy to locate"
+      - "Data preserved after errors"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "94% of users encounter form errors during checkout"
+      - source: "Nielsen Norman Group"
+        finding: "Poor error messages increase abandonment by 67%"
+
+  - id: "order_summary"
+    name: "Order Summary Visibility"
+    weight: 1.3
+    description: "Clarity and accessibility of order total, items, and costs throughout checkout"
+    evaluation_points:
+      - "Order summary always visible"
+      - "Item details easily reviewable"
+      - "Cost breakdown transparent"
+      - "Easy item quantity modification"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "Sticky order summaries reduce abandonment by 11%"
+      - source: "Nielsen Norman Group"
+        finding: "Users need to see total cost on every checkout step"
+
+  - id: "trust_checkout"
+    name: "Trust & Security Assurance"
+    weight: 1.4
+    description: "Security indicators, privacy assurance, and trust signals in checkout"
+    evaluation_points:
+      - "SSL/security badges visible"
+      - "Privacy policy linked"
+      - "PCI compliance indicators"
+      - "Money-back guarantee mentioned"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "17% of users abandon due to security concerns"
+      - source: "Nielsen Norman Group"
+        finding: "Security badges increase trust by 42%"
+
+  - id: "mobile_checkout"
+    name: "Mobile Checkout Optimization"
+    weight: 1.5
+    description: "Checkout experience optimized for mobile devices"
+    evaluation_points:
+      - "Mobile-optimized form fields"
+      - "Large, tappable buttons"
+      - "Appropriate keyboard types"
+      - "Minimal scrolling required"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "Mobile checkout abandonment is 84%, vs 73% on desktop"
+      - source: "Google Mobile Best Practices"
+        finding: "Single-column checkout forms perform 18% better on mobile"

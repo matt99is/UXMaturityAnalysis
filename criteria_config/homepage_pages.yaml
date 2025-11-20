@@ -1,0 +1,130 @@
+name: "Homepage Analysis"
+requires_interaction: false
+viewports:
+  - name: "desktop"
+    width: 1920
+    height: 1080
+  - name: "mobile"
+    width: 375
+    height: 812
+
+criteria:
+  - id: "value_proposition"
+    name: "Value Proposition Clarity"
+    weight: 1.5
+    description: "How clearly and quickly the site communicates its unique value and what it offers"
+    evaluation_points:
+      - "Value proposition visible above the fold"
+      - "Clear differentiation from competitors"
+      - "Benefit-focused messaging"
+      - "Minimal cognitive load to understand offering"
+    benchmarks:
+      - source: "Nielsen Norman Group"
+        finding: "Users spend 10-20 seconds deciding if a homepage is worth their time"
+      - source: "Baymard Institute"
+        finding: "57% of users can't immediately understand what a site sells from the homepage"
+
+  - id: "navigation"
+    name: "Navigation Structure"
+    weight: 1.3
+    description: "Ease of finding and accessing main product categories and key pages"
+    evaluation_points:
+      - "Clear, scannable navigation labels"
+      - "Logical information architecture"
+      - "Quick access to key categories"
+      - "Search prominence"
+    benchmarks:
+      - source: "Nielsen Norman Group"
+        finding: "Mega menus can improve task completion by 37% when properly structured"
+      - source: "Baymard Institute"
+        finding: "68% of users prefer category-based navigation over search for browsing"
+
+  - id: "hero_banner"
+    name: "Hero Section & Banner Effectiveness"
+    weight: 1.2
+    description: "Impact and relevance of hero imagery, promotions, and primary call-to-action"
+    evaluation_points:
+      - "Visually compelling imagery"
+      - "Clear promotional messaging"
+      - "Prominent CTA visibility"
+      - "Relevance to target audience"
+    benchmarks:
+      - source: "Nielsen Norman Group"
+        finding: "Carousel banners have only 1% click-through rate, static heroes perform better"
+      - source: "Baymard Institute"
+        finding: "72% of users say homepage promotions influence their shopping decisions"
+
+  - id: "trust_signals"
+    name: "Trust & Credibility Signals"
+    weight: 1.4
+    description: "Presence of trust indicators, social proof, and credibility markers"
+    evaluation_points:
+      - "Customer reviews/ratings visibility"
+      - "Security badges and certifications"
+      - "Social proof elements"
+      - "Professional design quality"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "48% of users cite trust seals as important for e-commerce purchases"
+      - source: "Nielsen Norman Group"
+        finding: "Customer testimonials increase conversion rates by 34%"
+
+  - id: "search_functionality"
+    name: "Search Accessibility"
+    weight: 1.1
+    description: "Prominence and usability of the site search feature"
+    evaluation_points:
+      - "Search box visibility and size"
+      - "Placeholder text clarity"
+      - "Mobile search accessibility"
+      - "Auto-suggest functionality"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "43% of homepage visitors immediately go to the search bar"
+      - source: "Nielsen Norman Group"
+        finding: "Search box should be at least 27 characters wide for optimal usability"
+
+  - id: "mobile_optimization"
+    name: "Mobile Experience"
+    weight: 1.3
+    description: "Homepage optimization for mobile devices and small screens"
+    evaluation_points:
+      - "Touch-friendly interactive elements"
+      - "Readable text without zooming"
+      - "Fast load times on mobile"
+      - "Simplified mobile navigation"
+    benchmarks:
+      - source: "Google Mobile Best Practices"
+        finding: "53% of mobile users abandon sites that take longer than 3 seconds to load"
+      - source: "Nielsen Norman Group"
+        finding: "Mobile conversion rates are 64% lower than desktop due to poor optimization"
+
+  - id: "content_hierarchy"
+    name: "Content Organization & Hierarchy"
+    weight: 1.0
+    description: "Visual hierarchy and organization of homepage content sections"
+    evaluation_points:
+      - "Clear visual hierarchy"
+      - "Scannable content layout"
+      - "Appropriate white space"
+      - "Progressive disclosure of information"
+    benchmarks:
+      - source: "Nielsen Norman Group"
+        finding: "Users read web content in an F-pattern, focusing on top and left areas"
+      - source: "Baymard Institute"
+        finding: "67% of users prefer clean, uncluttered homepage designs"
+
+  - id: "page_performance"
+    name: "Page Load & Performance"
+    weight: 1.2
+    description: "Perceived and actual page loading speed and performance"
+    evaluation_points:
+      - "Fast initial page load"
+      - "Progressive content rendering"
+      - "Minimal layout shifts"
+      - "Responsive interactions"
+    benchmarks:
+      - source: "Google Core Web Vitals"
+        finding: "Pages loading within 2 seconds have 15% higher conversion rates"
+      - source: "Baymard Institute"
+        finding: "Page load time directly impacts bounce rate - 1 second delay = 7% conversion loss"

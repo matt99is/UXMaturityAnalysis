@@ -12,6 +12,8 @@ from typing import Dict, List, Any
 import anthropic
 from anthropic import Anthropic
 import json
+from PIL import Image
+import io
 
 
 class ClaudeUXAnalyzer:
@@ -53,9 +55,11 @@ class ClaudeUXAnalyzer:
                 criteria_text += f"   - {benchmark}\n"
             criteria_text += "\n"
 
-        prompt = f"""You are a UX expert specializing in e-commerce conversion optimization. You have deep knowledge of Baymard Institute research and Nielsen Norman Group guidelines.
+        prompt = f"""You are a competitive intelligence analyst specializing in e-commerce UX strategy. You have deep knowledge of Baymard Institute research and Nielsen Norman Group guidelines.
 
-Analyze the provided screenshot(s) of {site_name}'s basket page (URL: {url}) against the following criteria:
+**IMPORTANT: Frame your analysis from a COMPETITIVE INTELLIGENCE perspective, not as recommendations to the competitor.**
+
+Analyze the provided screenshot(s) of {site_name}'s page (URL: {url}) against the following criteria:
 
 {criteria_text}
 
@@ -63,12 +67,13 @@ For each criterion, provide:
 1. A score from 0-10 (where 10 is excellent, adhering to best practices)
 2. Specific observations of what you see in the screenshot
 3. How it compares to best practices and benchmarks mentioned
+4. Competitive assessment: Is this a strength (threat to us) or weakness (opportunity for us)?
 
-Then provide:
-- Overall UX score (weighted average)
-- Top 3 strengths
-- Top 3 weaknesses
-- 5 actionable recommendations prioritized by impact
+**Competitive Intelligence Focus:**
+- Frame strengths as "competitive advantages" (threats we must counter)
+- Frame weaknesses as "exploitable vulnerabilities" (opportunities to differentiate)
+- Identify unmet user needs that neither this competitor nor market addresses
+- Assess their competitive position relative to UX best practices
 
 Return your analysis as a JSON object with this exact structure:
 {{
@@ -76,48 +81,103 @@ Return your analysis as a JSON object with this exact structure:
   "url": "{url}",
   "analysis_type": "{analysis_name}",
   "overall_score": <number 0-10>,
+  "competitive_position": {{
+    "tier": "market_leader|strong_contender|vulnerable",
+    "positioning": "<1-2 sentence assessment of their competitive UX position>",
+    "key_differentiator": "<their primary UX advantage, if any>"
+  }},
   "criteria_scores": [
     {{
       "criterion_id": "<id>",
       "criterion_name": "<name>",
       "score": <number 0-10>,
       "observations": "<detailed observations>",
-      "comparison_to_benchmarks": "<how it compares>"
+      "comparison_to_benchmarks": "<how it compares>",
+      "competitive_status": "advantage|parity|vulnerability"
     }}
   ],
   "strengths": [
-    "<strength 1>",
-    "<strength 2>",
-    "<strength 3>"
+    "<competitive advantage 1 - what they do well that poses a threat>",
+    "<competitive advantage 2>",
+    "<competitive advantage 3>"
+  ],
+  "competitive_advantages": [
+    "<feature or capability where they lead the market>",
+    "<another competitive threat>"
   ],
   "weaknesses": [
-    "<weakness 1>",
-    "<weakness 2>",
-    "<weakness 3>"
+    "<exploitable vulnerability 1 - gap we can target>",
+    "<exploitable vulnerability 2>",
+    "<exploitable vulnerability 3>"
+  ],
+  "exploitable_vulnerabilities": [
+    {{
+      "vulnerability": "<specific weakness>",
+      "opportunity": "<how we could exploit this>",
+      "user_impact": "<why users care about this gap>"
+    }}
+  ],
+  "unmet_user_needs": [
+    "<user need this competitor doesn't address>",
+    "<gap in their value proposition>"
   ],
   "key_findings": [
-    "<finding 1>",
-    "<finding 2>",
-    "<finding 3>"
-  ],
-  "actionable_recommendations": [
-    {{
-      "priority": "high|medium|low",
-      "recommendation": "<actionable recommendation>",
-      "expected_impact": "<impact description>",
-      "affected_criteria": ["<criterion_id>"]
-    }}
+    "<competitive insight 1>",
+    "<competitive insight 2>",
+    "<competitive insight 3>"
   ]
 }}
 
-Be specific and reference what you actually see in the screenshots. If something cannot be determined from the screenshot, note it as "Cannot verify from screenshot."
+Be specific and reference what you actually see in the screenshots. Think like a competitive strategist analyzing a rival. If something cannot be determined from the screenshot, note it as "Cannot verify from screenshot."
 """
         return prompt
 
     def _load_image_as_base64(self, image_path: str) -> str:
-        """Load image and convert to base64."""
-        with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode("utf-8")
+        """
+        Load image, compress if needed, and convert to base64.
+
+        Claude API has a 5MB limit per image. This method compresses
+        large screenshots to stay under that limit while maintaining quality.
+        """
+        MAX_SIZE_BYTES = 5 * 1024 * 1024  # 5MB limit
+
+        # Check original file size
+        file_size = os.path.getsize(image_path)
+
+        if file_size <= MAX_SIZE_BYTES:
+            # File is small enough, use as-is
+            with open(image_path, "rb") as image_file:
+                return base64.b64encode(image_file.read()).decode("utf-8")
+
+        # File too large - compress it
+        img = Image.open(image_path)
+
+        # Convert RGBA to RGB if needed (for JPEG compression)
+        if img.mode == 'RGBA':
+            rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+            rgb_img.paste(img, mask=img.split()[3])  # Use alpha channel as mask
+            img = rgb_img
+
+        # Try progressively lower quality until under limit
+        for quality in [85, 75, 65, 55, 45]:
+            buffer = io.BytesIO()
+            img.save(buffer, format='JPEG', quality=quality, optimize=True)
+            compressed_size = buffer.tell()
+
+            if compressed_size <= MAX_SIZE_BYTES:
+                buffer.seek(0)
+                return base64.b64encode(buffer.read()).decode("utf-8")
+
+        # If still too large, resize and try again
+        # Reduce dimensions by 30% and compress
+        new_width = int(img.width * 0.7)
+        new_height = int(img.height * 0.7)
+        img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        buffer = io.BytesIO()
+        img.save(buffer, format='JPEG', quality=70, optimize=True)
+        buffer.seek(0)
+        return base64.b64encode(buffer.read()).decode("utf-8")
 
     async def analyze_screenshots(
         self,

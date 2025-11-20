@@ -16,7 +16,7 @@ analysis_types:
       requires_interaction: true  # Launch visible browser and wait for user
       mode: "visible"  # "visible" or "headless"
       prompt: "🛒 Please add 1-2 items to the basket, then press Enter to continue..."
-      timeout: 120  # Maximum seconds to wait for user input
+      timeout: 300  # Maximum seconds to wait for user input (5 minutes)
       instructions: |
         Instructions for basket page setup:
         1. Navigate through the site and add 1-2 items to your basket

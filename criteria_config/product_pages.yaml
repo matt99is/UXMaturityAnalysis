@@ -1,0 +1,169 @@
+name: "Product Page Analysis"
+requires_interaction: false
+viewports:
+  - name: "desktop"
+    width: 1920
+    height: 1080
+  - name: "mobile"
+    width: 375
+    height: 812
+
+criteria:
+  - id: "product_imagery"
+    name: "Product Imagery & Gallery"
+    weight: 1.5
+    description: "Quality, quantity, and interactivity of product images and visual presentation"
+    evaluation_points:
+      - "High-resolution images available"
+      - "Multiple angles and views"
+      - "Zoom functionality"
+      - "360-degree or video capabilities"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "56% of users cite product images as the most important factor in purchase decisions"
+      - source: "Nielsen Norman Group"
+        finding: "Sites with 5+ product images per item see 19% higher conversion rates"
+
+  - id: "add_to_basket"
+    name: "Add to Basket/Cart Prominence"
+    weight: 1.6
+    description: "Visibility, clarity, and usability of the primary purchase action"
+    evaluation_points:
+      - "CTA button visibility and contrast"
+      - "Clear, action-oriented button text"
+      - "Button size appropriate for touch"
+      - "Stock availability clearly indicated"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "Large, high-contrast CTAs can increase conversions by 32%"
+      - source: "Nielsen Norman Group"
+        finding: "Add to cart buttons should be at least 44x44 pixels for mobile"
+
+  - id: "pricing_clarity"
+    name: "Pricing & Offer Transparency"
+    weight: 1.4
+    description: "Clarity of pricing, discounts, savings, and promotional offers"
+    evaluation_points:
+      - "Price clearly displayed above fold"
+      - "Discount/savings calculations visible"
+      - "No hidden fees or surprises"
+      - "Comparison to original price (if applicable)"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "49% of cart abandonments due to unexpected costs revealed later"
+      - source: "Nielsen Norman Group"
+        finding: "Showing savings amounts increases purchase likelihood by 27%"
+
+  - id: "product_information"
+    name: "Product Information Completeness"
+    weight: 1.3
+    description: "Comprehensiveness and organization of product details and specifications"
+    evaluation_points:
+      - "Key specs prominently displayed"
+      - "Detailed description accessible"
+      - "Size/dimension information"
+      - "Material/ingredient details"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "83% of users need detailed product information before purchasing"
+      - source: "Nielsen Norman Group"
+        finding: "Tabbed interfaces for product details reduce cognitive load by 41%"
+
+  - id: "social_proof"
+    name: "Reviews & Social Proof"
+    weight: 1.4
+    description: "Visibility and prominence of customer reviews, ratings, and testimonials"
+    evaluation_points:
+      - "Star rating visible above fold"
+      - "Review count displayed"
+      - "Recent reviews accessible"
+      - "Review authenticity indicators"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "95% of users read reviews before purchasing, 58% won't buy without reviews"
+      - source: "Nielsen Norman Group"
+        finding: "Products with reviews see 270% higher conversion rates"
+
+  - id: "subscription_purchase_options"
+    name: "Subscription/Auto-Delivery Options"
+    weight: 1.5
+    description: "Visibility, prominence, value proposition, and ethics of subscription purchasing options"
+    evaluation_points:
+      - "Subscription option visibility above the fold"
+      - "Prominence relative to one-time purchase (equal vs favored)"
+      - "Whether subscription is pre-selected by default (dark pattern check)"
+      - "Clarity of subscription terms (frequency, cancellation, flexibility)"
+      - "Value proposition clearly communicated (% savings, benefits)"
+      - "Opt-out mechanism easily accessible"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "Pre-selected subscriptions reduce trust and increase abandonment by 23%"
+      - source: "UK CMA Online Choice Architecture (2022)"
+        finding: "Pre-selected default options are 27% more likely to be chosen than non-default options (analysis of 58 studies)"
+      - source: "Nielsen Norman Group"
+        finding: "Users need clear cancellation terms before committing to subscriptions"
+
+  - id: "delivery_fulfillment_options"
+    name: "Delivery & Fulfillment Options"
+    weight: 1.3
+    description: "Clarity and variety of fulfillment methods, delivery timeframes, and availability"
+    evaluation_points:
+      - "Expected delivery date shown"
+      - "Delivery cost transparency"
+      - "Multiple fulfillment methods available (home delivery, click & collect, store pickup)"
+      - "Click & collect prominence and availability indication"
+      - "Same-day/next-day delivery options clearly communicated"
+      - "Stock status and fulfillment location indicated"
+      - "Postcode/ZIP checker for delivery eligibility"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "28% of users abandon purchases due to unclear delivery information"
+      - source: "Nielsen Norman Group"
+        finding: "Showing delivery dates increases conversion by 18%"
+      - source: "Retail Research"
+        finding: "Click & collect availability reduces cart abandonment by 12%"
+
+  - id: "trust_security"
+    name: "Trust & Security Indicators"
+    weight: 1.1
+    description: "Presence of trust signals, return policy, and security assurances"
+    evaluation_points:
+      - "Return policy easily accessible"
+      - "Security badges visible"
+      - "Warranty information"
+      - "Customer service contact options"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "48% of users look for return policy before purchasing"
+      - source: "Nielsen Norman Group"
+        finding: "Visible return policies increase trust by 35%"
+
+  - id: "cross_sell_upsell"
+    name: "Cross-sell & Upsell Effectiveness"
+    weight: 1.0
+    description: "Quality and relevance of product recommendations and related items"
+    evaluation_points:
+      - "Relevant product suggestions"
+      - "Complementary items shown"
+      - "Bundles or package deals"
+      - "Non-intrusive recommendation placement"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "Effective cross-selling can increase average order value by 20%"
+      - source: "Nielsen Norman Group"
+        finding: "Product recommendations should be personalized and contextual"
+
+  - id: "mobile_product_experience"
+    name: "Mobile Product Page Optimization"
+    weight: 1.3
+    description: "Product page experience optimized for mobile devices"
+    evaluation_points:
+      - "Easy image gallery navigation on mobile"
+      - "Sticky add-to-cart button"
+      - "Readable product details without zooming"
+      - "Fast mobile page load"
+    benchmarks:
+      - source: "Google Mobile Best Practices"
+        finding: "Mobile product pages should load in under 2.5 seconds"
+      - source: "Baymard Institute"
+        finding: "61% of mobile users won't return to a site with poor mobile experience"

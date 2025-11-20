@@ -4,10 +4,14 @@ anthropic==0.39.0
 
 # Browser automation
 playwright==1.48.0
+playwright-stealth==2.0.0
 
 # Data handling
 pydantic==2.9.2
 pyyaml==6.0.2
+
+# Image processing
+Pillow>=10.0.0  # For image compression
 
 # Utilities
 rich==13.9.2  # For better console output

@@ -1,0 +1,157 @@
+name: "E-commerce Basket Page Analysis"
+requires_interaction: true
+interaction_prompt: "🛒 Please add 1-2 items to the basket, then press Enter to continue..."
+interaction_timeout: 300
+viewports:
+  - name: "desktop"
+    width: 1920
+    height: 1080
+  - name: "mobile"
+    width: 375
+    height: 812
+
+criteria:
+  - id: "discount_code_field"
+    name: "Discount Code Field"
+    weight: 1.4
+    description: "Placement, visibility, and messaging of promotional code entry"
+    evaluation_points:
+      - "Is the discount code field easily visible without scrolling?"
+      - "Is it clearly labeled and positioned logically in the flow?"
+      - "Does messaging clarify when codes are applied vs active?"
+      - "Are there helpful prompts or links to find codes?"
+      - "Does it cause confusion about when discounts are calculated?"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "64% of users abandon if discount codes are confusing"
+      - source: "Best Practice"
+        finding: "Show code field but not too prominently to avoid discount-seeking behavior"
+
+  - id: "shipping_cost_transparency"
+    name: "Shipping Cost Transparency"
+    weight: 1.6
+    description: "Visibility of shipping costs before checkout initiation"
+    evaluation_points:
+      - "Are shipping costs displayed on the basket page or only later?"
+      - "Is there a clear breakdown of delivery costs?"
+      - "Are free shipping thresholds clearly communicated?"
+      - "Can users see different shipping options and costs?"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "Unexpected shipping costs are the #1 reason for cart abandonment (48%)"
+      - source: "Best Practice"
+        finding: "Show shipping estimate or exact cost on basket page"
+
+  - id: "delivery_estimates"
+    name: "Shipping Delivery Estimates"
+    weight: 1.3
+    description: "Communication of delivery timeframes and dispatch cutoffs"
+    evaluation_points:
+      - "Are delivery time estimates shown on the basket page?"
+      - "Do they display same-day or next-day dispatch cutoff times?"
+      - "Is delivery date/range communicated clearly?"
+      - "Can users easily understand when they'll receive items?"
+    benchmarks:
+      - source: "Nielsen Norman Group"
+        finding: "Users want delivery date certainty early in the flow"
+      - source: "Best Practice"
+        finding: "Show estimated delivery dates and dispatch cutoffs"
+
+  - id: "payment_methods"
+    name: "Payment Method Visibility"
+    weight: 1.1
+    description: "Early indication of accepted payment methods"
+    evaluation_points:
+      - "Are payment method icons/logos visible on basket page?"
+      - "Can users see what payment options are available before checkout?"
+      - "Are payment security indicators present?"
+    benchmarks:
+      - source: "Best Practice"
+        finding: "Display accepted payment methods early to build confidence"
+
+  - id: "express_checkout"
+    name: "Express Checkout Options"
+    weight: 1.3
+    description: "Availability of Apple Pay, Google Pay, PayPal express options"
+    evaluation_points:
+      - "Are express checkout buttons (Apple Pay, Google Pay, PayPal) visible?"
+      - "Are they prominently positioned?"
+      - "Is the value proposition clear (faster checkout)?"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "Express checkout can reduce checkout friction by 30-50%"
+      - source: "Best Practice"
+        finding: "Offer express options above standard checkout CTA"
+
+  - id: "trust_signals"
+    name: "Trust Signals"
+    weight: 1.1
+    description: "Security badges, return policy, guarantees"
+    evaluation_points:
+      - "Are security badges or SSL indicators present?"
+      - "Is return policy easily accessible?"
+      - "Are there money-back guarantees or satisfaction promises?"
+      - "Is there social proof or trust messaging?"
+    benchmarks:
+      - source: "Nielsen Norman Group"
+        finding: "Trust signals reduce perceived risk"
+      - source: "Best Practice"
+        finding: "Include security badges near checkout CTA"
+
+  - id: "basket_summary"
+    name: "Basket Summary Clarity"
+    weight: 1.4
+    description: "Clarity of costs breakdown - subtotals, taxes, discounts, delivery"
+    evaluation_points:
+      - "Is there a clear itemized breakdown of costs?"
+      - "Are subtotal, tax, delivery, and discounts clearly separated?"
+      - "Is the total prominently displayed?"
+      - "Can users easily understand what they're paying?"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "Hidden costs and unclear pricing are top abandonment reasons"
+      - source: "Best Practice"
+        finding: "Progressive disclosure of costs with clear labeling"
+
+  - id: "cta_buttons"
+    name: "CTA Buttons"
+    weight: 1.3
+    description: "Copy, prominence, and placement of call-to-action buttons"
+    evaluation_points:
+      - "Is the primary CTA button prominently displayed?"
+      - "Is the button copy clear and action-oriented?"
+      - "Is there good visual hierarchy (size, color, position)?"
+      - "Are there competing CTAs that might cause confusion?"
+    benchmarks:
+      - source: "Nielsen Norman Group"
+        finding: "Primary CTA should be visually dominant"
+      - source: "Best Practice"
+        finding: "Use action-oriented copy like 'Continue to Checkout' vs 'Next'"
+
+  - id: "basket_saving"
+    name: "Basket Saving Features"
+    weight: 1.0
+    description: "Save for later, wishlisting, or basket persistence features"
+    evaluation_points:
+      - "Is there a 'Save for Later' or similar feature?"
+      - "Can users move items to a wishlist?"
+      - "Is basket persistence communicated?"
+      - "Are there options to share the basket?"
+    benchmarks:
+      - source: "Best Practice"
+        finding: "Offer save for later to reduce permanent abandonment"
+
+  - id: "mobile_responsiveness"
+    name: "Mobile Responsiveness"
+    weight: 1.3
+    description: "Mobile UX optimization and touch target sizing"
+    evaluation_points:
+      - "Does the page have responsive design indicators?"
+      - "Are touch targets appropriately sized?"
+      - "Is the layout mobile-optimized?"
+      - "Are key elements (CTA, summary) accessible on mobile?"
+    benchmarks:
+      - source: "Google Mobile Best Practices"
+        finding: "61% of mobile users unlikely to return to a site they had trouble accessing"
+      - source: "Best Practice"
+        finding: "Touch targets min 44x44px, readable text without zoom"
