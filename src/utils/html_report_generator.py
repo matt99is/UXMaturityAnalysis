@@ -18,6 +18,7 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 from jinja2 import Template
 import base64
+from .screenshot_annotator import ScreenshotAnnotator
 
 
 class HTMLReportGenerator:
@@ -28,6 +29,7 @@ class HTMLReportGenerator:
     def __init__(self, output_dir: str = "output"):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
+        self.annotator = ScreenshotAnnotator()
 
     def _create_radar_chart(self, results: List[Dict[str, Any]]) -> str:
         """
@@ -341,12 +343,52 @@ class HTMLReportGenerator:
             'strongest_criterion_avg': avg_by_criterion.get(strongest_criterion, 0) if strongest_criterion else 0
         }
 
-    def _get_html_template(self) -> str:
+    def _prepare_annotated_screenshots(
+        self,
+        competitor_results: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """
-        Return HTML template string.
+        Create annotated versions of screenshots for each competitor.
+
+        Args:
+            competitor_results: List of competitor analysis results
 
         Returns:
-            HTML template with Bootstrap and custom styling
+            Updated results with annotated screenshot paths
+        """
+        for result in competitor_results:
+            if not result.get('success') or not result.get('screenshot_metadata'):
+                continue
+
+            # Generate annotations from criteria scores
+            if result.get('criteria_scores'):
+                annotations = self.annotator.create_annotations_from_analysis(
+                    result['criteria_scores'],
+                    top_n=2  # Top 2 strengths and weaknesses
+                )
+
+                # Annotate each screenshot
+                for screenshot in result['screenshot_metadata']:
+                    try:
+                        screenshot_path = screenshot.get('filepath')
+                        if screenshot_path and Path(screenshot_path).exists():
+                            annotated_path = self.annotator.annotate_screenshot(
+                                screenshot_path,
+                                annotations
+                            )
+                            screenshot['annotated_filepath'] = annotated_path
+                    except Exception as e:
+                        # If annotation fails, just skip it
+                        pass
+
+        return competitor_results
+
+    def _get_html_template(self) -> str:
+        """
+        Return HTML template string with lightbox and filtering.
+
+        Returns:
+            HTML template with Bootstrap, custom styling, and interactive features
         """
         return """<!DOCTYPE html>
 <html lang="en">
@@ -356,6 +398,232 @@ class HTMLReportGenerator:
     <title>{{ analysis_type }} - Competitive Intelligence Report</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Lightbox Modal */
+        .lightbox-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.95);
+            align-items: center;
+            justify-content: center;
+        }
+        .lightbox-modal.active {
+            display: flex;
+        }
+        .lightbox-content {
+            position: relative;
+            max-width: 95%;
+            max-height: 95%;
+            animation: zoomIn 0.3s;
+        }
+        .lightbox-content img {
+            max-width: 100%;
+            max-height: 95vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 0 50px rgba(255,255,255,0.2);
+        }
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10000;
+            background: rgba(0,0,0,0.5);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .lightbox-close:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+            background: rgba(0,0,0,0.5);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .lightbox-nav:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-50%) scale(1.1);
+        }
+        .lightbox-prev {
+            left: 20px;
+        }
+        .lightbox-next {
+            right: 20px;
+        }
+        .lightbox-caption {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            max-width: 80%;
+            text-align: center;
+        }
+        @keyframes zoomIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Filter Controls */
+        .filter-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+        }
+        .filter-panel .form-label {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        .filter-panel .form-select,
+        .filter-panel .form-control {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 15px;
+        }
+        .filter-panel .form-select:focus,
+        .filter-panel .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .filter-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .filter-badge:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        .filter-badge.active {
+            background: #48bb78;
+        }
+        .reset-filters-btn {
+            background: linear-gradient(135deg, #f56565 0%, #ed8936 100%);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .reset-filters-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(245, 101, 101, 0.4);
+        }
+        .filter-results-count {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-top: 10px;
+        }
+
+        /* Make competitor cards filterable */
+        .competitor-card.filtered-out {
+            display: none !important;
+        }
+
+        /* Enhanced Screenshot Gallery */
+        .screenshot-gallery {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .screenshot-thumb {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .screenshot-thumb:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        .screenshot-thumb img {
+            width: 250px;
+            height: auto;
+            display: block;
+        }
+        .screenshot-thumb .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(102, 126, 234, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+            color: white;
+            font-size: 2rem;
+        }
+        .screenshot-thumb:hover .overlay {
+            opacity: 1;
+        }
+        .screenshot-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -638,8 +906,43 @@ class HTMLReportGenerator:
                 </div>
             </div>
 
-            <!-- Competitor Details -->
+            <!-- Filter Panel -->
             <div class="row">
+                <div class="col-12">
+                    <div class="filter-panel">
+                        <h5><i class="fas fa-filter"></i> <strong>Filter & Search</strong></h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Search Competitor</label>
+                                <input type="text" class="form-control" id="searchCompetitor" placeholder="Type competitor name...">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Minimum Score</label>
+                                <input type="range" class="form-range" id="minScoreFilter" min="0" max="10" step="0.5" value="0">
+                                <div class="text-center"><span id="minScoreValue">0.0</span>/10</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Competitive Status</label>
+                                <select class="form-select" id="statusFilter">
+                                    <option value="all">All Statuses</option>
+                                    <option value="advantage">Advantages Only</option>
+                                    <option value="vulnerability">Vulnerabilities Only</option>
+                                    <option value="parity">Parity Only</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button class="reset-filters-btn" onclick="resetFilters()">
+                                <i class="fas fa-redo"></i> Reset Filters
+                            </button>
+                            <span class="filter-results-count" id="filterCount">Showing {{ competitors|length }} competitors</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Competitor Details -->
+            <div class="row" id="competitorContainer">
                 <div class="col-12">
                     <h2 class="section-title"><i class="fas fa-users"></i> Competitor Profiles</h2>
                 </div>
@@ -647,7 +950,10 @@ class HTMLReportGenerator:
                 {% for competitor in competitors %}
                 {% if competitor.success %}
                 <div class="col-12">
-                    <div class="competitor-card">
+                    <div class="competitor-card"
+                         data-competitor="{{ competitor.site_name|lower }}"
+                         data-score="{{ competitor.overall_score }}"
+                         data-tier="{{ competitor.competitive_position.tier if competitor.competitive_position else '' }}">
                         <div class="competitor-header">
                             <div>
                                 <div class="competitor-name">{{ competitor.site_name }}</div>
@@ -724,8 +1030,15 @@ class HTMLReportGenerator:
                         {% if competitor.screenshot_metadata %}
                         <div class="screenshot-gallery">
                             {% for screenshot in competitor.screenshot_metadata %}
-                            <div class="screenshot-thumb">
-                                <img src="{{ screenshot.filepath }}" alt="{{ screenshot.viewport_name }}" title="{{ screenshot.viewport_name|title }} ({{ screenshot.viewport.width }}x{{ screenshot.viewport.height }})">
+                            <div class="screenshot-thumb"
+                                 onclick="openLightbox('{{ screenshot.annotated_filepath if screenshot.annotated_filepath else screenshot.filepath }}', '{{ competitor.site_name }} - {{ screenshot.viewport_name|title }}')">
+                                <img src="{{ screenshot.annotated_filepath if screenshot.annotated_filepath else screenshot.filepath }}"
+                                     alt="{{ screenshot.viewport_name }}"
+                                     title="{{ screenshot.viewport_name|title }} ({{ screenshot.viewport.width }}x{{ screenshot.viewport.height }})">
+                                <div class="overlay">
+                                    <i class="fas fa-search-plus"></i>
+                                </div>
+                                <div class="screenshot-badge">{{ screenshot.viewport_name|title }}</div>
                             </div>
                             {% endfor %}
                         </div>
@@ -744,7 +1057,119 @@ class HTMLReportGenerator:
         </div>
     </div>
 
+    <!-- Lightbox Modal -->
+    <div id="lightboxModal" class="lightbox-modal" onclick="closeLightbox(event)">
+        <span class="lightbox-close" onclick="closeLightbox(event)">&times;</span>
+        <div class="lightbox-content" onclick="event.stopPropagation()">
+            <img id="lightboxImage" src="" alt="">
+            <div class="lightbox-caption" id="lightboxCaption"></div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Lightbox functionality
+        function openLightbox(imageSrc, caption) {
+            const modal = document.getElementById('lightboxModal');
+            const img = document.getElementById('lightboxImage');
+            const cap = document.getElementById('lightboxCaption');
+
+            img.src = imageSrc;
+            cap.textContent = caption;
+            modal.classList.add('active');
+
+            // Prevent body scroll when lightbox is open
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox(event) {
+            const modal = document.getElementById('lightboxModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            event.stopPropagation();
+        }
+
+        // Close lightbox on ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeLightbox(event);
+            }
+        });
+
+        // Filter functionality
+        const searchInput = document.getElementById('searchCompetitor');
+        const minScoreSlider = document.getElementById('minScoreFilter');
+        const minScoreValue = document.getElementById('minScoreValue');
+        const statusFilter = document.getElementById('statusFilter');
+        const filterCount = document.getElementById('filterCount');
+
+        // Update min score display
+        minScoreSlider.addEventListener('input', function() {
+            minScoreValue.textContent = this.value;
+            applyFilters();
+        });
+
+        // Apply filters on input
+        searchInput.addEventListener('input', applyFilters);
+        statusFilter.addEventListener('change', applyFilters);
+
+        function applyFilters() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const minScore = parseFloat(minScoreSlider.value);
+            const status = statusFilter.value;
+
+            const cards = document.querySelectorAll('.competitor-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const competitorName = card.getAttribute('data-competitor');
+                const score = parseFloat(card.getAttribute('data-score'));
+                const tier = card.getAttribute('data-tier');
+
+                // Search filter
+                const matchesSearch = competitorName.includes(searchTerm);
+
+                // Score filter
+                const matchesScore = score >= minScore;
+
+                // Status filter - check if any criteria match the status
+                let matchesStatus = status === 'all';
+                if (!matchesStatus) {
+                    const statusBadges = card.querySelectorAll('.competitive-status');
+                    statusBadges.forEach(badge => {
+                        if (badge.classList.contains('status-' + status)) {
+                            matchesStatus = true;
+                        }
+                    });
+                }
+
+                // Show/hide card
+                if (matchesSearch && matchesScore && matchesStatus) {
+                    card.parentElement.classList.remove('filtered-out');
+                    visibleCount++;
+                } else {
+                    card.parentElement.classList.add('filtered-out');
+                }
+            });
+
+            // Update count
+            filterCount.textContent = `Showing ${visibleCount} of ${cards.length} competitors`;
+        }
+
+        function resetFilters() {
+            searchInput.value = '';
+            minScoreSlider.value = 0;
+            minScoreValue.textContent = '0.0';
+            statusFilter.value = 'all';
+            applyFilters();
+        }
+
+        // Initialize filter count
+        document.addEventListener('DOMContentLoaded', function() {
+            const totalCards = document.querySelectorAll('.competitor-card').length;
+            filterCount.textContent = `Showing ${totalCards} competitors`;
+        });
+    </script>
 </body>
 </html>"""
 
@@ -769,17 +1194,20 @@ class HTMLReportGenerator:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_filename = f"competitive_intelligence_{timestamp}.html"
 
-        # Generate all charts
-        radar_chart = self._create_radar_chart(results)
-        bar_chart = self._create_criteria_bar_chart(results)
-        heatmap = self._create_heatmap(results)
-        box_plot = self._create_score_distribution(results)
-
-        # Get executive summary
-        summary = self._get_executive_summary(results)
-
         # Filter successful competitors for display
         successful_competitors = [r for r in results if r.get('success')]
+
+        # Annotate screenshots with findings
+        successful_competitors = self._prepare_annotated_screenshots(successful_competitors)
+
+        # Generate all charts
+        radar_chart = self._create_radar_chart(successful_competitors)
+        bar_chart = self._create_criteria_bar_chart(successful_competitors)
+        heatmap = self._create_heatmap(successful_competitors)
+        box_plot = self._create_score_distribution(successful_competitors)
+
+        # Get executive summary
+        summary = self._get_executive_summary(successful_competitors)
 
         # Render template
         template = Template(self._get_html_template())
