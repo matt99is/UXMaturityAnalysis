@@ -38,6 +38,7 @@ from src.config_loader import AnalysisConfig
 from src.analyzers.screenshot_capture import ScreenshotCapture
 from src.analyzers.claude_analyzer import ClaudeUXAnalyzer
 from src.utils.report_generator import ReportGenerator
+from src.utils.html_report_generator import HTMLReportGenerator
 from src.utils.audit_organizer import (
     extract_competitor_name,
     create_audit_directory_structure,
@@ -74,6 +75,7 @@ class UXAnalysisOrchestrator:
         self.screenshot_capturer = ScreenshotCapture()
         self.claude_analyzer = ClaudeUXAnalyzer(api_key=api_key, model=model)
         self.report_generator = ReportGenerator()
+        self.html_report_generator = HTMLReportGenerator()
         self.manual_mode = manual_mode
         self.screenshots_dir = screenshots_dir
 
@@ -401,7 +403,7 @@ class UXAnalysisOrchestrator:
         audit_summary: Dict[str, Any] = None
     ) -> Dict[str, str]:
         """
-        Generate JSON and markdown reports with new audit structure.
+        Generate JSON, markdown, and HTML reports with new audit structure.
 
         Args:
             results: List of analysis results
@@ -424,6 +426,19 @@ class UXAnalysisOrchestrator:
             )
             self.console.print(f"[green]Comparison report:[/green] {md_path}")
 
+            # Generate interactive HTML report
+            try:
+                html_filename = f"{audit_root.name}_report.html"
+                html_path = self.html_report_generator.generate_html_report(
+                    results=results,
+                    analysis_type=self.analysis_type_config.name,
+                    output_filename=f"audits/{audit_root.name}/{html_filename}"
+                )
+                self.console.print(f"[green]📊 Interactive HTML report:[/green] {html_path}")
+            except Exception as e:
+                self.console.print(f"[yellow]Warning: Could not generate HTML report: {e}[/yellow]")
+                html_path = None
+
             # Save audit summary
             if audit_summary:
                 summary_path = self.report_generator.save_audit_summary(
@@ -434,6 +449,7 @@ class UXAnalysisOrchestrator:
 
             return {
                 "markdown": md_path,
+                "html": html_path,
                 "summary": summary_path if audit_summary else None,
                 "audit_root": str(audit_root)
             }
@@ -445,9 +461,21 @@ class UXAnalysisOrchestrator:
             md_path = self.report_generator.generate_markdown_report(results)
             self.console.print(f"[green]Markdown report saved:[/green] {md_path}")
 
+            # Generate HTML report
+            try:
+                html_path = self.html_report_generator.generate_html_report(
+                    results=results,
+                    analysis_type="UX Analysis"
+                )
+                self.console.print(f"[green]📊 Interactive HTML report:[/green] {html_path}")
+            except Exception as e:
+                self.console.print(f"[yellow]Warning: Could not generate HTML report: {e}[/yellow]")
+                html_path = None
+
             return {
                 "json": json_path,
-                "markdown": md_path
+                "markdown": md_path,
+                "html": html_path
             }
 
     def display_summary(self, results: List[Dict[str, Any]]):
