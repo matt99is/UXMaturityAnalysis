@@ -792,17 +792,20 @@ SOFTWARE.
 
 - **Main README**: This file (comprehensive guide)
 - **CHANGELOG**: [CHANGELOG.md](CHANGELOG.md) - Version history and upgrade notes
-- **Sample Output**: [docs/SAMPLE_OUTPUT.md](docs/SAMPLE_OUTPUT.md) - Example reports
+- **Sample Output**: [docs/SAMPLE_OUTPUT.md](docs/SAMPLE_OUTPUT.md) - Example markdown report
+- **Demo HTML Report**: [docs/DEMO_REPORT.html](docs/DEMO_REPORT.html) - Interactive HTML report with charts
 - **Architecture**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - Technical design
-- **Tests**: `tests/` directory - Setup verification and examples
+- **Bot Detection Guide**: [docs/BOT_DETECTION_GUIDE.md](docs/BOT_DETECTION_GUIDE.md) - Handling protected sites
+- **Setup Verification**: `tests/verify_setup.py` - Validate your installation
 
 ### Getting Help
 
 1. **Check Documentation**: Review README and docs folder
-2. **Run Diagnostics**: `python3 tests/verify_setup.py`
-3. **Check Version**: `python3 main.py --version`
-4. **Review Examples**: See usage examples in README
-5. **Open Issue**: GitHub Issues with version info and details
+2. **View Demo Report**: Open `docs/DEMO_REPORT.html` in browser to see example output
+3. **Run Diagnostics**: `python3 tests/verify_setup.py`
+4. **Check Version**: `python3 main.py --version`
+5. **Review Examples**: See usage examples in README
+6. **Open Issue**: GitHub Issues with version info and details
 
 ### Community
 

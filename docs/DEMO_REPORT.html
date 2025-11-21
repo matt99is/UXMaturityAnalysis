@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Page Analysis - Competitive Intelligence Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Lightbox Modal */
+        .lightbox-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.95);
+            align-items: center;
+            justify-content: center;
+        }
+        .lightbox-modal.active {
+            display: flex;
+        }
+        .lightbox-content {
+            position: relative;
+            max-width: 95%;
+            max-height: 95%;
+            animation: zoomIn 0.3s;
+        }
+        .lightbox-content img {
+            max-width: 100%;
+            max-height: 95vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 0 50px rgba(255,255,255,0.2);
+        }
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10000;
+            background: rgba(0,0,0,0.5);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .lightbox-close:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+            background: rgba(0,0,0,0.5);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .lightbox-nav:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-50%) scale(1.1);
+        }
+        .lightbox-prev {
+            left: 20px;
+        }
+        .lightbox-next {
+            right: 20px;
+        }
+        .lightbox-caption {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            max-width: 80%;
+            text-align: center;
+        }
+        @keyframes zoomIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Filter Controls */
+        .filter-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+        }
+        .filter-panel .form-label {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        .filter-panel .form-select,
+        .filter-panel .form-control {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 15px;
+        }
+        .filter-panel .form-select:focus,
+        .filter-panel .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .filter-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .filter-badge:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        .filter-badge.active {
+            background: #48bb78;
+        }
+        .reset-filters-btn {
+            background: linear-gradient(135deg, #f56565 0%, #ed8936 100%);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .reset-filters-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(245, 101, 101, 0.4);
+        }
+        .filter-results-count {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-top: 10px;
+        }
+
+        /* Make competitor cards filterable */
+        .competitor-card.filtered-out {
+            display: none !important;
+        }
+
+        /* Enhanced Screenshot Gallery */
+        .screenshot-gallery {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .screenshot-thumb {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .screenshot-thumb:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        .screenshot-thumb img {
+            width: 250px;
+            height: auto;
+            display: block;
+        }
+        .screenshot-thumb .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(102, 126, 234, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+            color: white;
+            font-size: 2rem;
+        }
+        .screenshot-thumb:hover .overlay {
+            opacity: 1;
+        }
+        .screenshot-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px 0;
+        }
+        .container-main {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            margin-bottom: 40px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 3px solid #667eea;
+        }
+        .header h1 {
+            color: #2d3748;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .header .subtitle {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .stat-card .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .chart-container {
+            background: #f7fafc;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .competitor-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        .competitor-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+            transform: translateY(-2px);
+        }
+        .competitor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .competitor-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        .overall-score {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        .score-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        .score-excellent { background: #48bb78; color: white; }
+        .score-good { background: #38b2ac; color: white; }
+        .score-average { background: #ed8936; color: white; }
+        .score-poor { background: #f56565; color: white; }
+        .criterion-row {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            background: #f7fafc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .criterion-name {
+            font-weight: 600;
+            color: #2d3748;
+            flex: 1;
+        }
+        .criterion-score {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-left: 15px;
+        }
+        .progress-bar-custom {
+            height: 8px;
+            border-radius: 10px;
+            background: #e2e8f0;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        .screenshot-gallery {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .screenshot-thumb {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .screenshot-thumb:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .screenshot-thumb img {
+            width: 250px;
+            height: auto;
+            display: block;
+        }
+        .competitive-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: inline-block;
+        }
+        .status-advantage { background: #48bb78; color: white; }
+        .status-parity { background: #4299e1; color: white; }
+        .status-vulnerability { background: #f56565; color: white; }
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #718096;
+            font-size: 0.9rem;
+        }
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+        .alert-custom {
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="container-main">
+            <!-- Header -->
+            <div class="header">
+                <h1><i class="fas fa-chart-line"></i> Competitive Intelligence Report</h1>
+                <div class="subtitle">Product Page Analysis | Generated 2025-11-21 11:48:17</div>
+            </div>
+
+            <!-- Executive Summary -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h2 class="section-title"><i class="fas fa-star"></i> Executive Summary</h2>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-value">2</div>
+                        <div class="stat-label">Competitors Analyzed</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-value">7.3</div>
+                        <div class="stat-label">Average Score</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-value">7.8</div>
+                        <div class="stat-label">Top Score (ASOS)</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-value">6.8</div>
+                        <div class="stat-label">Lowest (Zara)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Insights -->
+            <div class="alert-custom">
+                <h5><i class="fas fa-lightbulb"></i> <strong>Key Insights</strong></h5>
+                <ul class="mb-0">
+                    <li><strong>🏆 Market Leader:</strong> ASOS leads with 7.8/10</li>
+                    
+                    <li><strong>📊 Most Consistent:</strong> ASOS shows the most balanced performance</li>
+                    
+                    
+                    <li><strong>💪 Industry Strength:</strong> Product Imagery & Gallery (avg: 8.5/10)</li>
+                    
+                    
+                    <li><strong>⚠️ Market Vulnerability:</strong> Subscription/Auto-Delivery Options (avg: 1.5/10) - opportunity to differentiate</li>
+                    
+                </ul>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="row">
+                <div class="col-12">
+                    <h2 class="section-title"><i class="fas fa-chart-area"></i> Visual Analysis</h2>
+                </div>
+
+                <!-- Radar Chart -->
+                <div class="col-12">
+                    <div class="chart-container">
+                        <html>
+<head><meta charset="utf-8" /></head>
+<body>
+    <div>                        <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
+        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.3.0.min.js" integrity="sha256-bO3dS6yCpk9aK4gUpNELtCiDeSYvGYnK7jFI58NQnHI=" crossorigin="anonymous"></script>                <div id="radar-chart" class="plotly-graph-div" style="height:600px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("radar-chart")) {                    Plotly.newPlot(                        "radar-chart",                        [{"fill":"toself","hovertemplate":"\u003cb\u003e%{theta}\u003c\u002fb\u003e\u003cbr\u003eScore: %{r:.1f}\u002f10\u003cextra\u003e\u003c\u002fextra\u003e","name":"ASOS","r":[8.5,9.0,8.0,7.5,4.5,3.0,8.5,7.0,8.0,9.0],"theta":["Product Imagery & Gallery","Add to Basket\u002fCart Prominence","Pricing & Offer Transparency","Product Information Completeness","Reviews & Social Proof","Subscription\u002fAuto-Delivery Options","Delivery & Fulfillment Options","Trust & Security Indicators","Cross-sell & Upsell Effectiveness","Mobile Product Page Optimization"],"type":"scatterpolar"},{"fill":"toself","hovertemplate":"\u003cb\u003e%{theta}\u003c\u002fb\u003e\u003cbr\u003eScore: %{r:.1f}\u002f10\u003cextra\u003e\u003c\u002fextra\u003e","name":"Zara","r":[8.5,7.0,8.0,7.5,2.0,0.0,4.0,6.5,7.0,8.0],"theta":["Product Imagery & Gallery","Add to Basket\u002fCart Prominence","Pricing & Offer Transparency","Product Information Completeness","Reviews & Social Proof","Subscription\u002fAuto-Delivery Options","Delivery & Fulfillment Options","Trust & Security Indicators","Cross-sell & Upsell Effectiveness","Mobile Product Page Optimization"],"type":"scatterpolar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"polar":{"radialaxis":{"tickfont":{"size":10},"visible":true,"range":[0,10]}},"title":{"text":"\u003cb\u003eCompetitive UX Comparison\u003c\u002fb\u003e\u003cbr\u003e\u003csub\u003eOverall performance across all criteria\u003c\u002fsub\u003e","x":0.5,"xanchor":"center"},"legend":{"orientation":"h","yanchor":"bottom","y":-0.2,"xanchor":"center","x":0.5},"showlegend":true,"height":600},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div>
+</body>
+</html>
+                    </div>
+                </div>
+
+                <!-- Heatmap -->
+                <div class="col-12">
+                    <div class="chart-container">
+                        <html>
+<head><meta charset="utf-8" /></head>
+<body>
+    <div>                            <div id="heatmap" class="plotly-graph-div" style="height:400px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("heatmap")) {                    Plotly.newPlot(                        "heatmap",                        [{"colorbar":{"ticktext":["0","2","4","6","8","10"],"tickvals":[0,2,4,6,8,10],"title":{"text":"Score"}},"colorscale":[[0,"#d32f2f"],[0.2,"#f57c00"],[0.4,"#fbc02d"],[0.6,"#7cb342"],[0.8,"#388e3c"],[1,"#1b5e20"]],"hovertemplate":"\u003cb\u003e%{y}\u003c\u002fb\u003e\u003cbr\u003e%{x}\u003cbr\u003eScore: %{z:.1f}\u002f10\u003cextra\u003e\u003c\u002fextra\u003e","text":[[8.5,9.0,8.0,7.5,4.5,3.0,8.5,7.0,8.0,9.0],[8.5,7.0,8.0,7.5,2.0,0.0,4.0,6.5,7.0,8.0]],"textfont":{"color":"white","size":12},"texttemplate":"%{text:.1f}","x":["Product Imagery & Gallery","Add to Basket\u002fCart Prominence","Pricing & Offer Transparency","Product Information Completeness","Reviews & Social Proof","Subscription\u002fAuto-Delivery Options","Delivery & Fulfillment Options","Trust & Security Indicators","Cross-sell & Upsell Effectiveness","Mobile Product Page Optimization"],"y":["ASOS","Zara"],"z":[[8.5,9.0,8.0,7.5,4.5,3.0,8.5,7.0,8.0,9.0],[8.5,7.0,8.0,7.5,2.0,0.0,4.0,6.5,7.0,8.0]],"type":"heatmap"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"title":{"text":"\u003cb\u003eFeature Adoption Heatmap\u003c\u002fb\u003e\u003cbr\u003e\u003csub\u003eColor-coded performance matrix\u003c\u002fsub\u003e","x":0.5,"xanchor":"center"},"xaxis":{"title":{"text":"Criteria"},"tickangle":-45,"side":"bottom"},"yaxis":{"title":{"text":"Competitors"}},"height":400},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div>
+</body>
+</html>
+                    </div>
+                </div>
+
+                <!-- Bar Chart -->
+                <div class="col-12">
+                    <div class="chart-container">
+                        <html>
+<head><meta charset="utf-8" /></head>
+<body>
+    <div>                            <div id="bar-chart" class="plotly-graph-div" style="height:500px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("bar-chart")) {                    Plotly.newPlot(                        "bar-chart",                        [{"hovertemplate":"\u003cb\u003e%{x}\u003c\u002fb\u003e\u003cbr\u003e%{fullData.name}: %{y:.1f}\u002f10\u003cextra\u003e\u003c\u002fextra\u003e","name":"Zara","x":["Product Imagery & Gallery","Add to Basket\u002fCart Prominence","Pricing & Offer Transparency","Product Information Completeness","Reviews & Social Proof","Subscription\u002fAuto-Delivery Options","Delivery & Fulfillment Options","Trust & Security Indicators","Cross-sell & Upsell Effectiveness","Mobile Product Page Optimization"],"y":[8.5,7.0,8.0,7.5,2.0,0.0,4.0,6.5,7.0,8.0],"type":"bar"},{"hovertemplate":"\u003cb\u003e%{x}\u003c\u002fb\u003e\u003cbr\u003e%{fullData.name}: %{y:.1f}\u002f10\u003cextra\u003e\u003c\u002fextra\u003e","name":"ASOS","x":["Product Imagery & Gallery","Add to Basket\u002fCart Prominence","Pricing & Offer Transparency","Product Information Completeness","Reviews & Social Proof","Subscription\u002fAuto-Delivery Options","Delivery & Fulfillment Options","Trust & Security Indicators","Cross-sell & Upsell Effectiveness","Mobile Product Page Optimization"],"y":[8.5,9.0,8.0,7.5,4.5,3.0,8.5,7.0,8.0,9.0],"type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"title":{"text":"\u003cb\u003eCriteria Performance Comparison\u003c\u002fb\u003e\u003cbr\u003e\u003csub\u003eScores across all evaluation criteria\u003c\u002fsub\u003e","x":0.5,"xanchor":"center"},"xaxis":{"title":{"text":"Criteria"},"tickangle":-45},"yaxis":{"title":{"text":"Score (0-10)"},"range":[0,10]},"legend":{"orientation":"h","yanchor":"bottom","y":-0.4,"xanchor":"center","x":0.5},"barmode":"group","height":500},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div>
+</body>
+</html>
+                    </div>
+                </div>
+
+                <!-- Score Distribution -->
+                <div class="col-12">
+                    <div class="chart-container">
+                        <html>
+<head><meta charset="utf-8" /></head>
+<body>
+    <div>                            <div id="box-plot" class="plotly-graph-div" style="height:450px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("box-plot")) {                    Plotly.newPlot(                        "box-plot",                        [{"boxmean":"sd","hovertemplate":"\u003cb\u003e%{fullData.name}\u003c\u002fb\u003e\u003cbr\u003eScore: %{y:.1f}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"size":8},"name":"ASOS","y":[8.5,9.0,8.0,7.5,4.5,3.0,8.5,7.0,8.0,9.0],"type":"box"},{"boxmean":"sd","hovertemplate":"\u003cb\u003e%{fullData.name}\u003c\u002fb\u003e\u003cbr\u003eScore: %{y:.1f}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"size":8},"name":"Zara","y":[8.5,7.0,8.0,7.5,2.0,0.0,4.0,6.5,7.0,8.0],"type":"box"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"title":{"text":"\u003cb\u003eScore Distribution\u003c\u002fb\u003e\u003cbr\u003e\u003csub\u003ePerformance consistency across criteria\u003c\u002fsub\u003e","x":0.5,"xanchor":"center"},"yaxis":{"title":{"text":"Score (0-10)"},"range":[0,10]},"height":450,"showlegend":false},                        {"displayModeBar": false, "responsive": true}                    )                };            </script>        </div>
+</body>
+</html>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Panel -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="filter-panel">
+                        <h5><i class="fas fa-filter"></i> <strong>Filter & Search</strong></h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Search Competitor</label>
+                                <input type="text" class="form-control" id="searchCompetitor" placeholder="Type competitor name...">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Minimum Score</label>
+                                <input type="range" class="form-range" id="minScoreFilter" min="0" max="10" step="0.5" value="0">
+                                <div class="text-center"><span id="minScoreValue">0.0</span>/10</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Competitive Status</label>
+                                <select class="form-select" id="statusFilter">
+                                    <option value="all">All Statuses</option>
+                                    <option value="advantage">Advantages Only</option>
+                                    <option value="vulnerability">Vulnerabilities Only</option>
+                                    <option value="parity">Parity Only</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button class="reset-filters-btn" onclick="resetFilters()">
+                                <i class="fas fa-redo"></i> Reset Filters
+                            </button>
+                            <span class="filter-results-count" id="filterCount">Showing 2 competitors</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Competitor Details -->
+            <div class="row" id="competitorContainer">
+                <div class="col-12">
+                    <h2 class="section-title"><i class="fas fa-users"></i> Competitor Profiles</h2>
+                </div>
+
+                
+                
+                <div class="col-12">
+                    <div class="competitor-card"
+                         data-competitor="asos"
+                         data-score="7.8"
+                         data-tier="strong_contender">
+                        <div class="competitor-header">
+                            <div>
+                                <div class="competitor-name">ASOS</div>
+                                <small class="text-muted">https://www.asos.com/</small>
+                            </div>
+                            <div class="overall-score">
+                                7.8/10
+                            </div>
+                        </div>
+
+                        <!-- Competitive Position -->
+                        
+                        <div class="mb-3">
+                            <span class="score-badge
+                                score-good
+                                ">
+                                Strong Contender
+                            </span>
+                            <p class="mt-2 text-muted">ASOS demonstrates strong execution of e-commerce fundamentals with particular strength in visual presentation and mobile optimization, though they show vulnerabilities in social proof implementation and subscription offerings that present clear differentiation opportunities.</p>
+                        </div>
+                        
+
+                        <!-- Criteria Scores -->
+                        <div class="mt-3">
+                            <h5><strong>Performance by Criteria</strong></h5>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Product Imagery & Gallery
+                                    <span class="competitive-status status-advantage">
+                                        advantage
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #48bb78
+                                    ">
+                                    8.5
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 85.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Add to Basket/Cart Prominence
+                                    <span class="competitive-status status-advantage">
+                                        advantage
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #48bb78
+                                    ">
+                                    9.0
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 90.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Pricing & Offer Transparency
+                                    <span class="competitive-status status-advantage">
+                                        advantage
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #48bb78
+                                    ">
+                                    8.0
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 80.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Product Information Completeness
+                                    <span class="competitive-status status-parity">
+                                        parity
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #38b2ac
+                                    ">
+                                    7.5
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 75.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Reviews & Social Proof
+                                    <span class="competitive-status status-vulnerability">
+                                        vulnerability
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #ed8936
+                                    ">
+                                    4.5
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 45.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Subscription/Auto-Delivery Options
+                                    <span class="competitive-status status-parity">
+                                        parity
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #f56565">
+                                    3.0
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 30.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Delivery & Fulfillment Options
+                                    <span class="competitive-status status-parity">
+                                        parity
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #48bb78
+                                    ">
+                                    8.5
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 85.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Trust & Security Indicators
+                                    <span class="competitive-status status-parity">
+                                        parity
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #38b2ac
+                                    ">
+                                    7.0
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 70.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Cross-sell & Upsell Effectiveness
+                                    <span class="competitive-status status-advantage">
+                                        advantage
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #48bb78
+                                    ">
+                                    8.0
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 80.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Mobile Product Page Optimization
+                                    <span class="competitive-status status-advantage">
+                                        advantage
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #48bb78
+                                    ">
+                                    9.0
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 90.0%"></div>
+                            </div>
+                            
+                        </div>
+
+                        <!-- Strengths & Vulnerabilities -->
+                        <div class="row mt-4">
+                            
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-trophy text-success"></i> <strong>Competitive Advantages</strong></h6>
+                                <ul>
+                                    
+                                    <li>Exceptional mobile-first design with sticky CTA, optimized touch targets, and sophisticated navigation that sets a high bar for mobile commerce experiences</li>
+                                    
+                                    <li>Superior visual merchandising system combining multiple high-quality images, video content, and model views that effectively showcases products and reduces purchase uncertainty</li>
+                                    
+                                    <li>Highly prominent and optimized 'Add to Bag' CTA with excellent color contrast and positioning that removes friction from the purchase path</li>
+                                    
+                                </ul>
+                            </div>
+                            
+                            
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-exclamation-triangle text-warning"></i> <strong>Vulnerabilities</strong></h6>
+                                <ul>
+                                    
+                                    <li>Zero visible customer review integration on product pages despite industry research showing 95% of users read reviews and 58% won't buy without them</li>
+                                    
+                                    <li>No specific delivery date estimates shown on product page, only generic 'next day' promotional messaging</li>
+                                    
+                                    <li>Key product specifications hidden behind accordion/expandable sections, not immediately visible above fold</li>
+                                    
+                                </ul>
+                            </div>
+                            
+                        </div>
+
+                        <!-- Screenshots (if available) -->
+                        
+                        <div class="screenshot-gallery">
+                            
+                            <div class="screenshot-thumb"
+                                 onclick="openLightbox('demo_screenshots/asos/desktop_annotated.png', 'ASOS - Desktop')">
+                                <img src="demo_screenshots/asos/desktop_annotated.png"
+                                     alt="desktop"
+                                     title="Desktop (1920x1080)">
+                                <div class="overlay">
+                                    <i class="fas fa-search-plus"></i>
+                                </div>
+                                <div class="screenshot-badge">Desktop</div>
+                            </div>
+                            
+                            <div class="screenshot-thumb"
+                                 onclick="openLightbox('demo_screenshots/asos/mobile_annotated.png', 'ASOS - Mobile')">
+                                <img src="demo_screenshots/asos/mobile_annotated.png"
+                                     alt="mobile"
+                                     title="Mobile (375x812)">
+                                <div class="overlay">
+                                    <i class="fas fa-search-plus"></i>
+                                </div>
+                                <div class="screenshot-badge">Mobile</div>
+                            </div>
+                            
+                        </div>
+                        
+                    </div>
+                </div>
+                
+                
+                
+                <div class="col-12">
+                    <div class="competitor-card"
+                         data-competitor="zara"
+                         data-score="6.8"
+                         data-tier="strong_contender">
+                        <div class="competitor-header">
+                            <div>
+                                <div class="competitor-name">Zara</div>
+                                <small class="text-muted">https://www.zara.com/</small>
+                            </div>
+                            <div class="overall-score">
+                                6.8/10
+                            </div>
+                        </div>
+
+                        <!-- Competitive Position -->
+                        
+                        <div class="mb-3">
+                            <span class="score-badge
+                                score-good
+                                ">
+                                Strong Contender
+                            </span>
+                            <p class="mt-2 text-muted">Zara demonstrates strong visual merchandising with high-quality imagery and clean aesthetic, but exhibits significant vulnerabilities in social proof, subscription options, and delivery transparency that create exploitable gaps.</p>
+                        </div>
+                        
+
+                        <!-- Criteria Scores -->
+                        <div class="mt-3">
+                            <h5><strong>Performance by Criteria</strong></h5>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Product Imagery & Gallery
+                                    <span class="competitive-status status-advantage">
+                                        advantage
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #48bb78
+                                    ">
+                                    8.5
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 85.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Add to Basket/Cart Prominence
+                                    <span class="competitive-status status-parity">
+                                        parity
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #38b2ac
+                                    ">
+                                    7.0
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 70.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Pricing & Offer Transparency
+                                    <span class="competitive-status status-advantage">
+                                        advantage
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #48bb78
+                                    ">
+                                    8.0
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 80.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Product Information Completeness
+                                    <span class="competitive-status status-advantage">
+                                        advantage
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #38b2ac
+                                    ">
+                                    7.5
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 75.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Reviews & Social Proof
+                                    <span class="competitive-status status-vulnerability">
+                                        vulnerability
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #f56565">
+                                    2.0
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 20.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Subscription/Auto-Delivery Options
+                                    <span class="competitive-status status-vulnerability">
+                                        vulnerability
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #f56565">
+                                    0.0
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 0.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Delivery & Fulfillment Options
+                                    <span class="competitive-status status-vulnerability">
+                                        vulnerability
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #ed8936
+                                    ">
+                                    4.0
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 40.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Trust & Security Indicators
+                                    <span class="competitive-status status-parity">
+                                        parity
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #38b2ac
+                                    ">
+                                    6.5
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 65.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Cross-sell & Upsell Effectiveness
+                                    <span class="competitive-status status-parity">
+                                        parity
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #38b2ac
+                                    ">
+                                    7.0
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 70.0%"></div>
+                            </div>
+                            
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Mobile Product Page Optimization
+                                    <span class="competitive-status status-advantage">
+                                        advantage
+                                    </span>
+                                </div>
+                                <div class="criterion-score" style="color:
+                                    #48bb78
+                                    ">
+                                    8.0
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 80.0%"></div>
+                            </div>
+                            
+                        </div>
+
+                        <!-- Strengths & Vulnerabilities -->
+                        <div class="row mt-4">
+                            
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-trophy text-success"></i> <strong>Competitive Advantages</strong></h6>
+                                <ul>
+                                    
+                                    <li>Exceptional product photography with multiple high-resolution images including lifestyle, flat lay, and detail shots that create strong visual merchandising and emotional connection</li>
+                                    
+                                    <li>Clean, minimalist interface design that reduces cognitive load and emphasizes product while maintaining brand luxury positioning across both mobile and desktop</li>
+                                    
+                                    <li>Clear pricing transparency without hidden costs or confusing promotional structures that builds trust and reduces cart abandonment risk</li>
+                                    
+                                </ul>
+                            </div>
+                            
+                            
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-exclamation-triangle text-warning"></i> <strong>Vulnerabilities</strong></h6>
+                                <ul>
+                                    
+                                    <li>Zero social proof or customer review integration on product pages</li>
+                                    
+                                    <li>Delivery information hidden or insufficiently prominent in purchase flow</li>
+                                    
+                                    <li>No subscription or loyalty program integration visible in product experience</li>
+                                    
+                                </ul>
+                            </div>
+                            
+                        </div>
+
+                        <!-- Screenshots (if available) -->
+                        
+                        <div class="screenshot-gallery">
+                            
+                            <div class="screenshot-thumb"
+                                 onclick="openLightbox('demo_screenshots/zara/desktop_annotated.png', 'Zara - Desktop')">
+                                <img src="demo_screenshots/zara/desktop_annotated.png"
+                                     alt="desktop"
+                                     title="Desktop (1920x1080)">
+                                <div class="overlay">
+                                    <i class="fas fa-search-plus"></i>
+                                </div>
+                                <div class="screenshot-badge">Desktop</div>
+                            </div>
+                            
+                            <div class="screenshot-thumb"
+                                 onclick="openLightbox('demo_screenshots/zara/mobile_annotated.png', 'Zara - Mobile')">
+                                <img src="demo_screenshots/zara/mobile_annotated.png"
+                                     alt="mobile"
+                                     title="Mobile (375x812)">
+                                <div class="overlay">
+                                    <i class="fas fa-search-plus"></i>
+                                </div>
+                                <div class="screenshot-badge">Mobile</div>
+                            </div>
+                            
+                        </div>
+                        
+                    </div>
+                </div>
+                
+                
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>Generated by <strong>E-commerce UX Competitive Intelligence Agent v1.2.0</strong></p>
+                <p>Powered by Claude AI | Report Date: 2025-11-21 11:48:17</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div id="lightboxModal" class="lightbox-modal" onclick="closeLightbox(event)">
+        <span class="lightbox-close" onclick="closeLightbox(event)">&times;</span>
+        <div class="lightbox-content" onclick="event.stopPropagation()">
+            <img id="lightboxImage" src="" alt="">
+            <div class="lightbox-caption" id="lightboxCaption"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Lightbox functionality
+        function openLightbox(imageSrc, caption) {
+            const modal = document.getElementById('lightboxModal');
+            const img = document.getElementById('lightboxImage');
+            const cap = document.getElementById('lightboxCaption');
+
+            img.src = imageSrc;
+            cap.textContent = caption;
+            modal.classList.add('active');
+
+            // Prevent body scroll when lightbox is open
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox(event) {
+            const modal = document.getElementById('lightboxModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            event.stopPropagation();
+        }
+
+        // Close lightbox on ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeLightbox(event);
+            }
+        });
+
+        // Filter functionality
+        const searchInput = document.getElementById('searchCompetitor');
+        const minScoreSlider = document.getElementById('minScoreFilter');
+        const minScoreValue = document.getElementById('minScoreValue');
+        const statusFilter = document.getElementById('statusFilter');
+        const filterCount = document.getElementById('filterCount');
+
+        // Update min score display
+        minScoreSlider.addEventListener('input', function() {
+            minScoreValue.textContent = this.value;
+            applyFilters();
+        });
+
+        // Apply filters on input
+        searchInput.addEventListener('input', applyFilters);
+        statusFilter.addEventListener('change', applyFilters);
+
+        function applyFilters() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const minScore = parseFloat(minScoreSlider.value);
+            const status = statusFilter.value;
+
+            const cards = document.querySelectorAll('.competitor-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const competitorName = card.getAttribute('data-competitor');
+                const score = parseFloat(card.getAttribute('data-score'));
+                const tier = card.getAttribute('data-tier');
+
+                // Search filter
+                const matchesSearch = competitorName.includes(searchTerm);
+
+                // Score filter
+                const matchesScore = score >= minScore;
+
+                // Status filter - check if any criteria match the status
+                let matchesStatus = status === 'all';
+                if (!matchesStatus) {
+                    const statusBadges = card.querySelectorAll('.competitive-status');
+                    statusBadges.forEach(badge => {
+                        if (badge.classList.contains('status-' + status)) {
+                            matchesStatus = true;
+                        }
+                    });
+                }
+
+                // Show/hide card
+                if (matchesSearch && matchesScore && matchesStatus) {
+                    card.parentElement.classList.remove('filtered-out');
+                    visibleCount++;
+                } else {
+                    card.parentElement.classList.add('filtered-out');
+                }
+            });
+
+            // Update count
+            filterCount.textContent = `Showing ${visibleCount} of ${cards.length} competitors`;
+        }
+
+        function resetFilters() {
+            searchInput.value = '';
+            minScoreSlider.value = 0;
+            minScoreValue.textContent = '0.0';
+            statusFilter.value = 'all';
+            applyFilters();
+        }
+
+        // Initialize filter count
+        document.addEventListener('DOMContentLoaded', function() {
+            const totalCards = document.querySelectorAll('.competitor-card').length;
+            filterCount.textContent = `Showing ${totalCards} competitors`;
+        });
+    </script>
+</body>
+</html>
