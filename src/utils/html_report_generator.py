@@ -283,7 +283,15 @@ class HTMLReportGenerator:
             return {
                 'total': len(results),
                 'successful': 0,
-                'failed': len(results)
+                'failed': len(results),
+                'average_score': 0,
+                'leader': {'name': 'N/A', 'score': 0},
+                'weakest': {'name': 'N/A', 'score': 0},
+                'most_consistent': None,
+                'weakest_criterion': None,
+                'weakest_criterion_avg': 0,
+                'strongest_criterion': None,
+                'strongest_criterion_avg': 0
             }
 
         # Find leader
@@ -379,6 +387,53 @@ class HTMLReportGenerator:
                             screenshot['annotated_filepath'] = annotated_path
                     except Exception as e:
                         # If annotation fails, just skip it
+                        pass
+
+        return competitor_results
+
+    def _make_paths_relative(
+        self,
+        competitor_results: List[Dict[str, Any]],
+        html_file_path: Path
+    ) -> List[Dict[str, Any]]:
+        """
+        Convert absolute screenshot paths to relative paths from HTML file location.
+
+        Args:
+            competitor_results: List of competitor analysis results
+            html_file_path: Path where HTML file will be saved
+
+        Returns:
+            Updated results with relative screenshot paths
+        """
+        from pathlib import Path
+        import os
+
+        html_dir = html_file_path.parent
+
+        for result in competitor_results:
+            if not result.get('screenshot_metadata'):
+                continue
+
+            for screenshot in result['screenshot_metadata']:
+                # Convert filepath to relative
+                if screenshot.get('filepath'):
+                    abs_path = Path(screenshot['filepath'])
+                    try:
+                        rel_path = os.path.relpath(abs_path, html_dir)
+                        screenshot['filepath'] = rel_path
+                    except ValueError:
+                        # If paths are on different drives (Windows), keep absolute
+                        pass
+
+                # Convert annotated_filepath to relative
+                if screenshot.get('annotated_filepath'):
+                    abs_path = Path(screenshot['annotated_filepath'])
+                    try:
+                        rel_path = os.path.relpath(abs_path, html_dir)
+                        screenshot['annotated_filepath'] = rel_path
+                    except ValueError:
+                        # If paths are on different drives (Windows), keep absolute
                         pass
 
         return competitor_results
@@ -1195,7 +1250,8 @@ class HTMLReportGenerator:
             output_filename = f"competitive_intelligence_{timestamp}.html"
 
         # Filter successful competitors for display
-        successful_competitors = [r for r in results if r.get('success')]
+        # Must have both success=True AND overall_score to be included
+        successful_competitors = [r for r in results if r.get('success') and r.get('overall_score') is not None]
 
         # Annotate screenshots with findings
         successful_competitors = self._prepare_annotated_screenshots(successful_competitors)
@@ -1208,6 +1264,10 @@ class HTMLReportGenerator:
 
         # Get executive summary
         summary = self._get_executive_summary(successful_competitors)
+
+        # Convert screenshot paths to be relative to HTML file location
+        output_path = self.output_dir / output_filename
+        successful_competitors = self._make_paths_relative(successful_competitors, output_path)
 
         # Render template
         template = Template(self._get_html_template())
@@ -1223,7 +1283,6 @@ class HTMLReportGenerator:
         )
 
         # Save to file
-        output_path = self.output_dir / output_filename
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
 

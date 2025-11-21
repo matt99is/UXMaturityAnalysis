@@ -5,6 +5,41 @@ All notable changes to the E-commerce UX Competitive Intelligence Agent will be 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-11-21
+
+### Added
+- **Retry Failed Analyses**: Interactive prompt after all analyses complete
+  - If any competitors fail analysis, user is prompted to retry before report generation
+  - Reuses existing screenshots from audit folder (no browser interaction needed)
+  - One retry attempt per failed competitor
+  - Shows retry summary with success count
+  - Only generates reports after retry decision is made
+
+### Fixed
+- **Image Format Consistency**: All images now sent to Claude API as JPEG
+  - Simplified from conditional PNG/JPEG logic to always JPEG
+  - Small files use quality=95 (near-lossless)
+  - Large files use progressive compression (85→75→65→55→45)
+  - Eliminates media type mismatch errors
+- **Data Structure Flattening**: Fixed nested analysis structure issues
+  - Claude's response data now properly flattened at top level
+  - All report generators updated to handle flattened structure
+  - Markdown report generator now accesses fields directly (not via `analysis` key)
+  - HTML report filtering now works correctly with flattened data
+  - Display summary table now uses flattened structure
+- **HTML Report Image Paths**: Screenshots now use relative paths
+  - Paths converted from absolute to relative based on HTML file location
+  - Images load correctly in lightbox gallery
+  - Works when opening HTML file from any location
+- **HTML Report Generation**: Fixed crash when no competitors succeed
+  - Added complete fallback data structure for zero-success scenarios
+  - Report generates with "N/A" placeholders instead of crashing
+  - Handles missing `overall_score` gracefully
+
+### Changed
+- Image compression always converts to JPEG (previously conditional PNG preservation)
+- Report generation now happens after retry prompt (previously before)
+
 ## [1.2.0] - 2025-11-20
 
 ### Breaking Changes
@@ -17,6 +52,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - More reliable with bot-protected sites
 
 ### Added
+- **Interactive HTML Reports**: Rich, interactive reports with visualizations
+  - Radar chart comparing all competitors across criteria
+  - Heatmap showing feature adoption matrix with color coding
+  - Bar chart displaying top performers by criterion
+  - Box plot showing score distribution and consistency
+  - Executive summary with key metrics and insights
+  - Generated automatically alongside markdown reports
+- **Screenshot Annotations**: Visual findings overlaid on screenshots
+  - Automatic badges for top 2 advantages (green) and vulnerabilities (red)
+  - PIL-based annotation system with rounded rectangles
+  - Annotations based on competitive status (advantage/parity/vulnerability)
+  - Scales properly for desktop and mobile viewports
+- **Lightbox Gallery**: Full-screen screenshot viewing
+  - Click any screenshot to open in full-screen modal
+  - ESC key or click outside to close
+  - Shows competitor name and viewport (desktop/mobile)
+  - Prevents body scroll when lightbox is active
+- **Real-time Filtering**: Interactive search and filtering in HTML reports
+  - Search competitors by name (instant results)
+  - Minimum score slider (0-10 range)
+  - Competitive status filter (advantages/vulnerabilities/parity)
+  - Live results counter showing X of Y competitors
+  - Reset filters button
+- **Competitive Status Labeling**: Automatic relative performance indicators
+  - Advantage: Scores above market average on criterion
+  - Parity: Scores at market average
+  - Vulnerability: Scores below market average
+  - Status is context-aware based on competitive set
 - **Interactive Analysis Type Prompt**: Always shown unless `--analysis-type` specified
   - Nice formatted table with descriptions
   - Clear indication of analysis mode for each type
@@ -38,6 +101,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Transparent to user (happens automatically)
 
 ### Fixed
+- **Image Compression for Claude API**: Fixed base64 encoding overhead calculation
+  - Previously checked if raw file < 5MB, but base64 adds ~33% overhead
+  - Now uses ~3.65MB threshold for raw files to ensure encoded data < 5MB
+  - Prevents "image exceeds 5 MB maximum" errors from Claude API
+  - 4.8MB screenshots now automatically compress to ~2MB before encoding
+- **HTML Report Generation Error**: Fixed crash when all competitors fail analysis
+  - Added complete fallback data structure when no successful results
+  - Report now generates with "N/A" placeholders instead of crashing
+  - Handles missing `average_score`, `leader`, `weakest` keys gracefully
 - **Timestamp Bug**: Fixed `local variable 'timestamp' referenced before assignment` in interactive capture
 - **Navigation Timeout**: Changed from `networkidle` to `domcontentloaded` wait condition
   - Prevents timeouts on sites with persistent connections (analytics, chat widgets)
@@ -57,7 +129,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All analysis types now run in interactive mode (product, homepage, basket, checkout)
 - Browser always visible (no headless mode)
 - User controls every capture with Enter key
-- Pillow added as dependency for image processing
+- Report output now includes both markdown and HTML formats
+- Dependencies added: Pillow (image processing), Plotly (charts), Jinja2 (HTML templates), NumPy (Plotly requirement)
 
 ### Documentation
 - Updated README to reflect new interactive-only workflow
@@ -65,6 +138,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added retry option instructions
 - Updated "How It Works" section with two-phase workflow
 - Clarified interactive mode behavior
+- Added comprehensive HTML report explainer section (charts, filters, competitive status labels)
+- Updated configuration section to reference YAML files instead of config.yaml
+- Consolidated redundant sections and removed ~100 lines of outdated content
+- Updated project structure to show new utilities (html_report_generator, screenshot_annotator)
+- Updated version to 1.2.0 throughout documentation
 
 ## [1.1.0] - 2025-11-20
 
@@ -143,12 +221,14 @@ This project uses [Semantic Versioning](https://semver.org/):
 ## Upcoming Features
 
 Future releases may include:
-- HTML/DOM analysis alongside screenshots
-- Time-series tracking (monitor competitor changes)
+- Multi-step journey support (homepage → product → add to cart → basket)
+- HTML/DOM analysis alongside screenshots (for accessibility, performance metrics)
+- Time-series tracking (monitor competitor changes over time)
 - Parallel competitor analysis for speed
 - Additional page types (search results, category pages, account pages)
 - Export to CSV/Excel formats
-- Integration APIs for analytics tools
+- PowerPoint export with charts and screenshots
+- Integration APIs for analytics tools (GA4, ContentSquare)
 
 ---
 

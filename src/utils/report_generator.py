@@ -169,8 +169,8 @@ class ReportGenerator:
                 md += f"**Error:** {result.get('error', 'Unknown error')}\n\n"
                 continue
 
-            analysis = result.get("analysis", {})
-            md += self._generate_competitive_profile(analysis, i)
+            # Data is now flattened at the top level
+            md += self._generate_competitive_profile(result, i)
             md += "\n\n---\n\n"
 
         # Competitive Positioning Map
@@ -196,7 +196,7 @@ class ReportGenerator:
         if not successful:
             return "No successful analyses to summarize.\n"
 
-        scores = [r["analysis"]["overall_score"] for r in successful]
+        scores = [r.get("overall_score", 0) for r in successful]
         avg_score = sum(scores) / len(scores)
 
         md = f"### Overview\n\n"
@@ -207,7 +207,7 @@ class ReportGenerator:
         md += "### Feature Adoption Analysis\n\n"
         all_criteria_scores = {}
         for result in successful:
-            for criterion in result["analysis"].get("criteria_scores", []):
+            for criterion in result.get("criteria_scores", []):
                 crit_id = criterion.get("criterion_id", "")
                 crit_name = criterion.get("criterion_name", "")
                 score = criterion.get("score", 0)
@@ -254,9 +254,9 @@ class ReportGenerator:
         md += "\n\n### Competitive Clusters\n\n"
 
         # Leaders (7.5+), Contenders (6-7.5), Laggards (<6)
-        leaders = [r for r in successful if r["analysis"]["overall_score"] >= 7.5]
-        contenders = [r for r in successful if 6 <= r["analysis"]["overall_score"] < 7.5]
-        laggards = [r for r in successful if r["analysis"]["overall_score"] < 6]
+        leaders = [r for r in successful if r.get("overall_score", 0) >= 7.5]
+        contenders = [r for r in successful if 6 <= r.get("overall_score", 0) < 7.5]
+        laggards = [r for r in successful if r.get("overall_score", 0) < 6]
 
         if leaders:
             md += f"**Leaders (7.5+):** {', '.join([self._get_site_name(r) for r in leaders])}\n"
@@ -282,7 +282,7 @@ class ReportGenerator:
         # Build criteria matrix
         all_criteria = {}
         for result in successful:
-            for criterion in result["analysis"].get("criteria_scores", []):
+            for criterion in result.get("criteria_scores", []):
                 crit_id = criterion.get("criterion_id", "")
                 crit_name = criterion.get("criterion_name", "")
                 if crit_id not in all_criteria:
@@ -291,7 +291,7 @@ class ReportGenerator:
         # Populate scores for each competitor
         for result in successful:
             site_name = self._get_site_name(result)
-            for criterion in result["analysis"].get("criteria_scores", []):
+            for criterion in result.get("criteria_scores", []):
                 crit_id = criterion.get("criterion_id", "")
                 score = criterion.get("score", 0)
                 if crit_id in all_criteria:
@@ -383,7 +383,7 @@ class ReportGenerator:
         # Find highest scoring criteria across all competitors
         all_criteria_scores = {}
         for result in successful:
-            for criterion in result["analysis"].get("criteria_scores", []):
+            for criterion in result.get("criteria_scores", []):
                 crit_id = criterion.get("criterion_id", "")
                 crit_name = criterion.get("criterion_name", "")
                 score = criterion.get("score", 0)
@@ -446,7 +446,7 @@ class ReportGenerator:
         # Calculate criteria averages
         all_criteria_scores = {}
         for result in successful:
-            for criterion in result["analysis"].get("criteria_scores", []):
+            for criterion in result.get("criteria_scores", []):
                 crit_id = criterion.get("criterion_id", "")
                 crit_name = criterion.get("criterion_name", "")
                 score = criterion.get("score", 0)
@@ -490,7 +490,7 @@ class ReportGenerator:
             best_score = 0
             best_competitor = "Unknown"
             for result in successful:
-                for criterion in result["analysis"].get("criteria_scores", []):
+                for criterion in result.get("criteria_scores", []):
                     if criterion.get("criterion_id") == crit_id:
                         score = criterion.get("score", 0)
                         if score > best_score:
@@ -599,7 +599,7 @@ class ReportGenerator:
         # Sort by overall score
         sorted_results = sorted(
             successful,
-            key=lambda x: x["analysis"]["overall_score"],
+            key=lambda x: x.get("overall_score", 0),
             reverse=True
         )
 
@@ -609,7 +609,7 @@ class ReportGenerator:
 
         for result in sorted_results:
             site_name = self._get_site_name(result)
-            score = result["analysis"]["overall_score"]
+            score = result.get("overall_score", 0)
 
             # Create visual bar
             filled = int(score)
@@ -622,7 +622,7 @@ class ReportGenerator:
         md += "```\n\n"
 
         # Score distribution
-        scores = [r["analysis"]["overall_score"] for r in successful]
+        scores = [r.get("overall_score", 0) for r in successful]
         avg = sum(scores) / len(scores)
         md += f"**Market Average:** {avg:.1f}/10\n"
         md += f"**Score Spread:** {max(scores) - min(scores):.1f} points\n\n"
@@ -644,7 +644,7 @@ class ReportGenerator:
         # Calculate criteria averages
         all_criteria_scores = {}
         for result in successful:
-            for criterion in result["analysis"].get("criteria_scores", []):
+            for criterion in result.get("criteria_scores", []):
                 crit_id = criterion.get("criterion_id", "")
                 crit_name = criterion.get("criterion_name", "")
                 score = criterion.get("score", 0)
@@ -716,7 +716,7 @@ class ReportGenerator:
 
     def _get_site_name(self, result: Dict[str, Any]) -> str:
         """Extract site name from result."""
-        return result.get("analysis", {}).get("site_name", "Unknown")
+        return result.get("site_name", "Unknown")
 
 
 # EXTENSIBILITY NOTE: Future enhancement for additional report formats

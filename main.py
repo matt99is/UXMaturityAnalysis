@@ -227,6 +227,122 @@ class UXAnalysisOrchestrator:
                 "error": str(e)
             }
 
+    async def _retry_failed_competitors(
+        self,
+        results: List[Dict[str, Any]],
+        audit_structure: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """
+        Prompt user to retry failed competitor analyses using existing screenshots.
+
+        Args:
+            results: Current analysis results (including failures)
+            audit_structure: Audit directory structure with screenshot locations
+
+        Returns:
+            Updated results list (with retried analyses if user accepted)
+        """
+        from rich.panel import Panel
+
+        failed = [r for r in results if not r.get('success')]
+
+        if not failed:
+            return results
+
+        # Show failure summary
+        self.console.print()
+        self.console.print(Panel.fit(
+            f"[bold yellow]⚠️  {len(failed)} competitor(s) failed analysis:[/bold yellow]\n\n" +
+            "\n".join([f"  • [bold]{r['site_name']}[/bold] - {r.get('error', 'Unknown error')}" for r in failed]),
+            title="Analysis Failures",
+            border_style="yellow"
+        ))
+
+        # Prompt for retry
+        try:
+            self.console.print()
+            retry_input = input("Retry failed competitors now? ([Y]es / [n]o): ").strip().lower()
+            if retry_input not in ['y', 'yes', '']:
+                self.console.print("[dim]Proceeding without retry...[/dim]")
+                return results
+        except (EOFError, KeyboardInterrupt):
+            self.console.print("\n[dim]Proceeding without retry...[/dim]")
+            return results
+
+        # Retry each failed competitor
+        self.console.print("\n[bold cyan]═══ Retrying Failed Analyses ═══[/bold cyan]")
+        self.console.print(f"[dim]Using existing screenshots from audit folder[/dim]\n")
+
+        updated_results = []
+        retry_count = 0
+
+        for result in results:
+            if result.get('success'):
+                # Keep successful results as-is
+                updated_results.append(result)
+            else:
+                retry_count += 1
+                self.console.print(f"[bold]Retry {retry_count}/{len(failed)}: {result['site_name']}[/bold]")
+
+                # Load screenshots from audit folder
+                competitor_dir = audit_structure['competitors'].get(result['site_name'])
+                if not competitor_dir:
+                    self.console.print(f"  [red]✗ Could not find competitor directory[/red]")
+                    updated_results.append(result)  # Keep original failure
+                    continue
+
+                screenshots_dir = competitor_dir / 'screenshots'
+                screenshot_paths = [
+                    str(screenshots_dir / 'desktop.png'),
+                    str(screenshots_dir / 'mobile.png')
+                ]
+
+                # Check if screenshots exist
+                from pathlib import Path
+                if not all(Path(p).exists() for p in screenshot_paths):
+                    self.console.print(f"  [red]✗ Screenshots not found[/red]")
+                    updated_results.append(result)  # Keep original failure
+                    continue
+
+                # Prepare capture data for retry
+                capture_data = {
+                    'site_name': result['site_name'],
+                    'url': result['url'],
+                    'screenshot_paths': screenshot_paths,
+                    'screenshot_metadata': result.get('screenshot_metadata', [])
+                }
+
+                # Re-analyze
+                retry_result = await self.analyze_competitor_from_screenshots(capture_data)
+
+                # Save retry result if successful
+                if retry_result.get("success") and audit_structure:
+                    try:
+                        analysis_path = get_analysis_path(
+                            audit_structure['competitors'],
+                            result['site_name']
+                        )
+                        self.report_generator.save_competitor_analysis(
+                            retry_result,  # Already flattened
+                            analysis_path
+                        )
+                    except Exception as e:
+                        self.console.print(f"  [yellow]Warning: Could not save analysis: {e}[/yellow]")
+
+                updated_results.append(retry_result)
+
+        # Show retry summary
+        retry_success_count = sum(1 for r in updated_results if r.get('success'))
+        original_success_count = sum(1 for r in results if r.get('success'))
+        new_successes = retry_success_count - original_success_count
+
+        if new_successes > 0:
+            self.console.print(f"\n[green]✓ {new_successes} competitor(s) successfully analyzed on retry![/green]")
+        else:
+            self.console.print(f"\n[yellow]No additional successes from retry[/yellow]")
+
+        return updated_results
+
     async def analyze_competitor_from_screenshots(
         self,
         capture_data: Dict[str, Any]
@@ -281,8 +397,10 @@ class UXAnalysisOrchestrator:
 
             self.console.print(f"  [green]✓ Analysis complete![/green]")
 
-            # Add screenshot metadata to result
-            result = analysis_result.copy()
+            # Flatten the analysis structure - Claude's data is nested under 'analysis' key
+            # We want to merge it with screenshot_metadata at the top level
+            result = analysis_result.get("analysis", {}).copy() if "analysis" in analysis_result else analysis_result.copy()
+            result["success"] = True  # Ensure success flag is set
             result["screenshot_metadata"] = capture_data.get("screenshot_metadata", [])
 
             return result
@@ -380,11 +498,16 @@ class UXAnalysisOrchestrator:
                             capture_data['site_name']
                         )
                         self.report_generator.save_competitor_analysis(
-                            analysis_result.get('analysis', analysis_result),
+                            analysis_result,  # Already flattened
                             analysis_path
                         )
                     except Exception as e:
                         self.console.print(f"  [yellow]Warning: Could not save competitor analysis: {e}[/yellow]")
+
+            # PHASE 2.5: Retry failed analyses if any
+            failed_results = [r for r in results if not r.get('success')]
+            if failed_results and audit_structure:
+                results = await self._retry_failed_competitors(results, audit_structure)
 
         finally:
             # Ensure browser is closed
@@ -497,19 +620,18 @@ class UXAnalysisOrchestrator:
             table.add_column("Competitor", style="yellow")
             table.add_column("Overall Score", style="green")
 
-            # Sort by score
+            # Sort by score (data is now flattened)
             sorted_results = sorted(
                 successful,
-                key=lambda x: x["analysis"]["overall_score"],
+                key=lambda x: x.get("overall_score", 0),
                 reverse=True
             )
 
             for i, result in enumerate(sorted_results, 1):
-                analysis = result["analysis"]
-                score = analysis["overall_score"]
+                score = result.get("overall_score", 0)
                 table.add_row(
                     str(i),
-                    analysis["site_name"],
+                    result.get("site_name", "Unknown"),
                     f"{score:.1f}/10"
                 )
 

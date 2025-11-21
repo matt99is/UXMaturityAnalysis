@@ -134,31 +134,40 @@ Be specific and reference what you actually see in the screenshots. Think like a
 
     def _load_image_as_base64(self, image_path: str) -> str:
         """
-        Load image, compress if needed, and convert to base64.
+        Load image, convert to JPEG, and encode as base64.
 
-        Claude API has a 5MB limit per image. This method compresses
-        large screenshots to stay under that limit while maintaining quality.
+        Always converts to JPEG for consistency and smaller file sizes.
+        Claude API has a 5MB limit per image - this method ensures we stay under it.
+
+        Returns:
+            Base64 encoded JPEG image data
         """
-        MAX_SIZE_BYTES = 5 * 1024 * 1024  # 5MB limit
+        MAX_SIZE_BYTES = 5 * 1024 * 1024  # 5MB limit for base64 encoded data
+        # Account for ~33% overhead from base64 encoding
+        MAX_FILE_SIZE = int(MAX_SIZE_BYTES / 1.37)  # ~3.65MB threshold for raw file
 
-        # Check original file size
-        file_size = os.path.getsize(image_path)
-
-        if file_size <= MAX_SIZE_BYTES:
-            # File is small enough, use as-is
-            with open(image_path, "rb") as image_file:
-                return base64.b64encode(image_file.read()).decode("utf-8")
-
-        # File too large - compress it
+        # Always load image with PIL for consistent JPEG conversion
         img = Image.open(image_path)
 
-        # Convert RGBA to RGB if needed (for JPEG compression)
+        # Convert RGBA to RGB if needed (JPEG doesn't support transparency)
         if img.mode == 'RGBA':
             rgb_img = Image.new('RGB', img.size, (255, 255, 255))
             rgb_img.paste(img, mask=img.split()[3])  # Use alpha channel as mask
             img = rgb_img
+        elif img.mode != 'RGB':
+            img = img.convert('RGB')
 
-        # Try progressively lower quality until under limit
+        # Check if we need aggressive compression
+        file_size = os.path.getsize(image_path)
+
+        if file_size <= MAX_FILE_SIZE:
+            # Small file - use high quality JPEG (minimal compression)
+            buffer = io.BytesIO()
+            img.save(buffer, format='JPEG', quality=95, optimize=True)
+            buffer.seek(0)
+            return base64.b64encode(buffer.read()).decode("utf-8")
+
+        # Large file - try progressively lower quality until under limit
         for quality in [85, 75, 65, 55, 45]:
             buffer = io.BytesIO()
             img.save(buffer, format='JPEG', quality=quality, optimize=True)
@@ -218,7 +227,7 @@ Be specific and reference what you actually see in the screenshots. Think like a
                 "type": "image",
                 "source": {
                     "type": "base64",
-                    "media_type": "image/png",
+                    "media_type": "image/jpeg",  # Always JPEG for consistency
                     "data": image_data
                 }
             })

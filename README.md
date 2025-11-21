@@ -1,6 +1,6 @@
 # E-commerce UX Competitive Intelligence Agent
 
-**Version:** 1.1.0
+**Version:** 1.2.1
 **Status:** Production Ready
 **Python:** 3.9+
 
@@ -18,10 +18,8 @@ A Python tool that systematically analyzes competitor e-commerce pages and gener
 - [Quick Start](#quick-start)
 - [How It Works](#how-it-works)
 - [Usage Examples](#usage-examples)
-- [Bot Detection Handling](#bot-detection-handling-v110)
-- [Interactive vs Automated Mode](#interactive-vs-automated-mode)
+- [Configuration](#configuration)
 - [Output Structure](#output-structure)
-- [Supported Page Types](#supported-page-types)
 - [Architecture & Extensibility](#architecture--extensibility)
 - [Versioning](#versioning)
 - [Contributing](#contributing)
@@ -33,11 +31,10 @@ A Python tool that systematically analyzes competitor e-commerce pages and gener
 
 This tool automates competitive UX analysis for e-commerce sites by:
 
-1. **Auto-detecting page types** from URLs (homepage, product, basket, checkout)
-2. Capturing screenshots of competitor pages (desktop & mobile viewports)
-3. Analyzing UX against research-backed criteria (Baymard Institute, Nielsen Norman Group)
-4. **Generating competitive intelligence reports** focused on threats, opportunities, and market positioning
-5. Providing strategic insights for competitive differentiation
+1. Capturing screenshots of competitor pages (desktop & mobile viewports) in interactive mode
+2. Analyzing UX against research-backed criteria (Baymard Institute, Nielsen Norman Group)
+3. **Generating competitive intelligence reports** focused on threats, opportunities, and market positioning
+4. Providing strategic insights for competitive differentiation
 
 **Key Features:**
 - ✨ **Multi-Page-Type Support**: Analyze homepages, product pages, basket pages, and checkout flows
@@ -225,101 +222,6 @@ python3 main.py --manual-mode --screenshots-dir ./my-screenshots --urls https://
 - Maximum control over captured state
 - One-off competitive audits
 
-See [Bot Detection Guide](docs/BOT_DETECTION_GUIDE.md) for complete details.
-
-## Bot Detection Handling 🤖
-
-The tool is designed to work reliably with bot-protected sites through **interactive mode**:
-
-### **Interactive Mode** (Default) ⭐
-- **How it works:**
-  - Browser opens in visible mode (you control it)
-  - Navigate to the page yourself
-  - Solve CAPTCHAs, close popups, login if needed
-  - Press Enter when ready → Tool captures screenshots
-  - Choose to retry if something went wrong
-
-- **When to use:** All analyses (default mode)
-- **Advantages:**
-  - Works around bot detection naturally
-  - You verify the page loaded correctly
-  - Retry option if screenshots aren't right
-
-### **Manual Screenshot Mode** (Backup)
-- **How it works:**
-  - You manually capture screenshots (any method)
-  - Save as: `sitename_desktop.png`, `sitename_mobile.png`
-  - Tool loads your screenshots and analyzes
-
-```bash
-python3 main.py --manual-mode --screenshots-dir ./my-screenshots --urls https://amazon.com
-```
-
-- **When to use:** Sites with extremely aggressive bot detection (Amazon, eBay)
-- **Advantages:**
-  - Complete control over capture
-  - Use browser extensions, login states, etc.
-
-**No automated/headless mode:** Removed for reliability - interactive mode works better for modern bot detection.
-
-## Interactive Mode Workflow
-
-**All analyses now run in interactive mode for maximum reliability:**
-
-### How Interactive Mode Works
-- **Browser opens in visible mode** for each competitor
-- **You control the interaction:**
-  - Navigate to the correct page
-  - Close cookie banners and popups
-  - Solve CAPTCHAs if needed
-  - Wait for page to fully load
-  - For basket pages: Add 1-2 items first
-  - For checkout: Progress to checkout flow
-
-- **Press Enter** when ready to capture
-
-- **Review & Choose:**
-  - ✓ Captured X screenshots
-  - Continue? ([Y]es / [r]etry / [s]kip):
-    - **Y** → Move to next competitor
-    - **R** → Retry this one (browser reopens)
-    - **S** → Skip this competitor
-
-### Example Workflow
-```
-📋 Select Analysis Type:
-[You select: 4. Product Pages]
-
-🌐 Interactive Mode: Browser will open for each site
-Navigate to the page, close popups, then press Enter to capture
-
-Progress: 1/3 (interactive)
-
-Analyzing: zooplus
-URL: https://www.zooplus.co.uk/shop/...
-
-Navigate to the product page analysis and prepare for screenshot
-Close popups, accept cookies, and ensure page is fully loaded
-
-[Press Enter when ready...]
-
-✓ Captured 2 screenshot(s)
-
-Continue? ([Y]es / [r]etry / [s]kip): y
-
-Analyzing with Claude AI...
-✓ Analysis complete!
-
-Progress: 2/3 (interactive)
-...
-```
-
-### Benefits
-- ✅ **Works with any site** - you bypass bot detection naturally
-- ✅ **Visual verification** - you see what gets captured
-- ✅ **Retry option** - fix issues before analysis
-- ✅ **Complete control** - handle any edge case
-
 ## Configuration
 
 ### Competitors Configuration
@@ -343,48 +245,33 @@ Create a `competitors.json` file:
 
 ### UX Analysis Criteria
 
-Edit `config.yaml` to customize analysis criteria. The POC includes 10 criteria:
+Criteria are defined in YAML files in the `criteria_config/` directory. Each page type has its own criteria tailored to that context:
 
-1. **Discount Code Field** (Weight: 9/10)
-   - Placement, visibility, messaging clarity
-   - Code application vs activation clarity
+**Available Page Types:**
+- **`homepage_pages.yaml`** - 8 criteria (Value Proposition, Navigation, Hero Section, Trust Signals, Search, Mobile, Content Hierarchy, Performance)
+- **`product_pages.yaml`** - 10 criteria (Product Imagery, Add to Cart CTA, Pricing Display, Reviews, Subscription Options, Delivery Info, Trust Signals, Cross-sell, Mobile, etc.)
+- **`basket_pages.yaml`** - 10 criteria (Discount Code Field, Shipping Cost Transparency, Delivery Estimates, Payment Methods, Express Checkout, Trust Signals, Basket Summary, CTA Buttons, Saving Features, Mobile)
+- **`checkout_pages.yaml`** - 8 criteria (Form Design, Progress Indicators, Guest Checkout, Payment Variety, Error Prevention, Order Summary, Trust/Security, Mobile)
 
-2. **Shipping Cost Transparency** (Weight: 10/10)
-   - Visibility before checkout
-   - Free shipping thresholds
+**To customize criteria for a page type:**
+1. Open the relevant YAML file in `criteria_config/`
+2. Edit criteria definitions, weights, evaluation points, and benchmarks
+3. Run analysis - changes are applied automatically
 
-3. **Delivery Estimates** (Weight: 8/10)
-   - Time estimates shown
-   - Dispatch cutoff times
-
-4. **Payment Methods** (Weight: 7/10)
-   - Early visibility of accepted methods
-   - Security indicators
-
-5. **Express Checkout Options** (Weight: 8/10)
-   - Apple Pay, Google Pay, PayPal availability
-   - Prominence and positioning
-
-6. **Trust Signals** (Weight: 7/10)
-   - Security badges
-   - Return policy visibility
-   - Guarantees
-
-7. **Basket Summary Clarity** (Weight: 9/10)
-   - Cost breakdown clarity
-   - Subtotals, taxes, discounts
-
-8. **CTA Buttons** (Weight: 8/10)
-   - Copy clarity
-   - Visual prominence
-
-9. **Basket Saving Features** (Weight: 6/10)
-   - Save for later
-   - Wishlist integration
-
-10. **Mobile Responsiveness** (Weight: 8/10)
-    - Responsive design indicators
-    - Touch target sizing
+**Example criteria structure:**
+```yaml
+criteria:
+  - id: "discount_code"
+    name: "Discount Code Field"
+    weight: 1.5
+    description: "Placement and clarity of discount code field"
+    evaluation_points:
+      - "Field visibility and placement"
+      - "Clear messaging about code application"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "64% abandon if discount codes are confusing"
+```
 
 Each criterion is evaluated against Baymard Institute and Nielsen Norman Group benchmarks.
 
@@ -395,7 +282,8 @@ The tool organizes output by audit run with hierarchical structure:
 ```
 output/audits/
 └── 2025-11-20_homepage_pages/          # Audit folder
-    ├── _comparison_report.md            # Competitive intelligence report
+    ├── _comparison_report.md            # Markdown competitive intelligence report
+    ├── _comparison_report.html          # Interactive HTML report with charts
     ├── _audit_summary.json              # Audit metadata
     ├── nike/                            # Competitor folder
     │   ├── screenshots/
@@ -447,6 +335,129 @@ Visual UX maturity spectrum showing relative positioning
 
 **7. Methodology Appendix**
 
+### Interactive HTML Report
+
+The tool also generates an **interactive HTML report** (`_comparison_report.html`) with rich visualizations and filtering capabilities. Understanding the report sections:
+
+#### **1. Executive Summary**
+Four key metrics at the top of the report:
+- **Competitors Analyzed**: Total number of successfully analyzed competitors
+- **Average Score**: Mean UX score across all competitors (0-10 scale)
+- **Top Score**: Highest performing competitor and their score
+- **Lowest**: Weakest performing competitor and their score
+
+**Key Insights Box** highlights:
+- 🏆 **Market Leader**: Competitor with highest overall score
+- 📊 **Most Consistent**: Competitor with most balanced performance across criteria
+- 💪 **Industry Strength**: Criterion where the market performs best overall
+- ⚠️ **Market Vulnerability**: Criterion where all competitors struggle (opportunity to differentiate)
+
+#### **2. Visual Analysis Charts**
+
+**Radar Chart - Competitive UX Comparison**
+- Shows all competitors overlaid on same axes
+- Each axis = one UX criterion
+- Larger area = better overall performance
+- Use to: Quickly identify who leads/lags on specific criteria
+
+**Heatmap - Feature Adoption Matrix**
+- Rows = Competitors, Columns = Criteria
+- Color coding: 🟢 Green (8-10) → 🟡 Yellow (4-7) → 🔴 Red (0-3)
+- Numbers show exact scores
+- Use to: Spot patterns and gaps across the competitive landscape
+
+**Bar Chart - Top Performers by Criteria**
+- Shows which competitor scores highest on each criterion
+- Use to: Identify best-in-class references for each UX element
+
+**Box Plot - Score Distribution**
+- Shows score consistency for each competitor
+- Box = middle 50% of scores, line = median
+- Use to: See who has consistent vs. inconsistent UX quality
+
+#### **3. Filter & Search Panel**
+
+Interactive controls to explore the data:
+- **Search Competitor**: Type name to filter competitor cards
+- **Minimum Score**: Slider (0-10) to show only high-performing competitors
+- **Competitive Status**: Filter by advantages/vulnerabilities/parity
+- **Reset Filters**: Clear all filters to see full dataset
+
+Filter count shows: "Showing X of Y competitors"
+
+#### **4. Competitor Profiles**
+
+Each competitor card shows:
+
+**Competitive Position Tier** (badge at top):
+- 🟢 **Market Leader**: Score significantly above average (tier 1)
+- 🟡 **Strong Contender**: Score at or near average (tier 2)
+- 🔴 **Vulnerable**: Score below average (tier 3)
+
+**Performance by Criteria** table with three columns:
+1. **Criterion Name**: The UX element being evaluated
+2. **Status Badge**: Competitive intelligence label
+   - 🟢 **Advantage**: Scores above market average on this criterion (competitive threat)
+   - 🟡 **Parity**: Scores at market average (table stakes)
+   - 🔴 **Vulnerability**: Scores below market average (exploitable weakness)
+3. **Score**: Numerical score (0-10) with color coding
+
+**Understanding Status Labels:**
+- **Advantage** doesn't mean "good" - it means "better than competitors" (even a 7/10 can be an advantage if everyone else scores 5/10)
+- **Vulnerability** doesn't mean "bad" - it means "worse than competitors" (even a 7/10 can be a vulnerability if everyone else scores 9/10)
+- **Status is relative to the competitive set**, not absolute benchmarks
+
+**Screenshots Section**:
+- Desktop and mobile viewport screenshots
+- Click any screenshot to open **lightbox** (full-screen view)
+- ESC key or click outside to close lightbox
+- Annotated screenshots show top strengths (green badges) and weaknesses (red badges)
+
+**Strategic Insights**:
+- Competitive positioning summary
+- Key differentiator (if any)
+- Links to detailed findings in individual analysis JSON
+
+#### **5. Interactive Features**
+
+**Lightbox Gallery**:
+- Click any screenshot → Full-screen modal opens
+- Shows competitor name and viewport (desktop/mobile)
+- ESC key or click backdrop to close
+- Prevents page scroll when open
+
+**Real-time Filtering**:
+- All filters work instantly (no page reload)
+- Combine multiple filters (search + score + status)
+- Results update live as you type/adjust sliders
+
+**Responsive Design**:
+- Report adapts to screen size
+- Mobile-friendly layout
+- Charts resize for readability
+
+#### **How to Use the Report**
+
+**For Strategic Planning:**
+1. Check Executive Summary → Identify market leader
+2. Review Market Vulnerability insight → Find differentiation opportunities
+3. Use Heatmap → Spot patterns and white space
+
+**For Competitive Benchmarking:**
+1. Use Search filter → Find specific competitor
+2. Review their Advantages/Vulnerabilities
+3. Check Bar Chart → See where they lead the market
+
+**For UX Prioritization:**
+1. Look at Industry Strength → These are table stakes
+2. Find Market Vulnerability → Opportunity to lead
+3. Check your position on each criterion → Plan improvements
+
+**For Executive Presentations:**
+1. Use Radar Chart → Show competitive positioning visually
+2. Reference Key Insights box → Quick strategic summary
+3. Screenshots with annotations → Show specific examples
+
 ### Individual Competitor Analysis
 
 Each competitor gets `analysis.json` with:
@@ -494,18 +505,14 @@ criteria:
   # ... add more criteria
 ```
 
-2. Run analysis (auto-detected or manual):
+2. Run analysis with `--analysis-type` flag:
 ```bash
-# Auto-detection (if URL pattern added to detector)
-python3 main.py --urls https://example.com/campaign
-
-# Manual specification
-python3 main.py --analysis-type landing_pages --urls https://example.com/campaign
+python3 main.py --analysis-type landing_pages --config competitors.json
 ```
 
 **No code changes required!** The system automatically:
 - Loads your new YAML config
-- Makes it available as an analysis type
+- Makes it available as an analysis type option
 - Generates competitive intelligence reports using your criteria
 
 #### 2. Supported Page Types
@@ -519,7 +526,7 @@ Out of the box, the tool includes:
 
 Each optimized with page-specific UX criteria and benchmarks.
 
-#### 2. Adding Multi-Step Journeys
+#### 3. Adding Multi-Step Journeys
 
 Future enhancement to support navigation flows:
 
@@ -535,11 +542,11 @@ navigation:
 
 The `JourneyCapture` class in `src/analyzers/screenshot_capture.py` provides the framework for this.
 
-#### 3. Customizing Analysis Prompts
+#### 4. Customizing Analysis Prompts
 
 The `ClaudeUXAnalyzer` class (`src/analyzers/claude_analyzer.py`) builds prompts dynamically from config criteria, making it work with any analysis type.
 
-#### 4. Adding New Output Formats
+#### 5. Adding New Output Formats
 
 Extend `ReportGenerator` class (`src/utils/report_generator.py`):
 
@@ -572,7 +579,8 @@ BenchmarkAgent/
 │   └── utils/
 │       ├── report_generator.py     # Competitive intelligence reports
 │       ├── audit_organizer.py      # Hierarchical output organization
-│       └── page_type_detector.py   # ✨ Auto-detect page types from URLs
+│       ├── html_report_generator.py # Interactive HTML reports with charts
+│       └── screenshot_annotator.py  # Screenshot annotations
 └── output/audits/                   # ✨ Organized by audit run
     └── {date}_{analysis_type}/      #    Audit folder
         ├── _comparison_report.md    #    Competitive intelligence report
@@ -582,17 +590,15 @@ BenchmarkAgent/
             └── analysis.json        #    Individual analysis
 ```
 
-## Current Limitations (POC)
+## Current Limitations
 
-This is a proof-of-concept with some intentional limitations:
+Some intentional limitations in the current implementation:
 
-1. **Empty Basket Pages**: The POC captures whatever state the basket page is in. If a basket requires items to be added first, it will capture the empty state. Future iterations will add automated item addition.
+1. **Single URL per Competitor**: Currently analyzes one URL per competitor. Multi-step journeys (e.g., homepage → product → basket) are architecturally supported but not yet implemented.
 
-2. **Single URL per Competitor**: Currently analyzes one URL per competitor. Multi-step journeys are architecturally supported but not yet implemented.
+2. **Sequential Analysis**: Competitors are analyzed one at a time. Could be parallelized for faster execution.
 
-3. **Sequential Analysis**: Competitors are analyzed one at a time. Could be parallelized for faster execution.
-
-4. **Screenshot-Only Analysis**: Currently analyzes screenshots. Could be enhanced to include DOM/HTML analysis for additional insights.
+3. **Screenshot-Only Analysis**: Currently analyzes visual screenshots only. Could be enhanced to include DOM/HTML analysis for additional technical insights (accessibility, performance metrics, etc.).
 
 ## Use Cases
 
@@ -634,12 +640,16 @@ MOBILE_VIEWPORT_HEIGHT=812
 
 ## Roadmap
 
-Future enhancements planned:
+**Recently Completed** ✅
+- [x] Interactive HTML reports with embedded screenshots (v1.2.0)
+- [x] Screenshot annotations with visual findings (v1.2.0)
+- [x] Real-time filtering and search (v1.2.0)
+
+**Future enhancements planned:**
 
 - [ ] Multi-step journey support (homepage → product → add to cart → basket)
 - [ ] HTML/DOM analysis alongside screenshots
 - [ ] Parallel competitor analysis for speed
-- [ ] Interactive HTML reports with embedded screenshots
 - [ ] Time-series analysis (track competitor changes over time)
 - [ ] Export to CSV/Excel formats
 - [ ] Integration with analytics tools (GA4, ContentSquare)
@@ -653,9 +663,25 @@ This project uses [Semantic Versioning](https://semver.org/):
 - **MINOR** version for added functionality in a backward compatible manner
 - **PATCH** version for backward compatible bug fixes
 
-**Current Version:** 1.1.0
+**Current Version:** 1.2.1
 
 ### Version History
+
+**v1.2.1 (2025-11-21)** - Retry Mechanism & Bug Fixes
+- ✨ Interactive retry prompt for failed analyses
+- 🐛 Fixed image format consistency (always JPEG to Claude)
+- 🐛 Fixed data structure flattening issues
+- 🐛 Fixed HTML report image paths (now relative)
+- 🐛 Fixed report generation with zero successes
+
+**v1.2.0 (2025-11-20)** - Interactive HTML Reports & Enhanced UX
+- ✨ Interactive HTML reports with Plotly charts (radar, heatmap, bar, box plot)
+- ✨ Screenshot annotations with visual badges for strengths/weaknesses
+- ✨ Lightbox gallery for full-screen screenshot viewing
+- ✨ Real-time filtering and search in HTML reports
+- 🐛 Fixed image compression for Claude API 5MB limit
+- 🐛 Fixed HTML report generation when competitors fail analysis
+- 📊 Automated competitive status labeling (advantage/parity/vulnerability)
 
 **v1.1.0 (2025-11-20)** - Bot Detection Handling
 - ✨ Manual screenshot mode for heavily protected sites
@@ -665,8 +691,8 @@ This project uses [Semantic Versioning](https://semver.org/):
 **v1.0.0 (2025-11-20)** - Initial Release
 - Multi-page-type support (homepage, product, basket, checkout)
 - Competitive intelligence reporting framework
-- Smart auto-detection
 - Hierarchical output structure
+- Interactive browser-based screenshot capture
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and upgrade instructions.
 
@@ -726,9 +752,8 @@ The easiest way to contribute is adding new page types:
 
 1. Create a new YAML file in `criteria_config/` (e.g., `search_results.yaml`)
 2. Define criteria based on UX research (Baymard, Nielsen Norman)
-3. Add URL patterns to `src/utils/page_type_detector.py`
-4. Test with sample URLs
-5. Submit PR with examples
+3. Test with sample URLs using `--analysis-type search_results`
+4. Submit PR with examples and documentation
 
 ### Code Style
 
