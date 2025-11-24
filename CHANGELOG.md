@@ -5,6 +5,61 @@ All notable changes to the E-commerce UX Competitive Intelligence Agent will be 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-11-24
+
+### Added
+- **Dynamic Analysis Context System**: AI prompts now adapt to analysis type
+  - Added `analysis_context` field to criteria YAML configs
+  - Market and domain-specific context injected dynamically into prompts
+  - No more hardcoded basket/pet food language - works for any analysis type
+  - Example: Homepage analysis gets homepage-specific context, product pages get product-specific context
+  - Enables easy creation of new analysis types without code changes
+- **Strategic Insights Section**: New executive-focused analysis in HTML reports
+  - **Market Leaders**: Top 3 performers with key differentiators
+  - **Top 3 Opportunities**: Industry-wide weaknesses (60%+ scoring below 6) with potential gains
+  - **Competitive Threats**: Standout strengths from market leaders (9+ scores) with recommended actions
+  - **Quick Wins**: Common gaps across competitors with 30-day implementation estimates
+  - Positioned before charts section for immediate strategic visibility
+- **Overall Rankings Table**: Complete competitive ranking with positioning
+  - Rank badges (gold/silver/bronze for top 3)
+  - Color-coded scores (green 8+, orange 6-8, red <6)
+  - Competitive position labels (Market Leader 8+, Strong Contender 6.5-7.9, Competitive 5-6.4, Vulnerable <5)
+  - Key differentiator showing each competitor's strongest criterion
+  - Sortable and filterable within HTML report
+
+### Changed
+- **Claude Analyzer Architecture**: Completely refactored for flexibility
+  - `claude_analyzer.py` now accepts `analysis_context` parameter
+  - Removed hardcoded UK pet food/basket-specific language from prompts
+  - Generic prompt template that adapts to any page type
+  - `analysis_context` passed from config → main.py → analyzer
+- **Configuration System**: Enhanced for per-analysis-type customization
+  - `config_loader.py` now parses `analysis_context` from YAML files
+  - Each analysis type can have its own market/domain expertise context
+  - `basket_pages.yaml` updated with UK pet food retail context as example
+- **HTML Report Structure**: Reorganized for better strategic flow
+  - Executive Summary → Key Insights → **Strategic Insights (NEW)** → **Rankings (NEW)** → Charts → Filters → Competitor Profiles
+  - Strategic insights appear before charts for immediate actionability
+  - Rankings table provides quick competitive landscape overview
+
+### Removed
+- **Score Distribution Chart**: Removed box plot from HTML reports
+  - Redundant with existing heatmap visualization
+  - Limited additional insight vs other charts
+  - Simplifies report and improves load time
+
+### Technical
+- Added `_get_strategic_insights()` method to calculate market leaders, opportunities, threats, and quick wins
+- Added `_get_rankings_data()` method to generate competitive positioning table
+- Updated `AnalysisType` Pydantic model with optional `analysis_context` field
+- Updated HTML template with new CSS for strategic insights cards and rankings table
+- All strategic calculations based on actual analysis data (no hardcoded samples)
+
+### Documentation
+- `config.yaml` is now purely documentation (no longer loaded)
+- All active configuration in `criteria_config/*.yaml` files
+- Added comprehensive comments explaining `analysis_context` usage
+
 ## [1.2.1] - 2025-11-21
 
 ### Added

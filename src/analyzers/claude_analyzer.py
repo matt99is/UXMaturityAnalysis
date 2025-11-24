@@ -33,14 +33,16 @@ class ClaudeUXAnalyzer:
         criteria: List[Dict[str, Any]],
         analysis_name: str,
         site_name: str,
-        url: str
+        url: str,
+        analysis_context: Optional[str] = None
     ) -> str:
         """
         Build structured analysis prompt from criteria.
 
         EXTENSIBILITY NOTE: This template-based approach allows criteria
-        to be defined in config.yaml and automatically integrated into
-        prompts for any page type analysis.
+        to be defined in config and automatically integrated into
+        prompts for any page type analysis. Context can be customized
+        per analysis type via the analysis_context parameter.
         """
 
         criteria_text = ""
@@ -55,25 +57,30 @@ class ClaudeUXAnalyzer:
                 criteria_text += f"   - {benchmark}\n"
             criteria_text += "\n"
 
-        prompt = f"""You are a competitive intelligence analyst specializing in e-commerce UX strategy. You have deep knowledge of Baymard Institute research and Nielsen Norman Group guidelines.
+        # Build context section dynamically
+        context_section = ""
+        if analysis_context:
+            context_section = f"\n{analysis_context}\n\n"
 
-**IMPORTANT: Frame your analysis from a COMPETITIVE INTELLIGENCE perspective, not as recommendations to the competitor.**
+        prompt = f"""You are a competitive intelligence analyst specializing in e-commerce UX strategy.
+{context_section}**IMPORTANT: Frame your analysis from a COMPETITIVE INTELLIGENCE perspective, not as recommendations to the competitor.**
 
-Analyze the provided screenshot(s) of {site_name}'s page (URL: {url}) against the following criteria:
+Analyze the provided screenshot(s) of {site_name}'s page (URL: {url}) for {analysis_name} against the following criteria:
 
 {criteria_text}
 
 For each criterion, provide:
 1. A score from 0-10 (where 10 is excellent, adhering to best practices)
-2. Specific observations of what you see in the screenshot
-3. How it compares to best practices and benchmarks mentioned
+2. Specific observations of what you see in the screenshot (be detailed and reference visible elements)
+3. How it compares to best practices and benchmarks mentioned above
 4. Competitive assessment: Is this a strength (threat to us) or weakness (opportunity for us)?
 
 **Competitive Intelligence Focus:**
 - Frame strengths as "competitive advantages" (threats we must counter)
 - Frame weaknesses as "exploitable vulnerabilities" (opportunities to differentiate)
-- Identify unmet user needs that neither this competitor nor market addresses
-- Assess their competitive position relative to UX best practices
+- Assess the user experience quality based on the criteria and benchmarks provided
+- Identify unmet user needs in the customer journey
+- Evaluate their competitive position relative to market leaders
 
 Return your analysis as a JSON object with this exact structure:
 {{
@@ -194,7 +201,8 @@ Be specific and reference what you actually see in the screenshots. Think like a
         criteria: List[Dict[str, Any]],
         analysis_name: str,
         site_name: str,
-        url: str
+        url: str,
+        analysis_context: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Analyze UX from screenshots using Claude.
@@ -205,6 +213,7 @@ Be specific and reference what you actually see in the screenshots. Think like a
             analysis_name: Name of analysis type
             site_name: Competitor site name
             url: URL analyzed
+            analysis_context: Optional market/domain context for prompts
 
         Returns:
             Structured analysis results
@@ -214,7 +223,7 @@ Be specific and reference what you actually see in the screenshots. Think like a
         """
 
         # Build the analysis prompt
-        prompt = self._build_analysis_prompt(criteria, analysis_name, site_name, url)
+        prompt = self._build_analysis_prompt(criteria, analysis_name, site_name, url, analysis_context)
 
         # Prepare image content for API
         image_content = []
@@ -292,7 +301,8 @@ Be specific and reference what you actually see in the screenshots. Think like a
         criteria: List[Dict[str, Any]],
         analysis_name: str,
         site_name: str,
-        url: str
+        url: str,
+        analysis_context: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Synchronous version of analyze_screenshots for easier integration.
@@ -309,7 +319,7 @@ Be specific and reference what you actually see in the screenshots. Think like a
                 # We're already in an async context
                 return asyncio.create_task(
                     self.analyze_screenshots(
-                        screenshot_paths, criteria, analysis_name, site_name, url
+                        screenshot_paths, criteria, analysis_name, site_name, url, analysis_context
                     )
                 )
         except RuntimeError:
@@ -318,7 +328,7 @@ Be specific and reference what you actually see in the screenshots. Think like a
         # Create new event loop for sync call
         return asyncio.run(
             self.analyze_screenshots(
-                screenshot_paths, criteria, analysis_name, site_name, url
+                screenshot_paths, criteria, analysis_name, site_name, url, analysis_context
             )
         )
 

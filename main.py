@@ -196,14 +196,8 @@ class UXAnalysisOrchestrator:
                             else:
                                 self.console.print("  [red]Please enter 'y', 'r', or 's'[/red]")
                         except (EOFError, KeyboardInterrupt):
-                            self.console.print("\n  [yellow]⊘ Skipping this competitor[/yellow]")
-                            return {
-                                "success": False,
-                                "site_name": site_name,
-                                "url": url,
-                                "error": "Skipped by user (Ctrl+C)",
-                                "skipped": True
-                            }
+                            self.console.print("\n  [yellow]⊘ Cancelling entire analysis...[/yellow]")
+                            raise  # Re-raise to break out of main loop
                 else:
                     # Manual mode doesn't need retry
                     screenshot_retry = False
@@ -382,7 +376,8 @@ class UXAnalysisOrchestrator:
                 criteria=criteria_dicts,
                 analysis_name=self.analysis_type_config.name,
                 site_name=site_name,
-                url=url
+                url=url,
+                analysis_context=self.analysis_type_config.analysis_context
             )
 
             if not analysis_result.get("success"):
@@ -835,44 +830,50 @@ For more examples and documentation, see README.md
         competitors=competitors
     )
 
-    # Run analysis
-    results = await orchestrator.analyze_competitors(competitors, audit_structure)
+    try:
+        # Run analysis
+        results = await orchestrator.analyze_competitors(competitors, audit_structure)
 
-    # Calculate timing for audit summary
-    end_time = datetime.now()
-    successful = [r for r in results if r.get("success")]
-    failed = [r for r in results if not r.get("success")]
+        # Calculate timing for audit summary
+        end_time = datetime.now()
+        successful = [r for r in results if r.get("success")]
+        failed = [r for r in results if not r.get("success")]
 
-    # Generate audit summary metadata
-    audit_summary = generate_audit_summary(
-        analysis_type=analysis_type,
-        analysis_type_name=orchestrator.analysis_type_config.name,
-        competitors=competitors,
-        successful_count=len(successful),
-        failed_count=len(failed),
-        start_time=start_time,
-        end_time=end_time
-    )
+        # Generate audit summary metadata
+        audit_summary = generate_audit_summary(
+            analysis_type=analysis_type,
+            analysis_type_name=orchestrator.analysis_type_config.name,
+            competitors=competitors,
+            successful_count=len(successful),
+            failed_count=len(failed),
+            start_time=start_time,
+            end_time=end_time
+        )
 
-    # Generate reports
-    report_paths = orchestrator.generate_reports(results, audit_structure, audit_summary)
+        # Generate reports
+        report_paths = orchestrator.generate_reports(results, audit_structure, audit_summary)
 
-    # Display summary
-    orchestrator.display_summary(results)
+        # Display summary
+        orchestrator.display_summary(results)
 
-    # Show new organized output structure
-    audit_root = audit_structure['audit_root']
-    console.print(f"\n[bold green]✅ Analysis complete![/bold green]\n")
-    console.print(f"[bold]Results saved to:[/bold] [cyan]{audit_root}[/cyan]\n")
+        # Show new organized output structure
+        audit_root = audit_structure['audit_root']
+        console.print(f"\n[bold green]✅ Analysis complete![/bold green]\n")
+        console.print(f"[bold]Results saved to:[/bold] [cyan]{audit_root}[/cyan]\n")
 
-    if successful:
-        console.print("[bold]Competitors analyzed:[/bold]")
-        for comp in successful:
-            comp_name = comp.get('site_name', 'unknown')
-            comp_path = audit_root / comp_name
-            console.print(f"  • {comp_name} [dim]({comp_path})[/dim]")
+        if successful:
+            console.print("[bold]Competitors analyzed:[/bold]")
+            for comp in successful:
+                comp_name = comp.get('site_name', 'unknown')
+                comp_path = audit_root / comp_name
+                console.print(f"  • {comp_name} [dim]({comp_path})[/dim]")
 
-    console.print(f"\n[bold]Comparison report:[/bold] [cyan]{audit_root / '_comparison_report.md'}[/cyan]")
+        console.print(f"\n[bold]Comparison report:[/bold] [cyan]{audit_root / '_comparison_report.md'}[/cyan]")
+
+    except (EOFError, KeyboardInterrupt):
+        console.print("\n\n[bold yellow]⚠ Analysis cancelled by user[/bold yellow]")
+        console.print(f"[dim]Partial results (if any) saved to: {audit_structure['audit_root']}[/dim]")
+        sys.exit(0)
 
 
 if __name__ == "__main__":

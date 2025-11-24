@@ -1,7 +1,25 @@
-name: "E-commerce Basket Page Analysis"
+name: "E-commerce Basket Page Analysis - UK Retail"
 requires_interaction: true
-interaction_prompt: "🛒 Please add 1-2 items to the basket, then press Enter to continue..."
+interaction_prompt: "🛒 Please add 2-3 items to the basket, then press Enter to continue..."
 interaction_timeout: 300
+
+# Analysis Context - Market and domain-specific context for AI analysis
+analysis_context: |
+  **MARKET CONTEXT: UK Pet Food Retail**
+  This analysis focuses on basket/cart pages for UK pet food retailers. Key considerations:
+  - Subscription/auto-delivery is critical (Pets at Home VIP, Chewy Autoship model)
+  - Heavy products make shipping costs and free delivery thresholds highly sensitive
+  - Pack size clarity is essential (2kg vs 12kg bags, multi-buy deals)
+  - Mobile traffic dominates (65%+ of UK pet supply shopping)
+  - VAT-inclusive pricing is standard in UK
+  - Repeat purchase category with high customer lifetime value
+
+  **Domain Expertise:**
+  - Baymard Institute research on cart abandonment and checkout optimization
+  - Nielsen Norman Group guidelines for e-commerce usability
+  - UK pet retail market dynamics (subscription models, delivery expectations, mobile-first shopping)
+  - Pet food consumer behavior (repeat purchase patterns, brand loyalty, pack size preferences)
+
 viewports:
   - name: "desktop"
     width: 1920
@@ -10,148 +28,196 @@ viewports:
     width: 375
     height: 812
 
+# UX Analysis Criteria - optimized for UK retail basket pages
+# Total weight: 92 points across 11 criteria
 criteria:
-  - id: "discount_code_field"
-    name: "Discount Code Field"
-    weight: 1.4
-    description: "Placement, visibility, and messaging of promotional code entry"
-    evaluation_points:
-      - "Is the discount code field easily visible without scrolling?"
-      - "Is it clearly labeled and positioned logically in the flow?"
-      - "Does messaging clarify when codes are applied vs active?"
-      - "Are there helpful prompts or links to find codes?"
-      - "Does it cause confusion about when discounts are calculated?"
-    benchmarks:
-      - source: "Baymard Institute"
-        finding: "64% of users abandon if discount codes are confusing"
-      - source: "Best Practice"
-        finding: "Show code field but not too prominently to avoid discount-seeking behavior"
+  # TIER 1: Critical Conversion Drivers (Weight: 8-10)
 
   - id: "shipping_cost_transparency"
-    name: "Shipping Cost Transparency"
-    weight: 1.6
-    description: "Visibility of shipping costs before checkout initiation"
+    name: "Shipping Cost & Free Delivery Threshold"
+    weight: 10
+    description: "Visibility of delivery costs and free shipping thresholds on basket page"
     evaluation_points:
-      - "Are shipping costs displayed on the basket page or only later?"
-      - "Is there a clear breakdown of delivery costs?"
-      - "Are free shipping thresholds clearly communicated?"
-      - "Can users see different shipping options and costs?"
+      - "Are delivery costs displayed on basket page (not hidden until checkout)?"
+      - "Is free shipping threshold clearly shown (e.g., 'Add £5 for free delivery')?"
+      - "Can users see different delivery options and their costs?"
+      - "Is the delivery cost vs order value relationship clear?"
+      - "Are there visual indicators of progress toward free shipping (e.g., progress bar)?"
     benchmarks:
       - source: "Baymard Institute"
-        finding: "Unexpected shipping costs are the #1 reason for cart abandonment (48%)"
+        finding: "48% abandon due to unexpected shipping costs"
+      - source: "Pet Retail"
+        finding: "Heavy products make shipping cost critical concern"
       - source: "Best Practice"
-        finding: "Show shipping estimate or exact cost on basket page"
+        finding: "Show free shipping bar/progress indicator prominently"
+
+  - id: "subscription_auto_delivery"
+    name: "Subscription & Auto-Delivery Options"
+    weight: 10
+    description: "Subscribe & Save or auto-delivery program visibility and value proposition"
+    evaluation_points:
+      - "Is subscription/auto-delivery option visible in basket for applicable items?"
+      - "Is discount/savings clearly shown (e.g., 'Save 15% with subscription')?"
+      - "Can users easily switch between one-time purchase and subscription?"
+      - "Is delivery frequency selection intuitive and easy to understand?"
+      - "Are subscription terms clear (cancel anytime, skip deliveries, modify frequency)?"
+      - "Is the value proposition compelling and prominently displayed?"
+    benchmarks:
+      - source: "Market Research"
+        finding: "Pet food consumers highly receptive to subscriptions (convenience + savings)"
+      - source: "Best Practice"
+        finding: "Highlight savings percentage, emphasize flexibility and control"
+
+  - id: "basket_summary"
+    name: "Basket Summary & Total Clarity"
+    weight: 9
+    description: "Clear breakdown of subtotal, delivery, discounts, and total (VAT inclusive)"
+    evaluation_points:
+      - "Is there a clear itemized breakdown of all costs?"
+      - "Are subtotal, delivery, and discounts clearly separated and labeled?"
+      - "Is the total price prominently displayed and easy to find at a glance?"
+      - "Are subscription or multi-buy discounts clearly shown in breakdown?"
+      - "Does total update immediately when quantities or subscription options change?"
+    benchmarks:
+      - source: "Baymard Institute"
+        finding: "Hidden costs are #2 abandonment reason after shipping"
+      - source: "Best Practice"
+        finding: "Large, bold total with clear breakdown above, real-time updates"
+
+  - id: "product_information_cart"
+    name: "Product Details in Cart"
+    weight: 9
+    description: "Quality and completeness of product information visible in basket view"
+    evaluation_points:
+      - "Can users see clear product images (not tiny thumbnails, at least 100x100px)?"
+      - "Is pack size/weight clearly visible and prominent (critical for pet food)?"
+      - "Are product variants clearly shown (flavor, life stage: adult/puppy/senior)?"
+      - "Can users edit pack size or quantity without leaving cart?"
+      - "Are there links back to product pages for detailed information?"
+      - "Is nutritional info or key features accessible from cart view?"
+    benchmarks:
+      - source: "Pet Food Specific"
+        finding: "Pack size confusion common (2kg vs 12kg bags look similar)"
+      - source: "Baymard Institute"
+        finding: "27% abandon when unable to see/verify order details clearly"
+      - source: "Best Practice"
+        finding: "Show product images + pack size/weight prominently, inline editing"
+
+  - id: "mobile_layout_usability"
+    name: "Mobile Layout & Touch Usability"
+    weight: 9
+    description: "Mobile-optimized layout, readability, and touch target sizing"
+    evaluation_points:
+      - "Is text readable without zooming (minimum 16px font size)?"
+      - "Are touch targets appropriately sized (44x44px minimum for buttons)?"
+      - "Is the checkout CTA sticky/always visible on mobile viewport?"
+      - "Can users edit quantities easily on mobile (large, tappable +/- buttons)?"
+      - "Is basket summary easily accessible without excessive scrolling?"
+      - "Does the page avoid horizontal scrolling on mobile?"
+    benchmarks:
+      - source: "UK Market"
+        finding: "65%+ of e-commerce traffic is mobile, especially for pet supplies"
+      - source: "Google"
+        finding: "61% of users won't return after bad mobile experience"
+      - source: "Best Practice"
+        finding: "Sticky CTA, large touch targets (44x44px min), readable text (16px+)"
 
   - id: "delivery_estimates"
-    name: "Shipping Delivery Estimates"
-    weight: 1.3
-    description: "Communication of delivery timeframes and dispatch cutoffs"
+    name: "Delivery Timing & Urgency"
+    weight: 9
+    description: "Clear delivery timeframes, dispatch cutoffs, and urgency communication"
     evaluation_points:
-      - "Are delivery time estimates shown on the basket page?"
-      - "Do they display same-day or next-day dispatch cutoff times?"
-      - "Is delivery date/range communicated clearly?"
-      - "Can users easily understand when they'll receive items?"
+      - "Are delivery time estimates shown (e.g., 'Arrives Tuesday 5th March')?"
+      - "Is next-day/same-day cutoff time displayed if available (e.g., 'Order within 2hrs')?"
+      - "Is delivery date/range clear and specific (not vague '3-5 days')?"
+      - "For heavy items (pet food): Does delivery timeframe seem realistic?"
+      - "Are there urgency indicators to encourage immediate purchase?"
     benchmarks:
       - source: "Nielsen Norman Group"
-        finding: "Users want delivery date certainty early in the flow"
+        finding: "Delivery certainty early in flow reduces anxiety and abandonment"
       - source: "Best Practice"
-        finding: "Show estimated delivery dates and dispatch cutoffs"
-
-  - id: "payment_methods"
-    name: "Payment Method Visibility"
-    weight: 1.1
-    description: "Early indication of accepted payment methods"
-    evaluation_points:
-      - "Are payment method icons/logos visible on basket page?"
-      - "Can users see what payment options are available before checkout?"
-      - "Are payment security indicators present?"
-    benchmarks:
-      - source: "Best Practice"
-        finding: "Display accepted payment methods early to build confidence"
+        finding: "Show specific dates, not vague ranges; highlight urgency where applicable"
 
   - id: "express_checkout"
     name: "Express Checkout Options"
-    weight: 1.3
-    description: "Availability of Apple Pay, Google Pay, PayPal express options"
+    weight: 8
+    description: "One-click checkout options (Apple Pay, Google Pay, PayPal, Shop Pay)"
     evaluation_points:
-      - "Are express checkout buttons (Apple Pay, Google Pay, PayPal) visible?"
-      - "Are they prominently positioned?"
-      - "Is the value proposition clear (faster checkout)?"
+      - "Are express checkout buttons visible and prominent on basket page?"
+      - "Are they positioned ABOVE the standard checkout button?"
+      - "Do express checkout buttons appear on both desktop and mobile?"
+      - "Is the value proposition clear ('Skip forms' or 'Checkout in seconds')?"
+      - "Do buttons work without requiring account creation first?"
+    benchmarks:
+      - source: "UK Market"
+        finding: "Apple Pay adoption very high (40%+ of iPhone users actively use it)"
+      - source: "Baymard Institute"
+        finding: "Express checkout reduces friction by 30-50%, significantly boosting conversion"
+      - source: "Best Practice"
+        finding: "Multiple options (Apple Pay, Google Pay, PayPal), positioned prominently"
+
+  # TIER 2: Important Supporting Elements (Weight: 6-7)
+
+  - id: "quantity_management"
+    name: "Quantity Selection & Editing"
+    weight: 7
+    description: "Ease of changing quantities and removing items from basket"
+    evaluation_points:
+      - "Can quantities be changed with +/- buttons (not just dropdown or text input)?"
+      - "Does quantity change update price immediately without page reload?"
+      - "Is 'Remove' option clearly visible and accessible for each item?"
+      - "Are quantity limits communicated clearly if applicable (e.g., max 5 per order)?"
+      - "For large quantities: Can users type number directly for faster input?"
     benchmarks:
       - source: "Baymard Institute"
-        finding: "Express checkout can reduce checkout friction by 30-50%"
+        finding: "Friction in quantity changes leads to abandonment and frustration"
       - source: "Best Practice"
-        finding: "Offer express options above standard checkout CTA"
-
-  - id: "trust_signals"
-    name: "Trust Signals"
-    weight: 1.1
-    description: "Security badges, return policy, guarantees"
-    evaluation_points:
-      - "Are security badges or SSL indicators present?"
-      - "Is return policy easily accessible?"
-      - "Are there money-back guarantees or satisfaction promises?"
-      - "Is there social proof or trust messaging?"
-    benchmarks:
-      - source: "Nielsen Norman Group"
-        finding: "Trust signals reduce perceived risk"
-      - source: "Best Practice"
-        finding: "Include security badges near checkout CTA"
-
-  - id: "basket_summary"
-    name: "Basket Summary Clarity"
-    weight: 1.4
-    description: "Clarity of costs breakdown - subtotals, taxes, discounts, delivery"
-    evaluation_points:
-      - "Is there a clear itemized breakdown of costs?"
-      - "Are subtotal, tax, delivery, and discounts clearly separated?"
-      - "Is the total prominently displayed?"
-      - "Can users easily understand what they're paying?"
-    benchmarks:
-      - source: "Baymard Institute"
-        finding: "Hidden costs and unclear pricing are top abandonment reasons"
-      - source: "Best Practice"
-        finding: "Progressive disclosure of costs with clear labeling"
+        finding: "+/- buttons with immediate price update, clear remove option"
 
   - id: "cta_buttons"
-    name: "CTA Buttons"
-    weight: 1.3
-    description: "Copy, prominence, and placement of call-to-action buttons"
+    name: "Checkout CTA Clarity"
+    weight: 7
+    description: "Prominence, copy clarity, and positioning of checkout call-to-action"
     evaluation_points:
-      - "Is the primary CTA button prominently displayed?"
-      - "Is the button copy clear and action-oriented?"
-      - "Is there good visual hierarchy (size, color, position)?"
-      - "Are there competing CTAs that might cause confusion?"
+      - "Is primary CTA button highly prominent (strong color contrast, large size)?"
+      - "Is button copy action-oriented and clear ('Proceed to Checkout' not 'Next')?"
+      - "Is CTA sticky/fixed position on mobile for constant accessibility?"
+      - "Are there competing CTAs that might cause confusion or split attention?"
+      - "Does button text clearly indicate the next step in purchase flow?"
     benchmarks:
       - source: "Nielsen Norman Group"
-        finding: "Primary CTA should be visually dominant"
+        finding: "Primary CTA should be unmissable, visually dominant element"
       - source: "Best Practice"
-        finding: "Use action-oriented copy like 'Continue to Checkout' vs 'Next'"
+        finding: "High contrast color, large size, sticky on mobile, action-oriented copy"
 
-  - id: "basket_saving"
-    name: "Basket Saving Features"
-    weight: 1.0
-    description: "Save for later, wishlisting, or basket persistence features"
+  - id: "cross_sell_recommendations"
+    name: "Cross-Sell & Related Products"
+    weight: 6
+    description: "Relevant product recommendations displayed in basket area"
     evaluation_points:
-      - "Is there a 'Save for Later' or similar feature?"
-      - "Can users move items to a wishlist?"
-      - "Is basket persistence communicated?"
-      - "Are there options to share the basket?"
+      - "Are complementary products suggested (treats, toys, accessories, related food)?"
+      - "Are recommendations contextual and relevant to basket contents?"
+      - "Is 'Frequently bought together' functionality present and visible?"
+      - "Can users add recommendations to cart without leaving basket page?"
+      - "Are cross-sells helpful and relevant vs intrusive, spammy, or overwhelming?"
     benchmarks:
+      - source: "Amazon"
+        finding: "35% of revenue attributed to product recommendations"
       - source: "Best Practice"
-        finding: "Offer save for later to reduce permanent abandonment"
+        finding: "Contextual recommendations, easy add-to-cart, not overwhelming"
 
-  - id: "mobile_responsiveness"
-    name: "Mobile Responsiveness"
-    weight: 1.3
-    description: "Mobile UX optimization and touch target sizing"
+  - id: "payment_and_trust"
+    name: "Payment Options & Trust Signals"
+    weight: 6
+    description: "Payment method visibility and trust/security indicators"
     evaluation_points:
-      - "Does the page have responsive design indicators?"
-      - "Are touch targets appropriately sized?"
-      - "Is the layout mobile-optimized?"
-      - "Are key elements (CTA, summary) accessible on mobile?"
+      - "Are accepted payment methods shown with icons (Visa, Mastercard, PayPal, etc.)?"
+      - "Are trust badges present (SSL, secure checkout, verified merchant badges)?"
+      - "Is return policy easily accessible and clearly linked?"
+      - "Are customer service contact details visible and easy to find?"
+      - "Is there social proof or trust messaging (reviews, guarantees, ratings)?"
     benchmarks:
-      - source: "Google Mobile Best Practices"
-        finding: "61% of mobile users unlikely to return to a site they had trouble accessing"
+      - source: "Baymard Institute"
+        finding: "18% abandon due to trust and security concerns"
       - source: "Best Practice"
-        finding: "Touch targets min 44x44px, readable text without zoom"
+        finding: "Show payment icons, trust badges near CTA, accessible return policy"

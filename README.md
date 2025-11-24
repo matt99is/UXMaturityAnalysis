@@ -1,6 +1,6 @@
 # E-commerce UX Competitive Intelligence Agent
 
-**Version:** 1.2.1
+**Version:** 1.3.0
 **Status:** Production Ready
 **Python:** 3.9+
 
@@ -250,30 +250,59 @@ Criteria are defined in YAML files in the `criteria_config/` directory. Each pag
 **Available Page Types:**
 - **`homepage_pages.yaml`** - 8 criteria (Value Proposition, Navigation, Hero Section, Trust Signals, Search, Mobile, Content Hierarchy, Performance)
 - **`product_pages.yaml`** - 10 criteria (Product Imagery, Add to Cart CTA, Pricing Display, Reviews, Subscription Options, Delivery Info, Trust Signals, Cross-sell, Mobile, etc.)
-- **`basket_pages.yaml`** - 10 criteria (Discount Code Field, Shipping Cost Transparency, Delivery Estimates, Payment Methods, Express Checkout, Trust Signals, Basket Summary, CTA Buttons, Saving Features, Mobile)
+- **`basket_pages.yaml`** - 11 criteria (Shipping Cost Transparency, Subscription Options, Basket Summary, Product Information, Mobile Layout, Delivery Estimates, Express Checkout, Quantity Management, CTA Buttons, Cross-sell, Payment & Trust)
 - **`checkout_pages.yaml`** - 8 criteria (Form Design, Progress Indicators, Guest Checkout, Payment Variety, Error Prevention, Order Summary, Trust/Security, Mobile)
 
 **To customize criteria for a page type:**
 1. Open the relevant YAML file in `criteria_config/`
 2. Edit criteria definitions, weights, evaluation points, and benchmarks
-3. Run analysis - changes are applied automatically
+3. Optionally add `analysis_context` for market/domain-specific AI analysis
+4. Run analysis - changes are applied automatically (no code changes needed!)
 
 **Example criteria structure:**
 ```yaml
+name: "E-commerce Basket Page Analysis - UK Retail"
+requires_interaction: true
+interaction_prompt: "🛒 Please add 2-3 items to the basket, then press Enter to continue..."
+interaction_timeout: 300
+
+# Analysis Context - Market/domain-specific context for AI prompts (NEW in v1.3.0)
+analysis_context: |
+  **MARKET CONTEXT: UK Pet Food Retail**
+  This analysis focuses on basket/cart pages for UK pet food retailers. Key considerations:
+  - Subscription/auto-delivery is critical (Pets at Home VIP, Chewy Autoship model)
+  - Heavy products make shipping costs and free delivery thresholds highly sensitive
+  - Mobile traffic dominates (65%+ of UK pet supply shopping)
+
+  **Domain Expertise:**
+  - Baymard Institute research on cart abandonment
+  - UK pet retail market dynamics (subscription models, delivery expectations)
+
+viewports:
+  - name: "desktop"
+    width: 1920
+    height: 1080
+  - name: "mobile"
+    width: 375
+    height: 812
+
 criteria:
-  - id: "discount_code"
-    name: "Discount Code Field"
-    weight: 1.5
-    description: "Placement and clarity of discount code field"
+  - id: "shipping_cost_transparency"
+    name: "Shipping Cost & Free Delivery Threshold"
+    weight: 10
+    description: "Visibility of delivery costs and free shipping thresholds on basket page"
     evaluation_points:
-      - "Field visibility and placement"
-      - "Clear messaging about code application"
+      - "Are delivery costs displayed on basket page (not hidden until checkout)?"
+      - "Is free shipping threshold clearly shown (e.g., 'Add £5 for free delivery')?"
     benchmarks:
       - source: "Baymard Institute"
-        finding: "64% abandon if discount codes are confusing"
+        finding: "48% abandon due to unexpected shipping costs"
 ```
 
-Each criterion is evaluated against Baymard Institute and Nielsen Norman Group benchmarks.
+**Key Features:**
+- **Dynamic AI Context** (v1.3.0): The `analysis_context` field lets you provide market-specific expertise that adapts Claude's analysis
+- **Automatic Integration**: No code changes needed - just edit YAML and run
+- Each criterion is evaluated against Baymard Institute and Nielsen Norman Group benchmarks
 
 ## Output Structure
 
@@ -352,7 +381,61 @@ Four key metrics at the top of the report:
 - 💪 **Industry Strength**: Criterion where the market performs best overall
 - ⚠️ **Market Vulnerability**: Criterion where all competitors struggle (opportunity to differentiate)
 
-#### **2. Visual Analysis Charts**
+#### **2. Strategic Insights** 🆕 v1.3.0
+
+Four executive-focused insight cards positioned for immediate strategic visibility:
+
+**Market Leaders Card**
+- Top 3 competitors by overall score
+- Key differentiator for each (their strongest criterion)
+- Helps identify who to benchmark against
+
+**Top Opportunities Card**
+- Industry-wide weaknesses (60%+ scoring below 6)
+- Percentage of market struggling with each criterion
+- Potential score gain if you excel
+- Example: "Subscription UX - 60% of market scores below 5. Potential: +2.5pts vs avg competitor"
+
+**Competitive Threats Card**
+- Standout strengths from market leaders (9+ scores)
+- Specific competitor + their exceptional capability
+- Recommended action to counter the threat
+- Example: "Pets at Home: Subscription UX (9.5/10) - Action: Must match subscription prominence"
+
+**Quick Wins Card**
+- Common gaps across 60%+ of competitors
+- Criteria where most competitors score below 6
+- Est. 30-day implementation timeframe
+- Estimated impact: "+1.5 points overall score, +8-12% conversion"
+
+**How to Use:**
+- Strategic planning: Identify differentiation opportunities (Top Opportunities)
+- Competitive positioning: Understand who leads where (Market Leaders, Threats)
+- Prioritization: Focus on Quick Wins for immediate gains
+- Executive presentations: Use these 4 cards for concise strategic summary
+
+#### **3. Overall Rankings** 🆕 v1.3.0
+
+Complete competitive ranking table showing all competitors:
+
+**Columns:**
+- **Rank**: Badge (🥇 Gold, 🥈 Silver, 🥉 Bronze for top 3)
+- **Competitor**: Company name
+- **Overall Score**: Color-coded (🟢 Green 8+, 🟠 Orange 6-8, 🔴 Red <6)
+- **Competitive Position**: Automatic classification
+  - Market Leader (8.0+): Significantly above average
+  - Strong Contender (6.5-7.9): At or near average
+  - Competitive (5.0-6.4): Below average but viable
+  - Vulnerable (<5.0): Significantly behind
+- **Key Differentiator**: Each competitor's strongest criterion
+
+**How to Use:**
+- Quick competitive landscape overview
+- Identify your relative position in the market
+- See where competitors differentiate
+- Share with stakeholders for instant understanding
+
+#### **4. Visual Analysis Charts**
 
 **Radar Chart - Competitive UX Comparison**
 - Shows all competitors overlaid on same axes
@@ -370,12 +453,7 @@ Four key metrics at the top of the report:
 - Shows which competitor scores highest on each criterion
 - Use to: Identify best-in-class references for each UX element
 
-**Box Plot - Score Distribution**
-- Shows score consistency for each competitor
-- Box = middle 50% of scores, line = median
-- Use to: See who has consistent vs. inconsistent UX quality
-
-#### **3. Filter & Search Panel**
+#### **5. Filter & Search Panel**
 
 Interactive controls to explore the data:
 - **Search Competitor**: Type name to filter competitor cards
@@ -385,7 +463,7 @@ Interactive controls to explore the data:
 
 Filter count shows: "Showing X of Y competitors"
 
-#### **4. Competitor Profiles**
+#### **6. Competitor Profiles**
 
 Each competitor card shows:
 
@@ -418,7 +496,7 @@ Each competitor card shows:
 - Key differentiator (if any)
 - Links to detailed findings in individual analysis JSON
 
-#### **5. Interactive Features**
+#### **7. Interactive Features**
 
 **Lightbox Gallery**:
 - Click any screenshot → Full-screen modal opens
@@ -439,24 +517,28 @@ Each competitor card shows:
 #### **How to Use the Report**
 
 **For Strategic Planning:**
-1. Check Executive Summary → Identify market leader
-2. Review Market Vulnerability insight → Find differentiation opportunities
-3. Use Heatmap → Spot patterns and white space
+1. Start with Strategic Insights → Get immediate actionable intelligence
+2. Review Top Opportunities → Identify differentiation areas
+3. Check Overall Rankings → Understand competitive landscape
+4. Use Heatmap → Spot patterns and white space
 
 **For Competitive Benchmarking:**
-1. Use Search filter → Find specific competitor
-2. Review their Advantages/Vulnerabilities
-3. Check Bar Chart → See where they lead the market
+1. Check Overall Rankings table → See relative positions
+2. Review Market Leaders card → Identify who to benchmark
+3. Look at Competitive Threats → Understand what you're up against
+4. Use Search filter → Deep dive on specific competitor
 
 **For UX Prioritization:**
-1. Look at Industry Strength → These are table stakes
-2. Find Market Vulnerability → Opportunity to lead
-3. Check your position on each criterion → Plan improvements
+1. Quick Wins card → Immediate 30-day priorities
+2. Top Opportunities card → Medium-term differentiation plays
+3. Industry Strength insight → These are table stakes
+4. Market Vulnerability insight → Long-term leadership areas
 
 **For Executive Presentations:**
-1. Use Radar Chart → Show competitive positioning visually
-2. Reference Key Insights box → Quick strategic summary
-3. Screenshots with annotations → Show specific examples
+1. Strategic Insights 4-card summary → Concise strategic story
+2. Overall Rankings table → Competitive position at a glance
+3. Radar Chart → Visual competitive positioning
+4. Screenshots with annotations → Specific examples
 
 ### Individual Competitor Analysis
 
@@ -641,6 +723,8 @@ MOBILE_VIEWPORT_HEIGHT=812
 ## Roadmap
 
 **Recently Completed** ✅
+- [x] Dynamic analysis context system (v1.3.0)
+- [x] Strategic insights and rankings (v1.3.0)
 - [x] Interactive HTML reports with embedded screenshots (v1.2.0)
 - [x] Screenshot annotations with visual findings (v1.2.0)
 - [x] Real-time filtering and search (v1.2.0)
@@ -663,9 +747,17 @@ This project uses [Semantic Versioning](https://semver.org/):
 - **MINOR** version for added functionality in a backward compatible manner
 - **PATCH** version for backward compatible bug fixes
 
-**Current Version:** 1.2.1
+**Current Version:** 1.3.0
 
 ### Version History
+
+**v1.3.0 (2025-11-24)** - Dynamic Analysis Context & Strategic Insights
+- ✨ **Dynamic analysis context system** - AI prompts adapt to page type via `analysis_context` YAML field
+- ✨ **Strategic Insights section** - Market leaders, opportunities, threats, and quick wins
+- ✨ **Overall Rankings table** - Complete competitive positioning with rank badges
+- 🎨 Removed score distribution chart (redundant with heatmap)
+- 🔧 Refactored Claude analyzer for maximum flexibility across analysis types
+- 📝 Updated configuration system for per-analysis-type context customization
 
 **v1.2.1 (2025-11-21)** - Retry Mechanism & Bug Fixes
 - ✨ Interactive retry prompt for failed analyses
