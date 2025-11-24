@@ -466,38 +466,66 @@ class UXAnalysisOrchestrator:
             if not self.manual_mode:
                 await self.screenshot_capturer.close_browser()
 
-            # PHASE 2: Analyze all screenshots
-            self.console.print("\n[bold cyan]═══ Phase 2: AI Analysis ═══[/bold cyan]")
-            self.console.print("[dim]Claude will now analyze all captured screenshots[/dim]\n")
+            # PHASE 2: Analyze all screenshots in parallel
+            self.console.print("\n[bold cyan]═══ Phase 2: AI Analysis (Parallel) ═══[/bold cyan]")
+            self.console.print("[dim]Claude will now analyze all captured screenshots concurrently[/dim]\n")
 
-            results = []
+            # Separate successful captures from failed ones
             successful_captures = [d for d in captured_data if d.get("success")]
+            failed_captures = [d for d in captured_data if not d.get("success")]
 
-            for i, capture_data in enumerate(captured_data, 1):
-                if not capture_data.get("success"):
-                    # Capture failed/skipped - add to results as-is
-                    results.append(capture_data)
-                    continue
+            self.console.print(f"[bold]Analyzing {len(successful_captures)} competitors in parallel...[/bold]")
 
-                self.console.print(f"[bold]Analyzing {i}/{len(captured_data)}...[/bold]")
+            # Create analysis tasks for all successful captures
+            analysis_tasks = [
+                self.analyze_competitor_from_screenshots(capture_data)
+                for capture_data in successful_captures
+            ]
 
-                # Analyze this competitor's screenshots
-                analysis_result = await self.analyze_competitor_from_screenshots(capture_data)
-                results.append(analysis_result)
+            # Run all analyses in parallel
+            if analysis_tasks:
+                analysis_results = await asyncio.gather(*analysis_tasks, return_exceptions=True)
 
-                # Save individual competitor analysis if audit structure provided
-                if audit_structure and analysis_result.get("success"):
-                    try:
-                        analysis_path = get_analysis_path(
-                            audit_structure['competitors'],
-                            capture_data['site_name']
-                        )
-                        self.report_generator.save_competitor_analysis(
-                            analysis_result,  # Already flattened
-                            analysis_path
-                        )
-                    except Exception as e:
-                        self.console.print(f"  [yellow]Warning: Could not save competitor analysis: {e}[/yellow]")
+                # Process results and handle any exceptions
+                processed_results = []
+                for i, (capture_data, analysis_result) in enumerate(zip(successful_captures, analysis_results)):
+                    # Check if result is an exception
+                    if isinstance(analysis_result, Exception):
+                        self.console.print(f"  [red]✗ {capture_data['site_name']}: {str(analysis_result)}[/red]")
+                        processed_results.append({
+                            "success": False,
+                            "site_name": capture_data['site_name'],
+                            "url": capture_data['url'],
+                            "error": str(analysis_result)
+                        })
+                    else:
+                        if analysis_result.get("success"):
+                            self.console.print(f"  [green]✓ {capture_data['site_name']}[/green]")
+                        else:
+                            self.console.print(f"  [yellow]⚠ {capture_data['site_name']}: {analysis_result.get('error', 'Unknown error')}[/yellow]")
+                        processed_results.append(analysis_result)
+
+                        # Save individual competitor analysis if audit structure provided
+                        if audit_structure and analysis_result.get("success"):
+                            try:
+                                analysis_path = get_analysis_path(
+                                    audit_structure['competitors'],
+                                    capture_data['site_name']
+                                )
+                                self.report_generator.save_competitor_analysis(
+                                    analysis_result,  # Already flattened
+                                    analysis_path
+                                )
+                            except Exception as e:
+                                self.console.print(f"  [yellow]Warning: Could not save {capture_data['site_name']}: {e}[/yellow]")
+
+                # Combine failed captures with processed analysis results
+                results = failed_captures + processed_results
+            else:
+                # No successful captures to analyze
+                results = failed_captures
+
+            self.console.print(f"\n[bold green]✓ Parallel analysis complete![/bold green]")
 
             # PHASE 2.5: Retry failed analyses if any
             failed_results = [r for r in results if not r.get('success')]

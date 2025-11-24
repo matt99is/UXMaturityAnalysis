@@ -1,5 +1,26 @@
 name: "Product Page Analysis"
 requires_interaction: false
+
+# Analysis Context - Market and domain-specific context for AI analysis
+analysis_context: |
+  **MARKET CONTEXT: E-commerce Product Detail Page (PDP) Optimization**
+  This analysis focuses on product page effectiveness for e-commerce conversion. Key considerations:
+  - Product pages are the highest-intent pages (users actively considering purchase)
+  - 56% of users cite product images as the most important purchase decision factor
+  - Social proof (reviews, ratings) can increase conversion by 18-270% depending on category
+  - Add to cart CTA prominence is the single biggest conversion driver on PDPs
+  - Mobile product page experience is critical (65%+ of product browsing on mobile)
+  - Clear pricing and delivery information reduces pre-checkout abandonment
+  - Product information completeness directly correlates with lower return rates
+
+  **Domain Expertise:**
+  - Baymard Institute research on product page conversion optimization
+  - Nielsen Norman Group guidelines for product imagery and detail presentation
+  - Social proof and review display best practices (star ratings, verified purchase badges)
+  - Mobile product page patterns (sticky add-to-cart, swipeable image galleries)
+  - Subscription/recurring purchase integration (Subscribe & Save models)
+  - Cross-sell and upsell positioning strategies
+
 viewports:
   - name: "desktop"
     width: 1920

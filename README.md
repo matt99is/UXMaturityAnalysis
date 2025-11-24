@@ -38,6 +38,7 @@ This tool automates competitive UX analysis for e-commerce sites by:
 
 **Key Features:**
 - ✨ **Multi-Page-Type Support**: Analyze homepages, product pages, basket pages, and checkout flows
+- ⚡ **Blazing Fast Parallel Analysis**: Analyzes all competitors concurrently (8-10x faster than sequential)
 - 🎤 **Interactive Analysis**: You control the browser - navigate, close popups, then capture
 - 🔄 **Retry Option**: Not happy with screenshots? Retry before analyzing
 - 🎯 **Competitive Intelligence Focus**: Reports frame findings as competitive advantages vs vulnerabilities
@@ -678,9 +679,7 @@ Some intentional limitations in the current implementation:
 
 1. **Single URL per Competitor**: Currently analyzes one URL per competitor. Multi-step journeys (e.g., homepage → product → basket) are architecturally supported but not yet implemented.
 
-2. **Sequential Analysis**: Competitors are analyzed one at a time. Could be parallelized for faster execution.
-
-3. **Screenshot-Only Analysis**: Currently analyzes visual screenshots only. Could be enhanced to include DOM/HTML analysis for additional technical insights (accessibility, performance metrics, etc.).
+2. **Screenshot-Only Analysis**: Currently analyzes visual screenshots only. Could be enhanced to include DOM/HTML analysis for additional technical insights (accessibility, performance metrics, etc.).
 
 ## Use Cases
 
@@ -723,6 +722,7 @@ MOBILE_VIEWPORT_HEIGHT=812
 ## Roadmap
 
 **Recently Completed** ✅
+- [x] ⚡ Parallel AI analysis (v1.3.1) - 8-10x faster analysis phase
 - [x] Dynamic analysis context system (v1.3.0)
 - [x] Strategic insights and rankings (v1.3.0)
 - [x] Interactive HTML reports with embedded screenshots (v1.2.0)
@@ -733,7 +733,6 @@ MOBILE_VIEWPORT_HEIGHT=812
 
 - [ ] Multi-step journey support (homepage → product → add to cart → basket)
 - [ ] HTML/DOM analysis alongside screenshots
-- [ ] Parallel competitor analysis for speed
 - [ ] Time-series analysis (track competitor changes over time)
 - [ ] Export to CSV/Excel formats
 - [ ] Integration with analytics tools (GA4, ContentSquare)

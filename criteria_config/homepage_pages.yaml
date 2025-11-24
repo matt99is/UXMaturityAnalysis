@@ -1,5 +1,24 @@
 name: "Homepage Analysis"
 requires_interaction: false
+
+# Analysis Context - Market and domain-specific context for AI analysis
+analysis_context: |
+  **MARKET CONTEXT: E-commerce Homepage Optimization**
+  This analysis focuses on homepage effectiveness for e-commerce sites. Key considerations:
+  - First impression is critical - users decide within 10-20 seconds if site is worth their time
+  - Value proposition clarity determines bounce rate and site engagement
+  - Navigation structure directly impacts product discovery and conversion paths
+  - Homepage serves as primary entry point for ~40% of site traffic
+  - Mobile-first design is essential (60%+ of traffic on mobile)
+  - Trust signals on homepage reduce perceived risk and increase brand credibility
+
+  **Domain Expertise:**
+  - Nielsen Norman Group research on homepage usability and first impressions
+  - Baymard Institute studies on homepage design patterns and conversion optimization
+  - Information architecture best practices for category navigation
+  - Above-the-fold optimization principles (critical messaging within first viewport)
+  - Mobile homepage patterns (progressive disclosure, simplified navigation)
+
 viewports:
   - name: "desktop"
     width: 1920

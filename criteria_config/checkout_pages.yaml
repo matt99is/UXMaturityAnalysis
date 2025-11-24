@@ -2,6 +2,30 @@ name: "Checkout Flow Analysis"
 requires_interaction: true
 interaction_prompt: "Please navigate through the checkout process to the final payment step (do not submit payment)"
 interaction_timeout: 300
+
+# Analysis Context - Market and domain-specific context for AI analysis
+analysis_context: |
+  **MARKET CONTEXT: E-commerce Checkout Optimization & Cart Abandonment**
+  This analysis focuses on checkout flow optimization and friction reduction. Key considerations:
+  - Average cart abandonment rate is 69.9% across e-commerce (Baymard Institute)
+  - Checkout is the highest-friction, highest-value touchpoint in the customer journey
+  - Every additional form field reduces conversion by ~5%
+  - 25% of users abandon due to long/complicated checkout processes
+  - 18% abandon due to concerns about payment security
+  - Guest checkout availability can improve conversion by 45%
+  - Express checkout options (Apple Pay, Google Pay) reduce friction by 30-50%
+  - Mobile checkout completion rates are 30% lower than desktop (optimization critical)
+
+  **Domain Expertise:**
+  - Baymard Institute extensive checkout usability research (100+ studies)
+  - Nielsen Norman Group form design and error prevention guidelines
+  - Payment method variety and trust signal best practices
+  - Multi-step vs single-page checkout performance data
+  - Progress indicators and psychological flow optimization
+  - Mobile checkout patterns (larger tap targets, simplified forms, autofill)
+  - Guest checkout vs account creation conversion impact
+  - Order summary visibility and edit capabilities
+
 viewports:
   - name: "desktop"
     width: 1920
