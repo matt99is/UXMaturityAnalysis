@@ -1,6 +1,6 @@
 # E-commerce UX Competitive Intelligence Agent
 
-**Version:** 1.3.0
+**Version:** 1.3.1
 **Status:** Production Ready
 **Python:** 3.9+
 
@@ -746,9 +746,15 @@ This project uses [Semantic Versioning](https://semver.org/):
 - **MINOR** version for added functionality in a backward compatible manner
 - **PATCH** version for backward compatible bug fixes
 
-**Current Version:** 1.3.0
+**Current Version:** 1.3.1
 
 ### Version History
+
+**v1.3.1 (2025-11-24)** - Performance Optimization & Context Completion
+- ⚡ **Parallel AI analysis** - 8-10x faster Phase 2 execution using `asyncio.gather()`
+- ⚡ Real-time progress indicators (✓/✗/⚠) for parallel analysis
+- ✨ **Completed analysis context** for all page types (homepage, product, checkout)
+- 📝 Removed "Sequential Analysis" limitation from documentation
 
 **v1.3.0 (2025-11-24)** - Dynamic Analysis Context & Strategic Insights
 - ✨ **Dynamic analysis context system** - AI prompts adapt to page type via `analysis_context` YAML field

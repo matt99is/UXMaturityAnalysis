@@ -5,16 +5,28 @@ All notable changes to the E-commerce UX Competitive Intelligence Agent will be 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.1] - 2025-11-24
 
 ### Performance
 - **⚡ Parallel AI Analysis**: Phase 2 now analyzes all competitors concurrently
   - Changed from sequential to parallel execution using `asyncio.gather()`
   - **8-10x faster** for multi-competitor analyses
   - Example: 10 competitors now analyzed in ~30-45 seconds vs 5 minutes
-  - Real-time progress indicators show which competitors completed
+  - Real-time progress indicators show which competitors completed (✓/✗/⚠)
   - Maintains same quality and error handling
   - No configuration changes needed - automatic speedup
+
+### Added
+- **Analysis Context for All Page Types**: Completed dynamic context implementation
+  - `homepage_pages.yaml`: E-commerce homepage optimization context
+  - `product_pages.yaml`: Product detail page (PDP) conversion context
+  - `checkout_pages.yaml`: Checkout optimization & cart abandonment context
+  - Each config now has tailored market/domain expertise for AI analysis
+
+### Documentation
+- Updated README.md with parallel analysis feature
+- Removed "Sequential Analysis" limitation (now resolved)
+- Updated roadmap to reflect completed parallel analysis
 
 ## [1.3.0] - 2025-11-24
 
