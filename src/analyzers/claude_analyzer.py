@@ -8,7 +8,7 @@ customized for different analysis types by injecting criteria from config.
 import os
 import base64
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import anthropic
 from anthropic import Anthropic
 import json
