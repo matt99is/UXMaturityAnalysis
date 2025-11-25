@@ -1567,19 +1567,6 @@ class HTMLReportGenerator:
                 }
             });
 
-            // Filter ranking table rows
-            rankingRows.forEach(row => {
-                const competitorCell = row.cells[1];
-                if (competitorCell) {
-                    const competitorName = competitorCell.textContent.trim().toLowerCase();
-                    if (visibleCompetitors.includes(competitorName)) {
-                        row.classList.remove('filtered-out');
-                    } else {
-                        row.classList.add('filtered-out');
-                    }
-                }
-            });
-
             // Update count
             filterCount.textContent = `Showing ${visibleCount} of ${cards.length} competitors`;
 
@@ -1588,13 +1575,68 @@ class HTMLReportGenerator:
         }
 
         function updateCharts(visibleCompetitors) {
-            // This function will re-render Plotly charts with only visible competitors
-            // We need to store the original chart data and filter it
-            if (visibleCompetitors.length === 0) return;
+            // Re-render Plotly charts with only visible competitors
 
-            // For now, we'll hide/show traces in Plotly charts
-            // This is a placeholder - full implementation depends on chart structure
-            console.log('Filtering charts for:', visibleCompetitors);
+            // If no competitors visible, show all
+            const showAll = !visibleCompetitors || visibleCompetitors.length === 0;
+
+            // Update Radar Chart
+            const radarDiv = document.getElementById('radar-chart');
+            if (radarDiv && radarDiv.data) {
+                const visibility = radarDiv.data.map(trace => {
+                    if (showAll) return true;
+                    return visibleCompetitors.includes(trace.name.toLowerCase()) ? true : 'legendonly';
+                });
+                Plotly.restyle('radar-chart', { visible: visibility },
+                    Array.from({length: radarDiv.data.length}, (_, i) => i));
+            }
+
+            // Update Bar Chart
+            const barDiv = document.getElementById('bar-chart');
+            if (barDiv && barDiv.data) {
+                const visibility = barDiv.data.map(trace => {
+                    if (showAll) return true;
+                    return visibleCompetitors.includes(trace.name.toLowerCase()) ? true : 'legendonly';
+                });
+                Plotly.restyle('bar-chart', { visible: visibility },
+                    Array.from({length: barDiv.data.length}, (_, i) => i));
+            }
+
+            // Update Heatmap (requires data filtering and redraw)
+            const heatmapDiv = document.getElementById('heatmap');
+            if (heatmapDiv && heatmapDiv.data) {
+                // Store original data on first call
+                if (!window.originalHeatmapData) {
+                    window.originalHeatmapData = JSON.parse(JSON.stringify(heatmapDiv.data));
+                }
+
+                if (showAll) {
+                    // Restore original data
+                    Plotly.react('heatmap', window.originalHeatmapData, heatmapDiv.layout);
+                } else {
+                    // Filter heatmap by y-axis labels (competitors)
+                    const originalData = window.originalHeatmapData[0];
+                    const filteredIndices = [];
+                    const filteredY = [];
+                    const filteredZ = [];
+
+                    originalData.y.forEach((comp, idx) => {
+                        if (visibleCompetitors.includes(comp.toLowerCase())) {
+                            filteredIndices.push(idx);
+                            filteredY.push(comp);
+                            filteredZ.push(originalData.z[idx]);
+                        }
+                    });
+
+                    const filteredData = [{
+                        ...originalData,
+                        y: filteredY,
+                        z: filteredZ
+                    }];
+
+                    Plotly.react('heatmap', filteredData, heatmapDiv.layout);
+                }
+            }
         }
 
         function resetFilters() {
@@ -1605,10 +1647,42 @@ class HTMLReportGenerator:
             applyFilters();
         }
 
-        // Initialize filter count
+        // Initialize filters and build dynamic dropdown
         document.addEventListener('DOMContentLoaded', function() {
-            const totalCards = document.querySelectorAll('.competitor-card').length;
+            const cards = document.querySelectorAll('.competitor-card');
+            const totalCards = cards.length;
             filterCount.textContent = `Showing ${totalCards} competitors`;
+
+            // Build dynamic filter dropdown based on available tiers
+            const availableTiers = new Map();
+            cards.forEach(card => {
+                const tier = card.getAttribute('data-tier');
+                if (tier) {
+                    availableTiers.set(tier, (availableTiers.get(tier) || 0) + 1);
+                }
+            });
+
+            // Tier labels and display order
+            const tierConfig = [
+                { value: 'market_leader', label: 'Market Leader' },
+                { value: 'strong_contender', label: 'Strong Contender' },
+                { value: 'competitive', label: 'Competitive' },
+                { value: 'vulnerable', label: 'Vulnerable' }
+            ];
+
+            // Rebuild status filter dropdown
+            const statusFilter = document.getElementById('statusFilter');
+            statusFilter.innerHTML = '<option value="all">All Status</option>';
+
+            tierConfig.forEach(tier => {
+                if (availableTiers.has(tier.value)) {
+                    const count = availableTiers.get(tier.value);
+                    const option = document.createElement('option');
+                    option.value = tier.value;
+                    option.textContent = `${tier.label} (${count})`;
+                    statusFilter.appendChild(option);
+                }
+            });
         });
 
         // Toggle card collapse/expand
