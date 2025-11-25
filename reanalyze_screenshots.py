@@ -24,16 +24,35 @@ async def reanalyze_audit(audit_path: str):
         print(f"Error: Audit directory not found: {audit_path}")
         return
 
-    # Load audit summary to get analysis type
+    # Load audit summary if exists, otherwise create minimal one
     summary_path = audit_dir / "_audit_summary.json"
-    if not summary_path.exists():
-        print(f"Error: Audit summary not found: {summary_path}")
-        return
+    if summary_path.exists():
+        with open(summary_path, 'r') as f:
+            audit_summary = json.load(f)
+        analysis_type = audit_summary.get('analysis_type', 'basket_pages')
+    else:
+        # Infer analysis type from folder name
+        folder_name = audit_dir.name
+        if 'basket' in folder_name or 'cart' in folder_name:
+            analysis_type = 'basket_pages'
+        elif 'product' in folder_name:
+            analysis_type = 'product_pages'
+        elif 'checkout' in folder_name:
+            analysis_type = 'checkout_pages'
+        elif 'homepage' in folder_name:
+            analysis_type = 'homepage_pages'
+        else:
+            analysis_type = 'basket_pages'  # Default
 
-    with open(summary_path, 'r') as f:
-        audit_summary = json.load(f)
+        print(f"No audit summary found. Inferring analysis type from folder name: {analysis_type}")
 
-    analysis_type = audit_summary.get('analysis_type', 'basket_pages')
+        # Create minimal audit summary
+        audit_summary = {
+            'analysis_type': analysis_type,
+            'timestamp': folder_name.split('_')[0] if '_' in folder_name else 'unknown',
+            'created_by': 'reanalysis_script'
+        }
+
     print(f"Analysis type: {analysis_type}")
 
     # Load config for analysis type
