@@ -119,8 +119,8 @@ async def reanalyze_audit(audit_path: str):
 
     # Reuse the existing audit structure
     audit_structure = {
-        'audit_root': str(audit_dir),
-        'competitors': {comp['site_name']: str(audit_dir / comp['site_name']) for comp in competitors_data}
+        'audit_root': audit_dir,  # Keep as Path object, not string
+        'competitors': {comp['site_name']: audit_dir / comp['site_name'] for comp in competitors_data}
     }
 
     # Run Phase 2 analysis only
