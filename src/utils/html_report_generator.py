@@ -198,6 +198,8 @@ class HTMLReportGenerator:
                 [0.8, '#388e3c'],    # Green (8-9)
                 [1, '#1b5e20']       # Dark green (9-10)
             ],
+            zmin=0,  # Fix: Set explicit min to prevent auto-scaling
+            zmax=10, # Fix: Set explicit max to prevent auto-scaling
             text=scores_matrix,
             texttemplate='%{text:.1f}',
             textfont={"size": 12, "color": "white"},
