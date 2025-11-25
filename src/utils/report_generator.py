@@ -717,19 +717,3 @@ class ReportGenerator:
     def _get_site_name(self, result: Dict[str, Any]) -> str:
         """Extract site name from result."""
         return result.get("site_name", "Unknown")
-
-
-# EXTENSIBILITY NOTE: Future enhancement for additional report formats
-class HTMLReportGenerator(ReportGenerator):
-    """
-    HTML report generator with interactive features.
-
-    Future capability: Generate interactive HTML reports with
-    charts, screenshots embedded, and filterable criteria.
-    """
-
-    def generate_html_report(self, analysis_results: List[Dict[str, Any]]) -> str:
-        """Generate interactive HTML report."""
-        raise NotImplementedError(
-            "HTML report generation will be implemented in future iteration."
-        )

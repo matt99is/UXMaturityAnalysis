@@ -48,7 +48,7 @@ from src.utils.audit_organizer import (
     get_audit_summary_path,
     generate_audit_summary
 )
-from src.utils.page_type_detector import detect_page_type, get_page_type_display_name
+from src.utils.page_type_detector import get_page_type_display_name
 from src.version import __version__, __title__
 
 
