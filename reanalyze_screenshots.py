@@ -14,8 +14,12 @@ import sys
 import os
 import json
 from pathlib import Path
+from dotenv import load_dotenv
 from main import UXAnalysisOrchestrator
 from src.config_loader import AnalysisConfig
+
+# Load environment variables from .env file
+load_dotenv()
 
 async def reanalyze_audit(audit_path: str):
     """Reanalyze all competitors in an existing audit folder."""
