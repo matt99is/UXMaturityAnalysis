@@ -135,6 +135,15 @@ Return your analysis as a JSON object with this exact structure:
   ]
 }}
 
+**IMPORTANT JSON FORMATTING RULES:**
+- All string values MUST properly escape special characters
+- Use \\n for newlines within strings (not actual line breaks)
+- Use \\" for quotes within strings
+- Ensure all strings are properly terminated with closing quotes
+- Ensure all objects and arrays are properly closed with }} or ]
+- Do NOT include any text outside the JSON object
+- Validate that your JSON is syntactically correct before responding
+
 Be specific and reference what you actually see in the screenshots. Think like a competitive strategist analyzing a rival. If something cannot be determined from the screenshot, note it as "Cannot verify from screenshot."
 """
         return prompt
@@ -163,6 +172,19 @@ Be specific and reference what you actually see in the screenshots. Think like a
             img = rgb_img
         elif img.mode != 'RGB':
             img = img.convert('RGB')
+
+        # Check dimensions - Claude API has 8000 pixel max per dimension
+        MAX_DIMENSION = 8000
+        original_size = (img.width, img.height)
+        if img.width > MAX_DIMENSION or img.height > MAX_DIMENSION:
+            # Calculate scale factor to fit within max dimension
+            scale_factor = min(MAX_DIMENSION / img.width, MAX_DIMENSION / img.height)
+            new_width = int(img.width * scale_factor)
+            new_height = int(img.height * scale_factor)
+            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            print(f"  [DEBUG] Resized image from {original_size} to ({new_width}, {new_height})")
+        else:
+            print(f"  [DEBUG] Image dimensions OK: {original_size}")
 
         # Check if we need aggressive compression
         file_size = os.path.getsize(image_path)
@@ -271,7 +293,24 @@ Be specific and reference what you actually see in the screenshots. Think like a
             else:
                 json_text = response_text
 
-            analysis_result = json.loads(json_text)
+            # Try to parse JSON - if it fails, save the raw response for debugging
+            try:
+                analysis_result = json.loads(json_text)
+            except json.JSONDecodeError as json_error:
+                # Save malformed response to file for debugging
+                debug_path = Path("output/debug_malformed_json")
+                debug_path.mkdir(parents=True, exist_ok=True)
+                timestamp = Path(screenshot_paths[0]).parent.parent.name if screenshot_paths else "unknown"
+                debug_file = debug_path / f"{site_name.replace(' ', '_')}_{timestamp}.txt"
+                with open(debug_file, 'w') as f:
+                    f.write(f"=== MALFORMED JSON DEBUG ===\n")
+                    f.write(f"Site: {site_name}\n")
+                    f.write(f"Error: {json_error}\n\n")
+                    f.write(f"=== EXTRACTED JSON TEXT ===\n")
+                    f.write(json_text)
+                    f.write(f"\n\n=== FULL RESPONSE ===\n")
+                    f.write(response_text)
+                raise  # Re-raise the original error
 
             # Add metadata
             analysis_result["screenshots_analyzed"] = screenshot_paths
@@ -283,10 +322,21 @@ Be specific and reference what you actually see in the screenshots. Think like a
             }
 
         except json.JSONDecodeError as e:
+            # Provide detailed error with context
+            error_msg = f"Failed to parse Claude response as JSON: {e}"
+
+            # Try to show context around the error
+            if 'json_text' in locals():
+                error_pos = getattr(e, 'pos', 0)
+                start = max(0, error_pos - 100)
+                end = min(len(json_text), error_pos + 100)
+                context = json_text[start:end]
+                error_msg += f"\n\nContext around error:\n...{context}..."
+
             return {
                 "success": False,
-                "error": f"Failed to parse Claude response as JSON: {e}",
-                "raw_response": response_text if 'response_text' in locals() else None
+                "error": error_msg,
+                "raw_response": json_text if 'json_text' in locals() else (response_text if 'response_text' in locals() else None)
             }
 
         except Exception as e:

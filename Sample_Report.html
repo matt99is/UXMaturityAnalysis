@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-commerce Basket Page Analysis - UK Pet Food Retail - Competitive Intelligence Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Lightbox Modal */
+        .lightbox-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.95);
+            align-items: center;
+            justify-content: center;
+        }
+        .lightbox-modal.active {
+            display: flex;
+        }
+        .lightbox-content {
+            position: relative;
+            max-width: 95%;
+            max-height: 95%;
+            animation: zoomIn 0.3s;
+        }
+        .lightbox-content img {
+            max-width: 100%;
+            max-height: 95vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 0 50px rgba(255,255,255,0.2);
+        }
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10000;
+            background: rgba(0,0,0,0.5);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .lightbox-close:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+            background: rgba(0,0,0,0.5);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .lightbox-nav:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-50%) scale(1.1);
+        }
+        .lightbox-prev {
+            left: 20px;
+        }
+        .lightbox-next {
+            right: 20px;
+        }
+        .lightbox-caption {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            max-width: 80%;
+            text-align: center;
+        }
+        @keyframes zoomIn {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Filter Controls */
+        .filter-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+        }
+        .filter-panel .form-label {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        .filter-panel .form-select,
+        .filter-panel .form-control {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 15px;
+        }
+        .filter-panel .form-select:focus,
+        .filter-panel .form-control:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+        .filter-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            background: #10b981;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .filter-badge:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+        .filter-badge.active {
+            background: #48bb78;
+        }
+        .reset-filters-btn {
+            background: linear-gradient(135deg, #f56565 0%, #ed8936 100%);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .reset-filters-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(245, 101, 101, 0.4);
+        }
+        .filter-results-count {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-top: 10px;
+        }
+
+        /* Make competitor cards filterable */
+        .filtered-out {
+            display: none !important;
+        }
+
+        /* Enhanced Screenshot Gallery */
+        .screenshot-gallery {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .screenshot-thumb {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .screenshot-thumb:hover {
+            border-color: #10b981;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        .screenshot-thumb img {
+            width: 250px;
+            height: auto;
+            display: block;
+        }
+        .screenshot-thumb .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(16, 185, 129, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+            color: white;
+            font-size: 2rem;
+        }
+        .screenshot-thumb:hover .overlay {
+            opacity: 1;
+        }
+        .screenshot-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    </style>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 20px 0;
+        }
+        .container-main {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            margin-bottom: 40px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 3px solid #10b981;
+        }
+        .header h1 {
+            color: #2d3748;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .header .subtitle {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .stat-card .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .chart-container {
+            background: #f7fafc;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .competitor-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        .competitor-card:hover {
+            border-color: #10b981;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+            transform: translateY(-2px);
+        }
+        .competitor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .competitor-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        .overall-score {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #10b981;
+        }
+        .score-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        .score-excellent { background: #48bb78; color: white; }
+        .score-good { background: #38b2ac; color: white; }
+        .score-average { background: #ed8936; color: white; }
+        .score-poor { background: #f56565; color: white; }
+        .criterion-row {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            background: #f7fafc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .criterion-name {
+            font-weight: 600;
+            color: #2d3748;
+            flex: 1;
+        }
+        .criterion-score {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-left: 15px;
+        }
+        .progress-bar-custom {
+            height: 8px;
+            border-radius: 10px;
+            background: #e2e8f0;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        .competitive-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: inline-block;
+        }
+        .status-advantage { background: #48bb78; color: white; }
+        .status-parity { background: #4299e1; color: white; }
+        .status-vulnerability { background: #f56565; color: white; }
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #718096;
+            font-size: 0.9rem;
+        }
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #10b981;
+        }
+        .alert-custom {
+            background: linear-gradient(135deg, #10b98115 0%, #05966915 100%);
+            border-left: 4px solid #10b981;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+        .card-body-collapsible {
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            max-height: 5000px;
+            opacity: 1;
+        }
+        .card-body-collapsible.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin: 0;
+            padding: 0;
+        }
+        .toggle-card-btn {
+            background: none;
+            border: none;
+            color: #10b981;
+            cursor: pointer;
+            font-size: 1.5rem;
+            padding: 0;
+            margin-left: 10px;
+            transition: transform 0.3s ease;
+        }
+        .toggle-card-btn:hover {
+            color: #059669;
+        }
+        .toggle-card-btn.collapsed {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="container-main">
+            <!-- Header -->
+            <div class="header">
+                <h1><i class="fas fa-chart-line"></i> Competitive Intelligence Report</h1>
+                <div class="subtitle">E-commerce Basket Page Analysis - UK Pet Food Retail | Generated 2025-11-24 15:30:00</div>
+            </div>
+
+            <!-- Executive Summary -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h2 class="section-title"><i class="fas fa-star"></i> Executive Summary</h2>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-value">10</div>
+                        <div class="stat-label">Competitors Analyzed</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-value">7.2</div>
+                        <div class="stat-label">Average Score</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-value">8.3</div>
+                        <div class="stat-label">Top Score (Pets at Home)</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-value">5.8</div>
+                        <div class="stat-label">Lowest (Petbarn)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Insights -->
+            <div class="alert-custom">
+                <h5><i class="fas fa-lightbulb"></i> <strong>Key Insights</strong></h5>
+                <ul class="mb-0">
+                    <li><strong><i class="fas fa-trophy"></i> Market Leader:</strong> Pets at Home leads with 8.3/10</li>
+                    <li><strong><i class="fas fa-chart-bar"></i> Most Consistent:</strong> Zooplus shows the most balanced performance</li>
+                    <li><strong><i class="fas fa-fire"></i> Industry Strength:</strong> Shipping Cost & Free Delivery Threshold (avg: 8.1/10)</li>
+                    <li><strong><i class="fas fa-exclamation-triangle"></i> Market Vulnerability:</strong> Subscription & Auto-Delivery Options (avg: 6.8/10) - opportunity to differentiate</li>
+                </ul>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="row">
+                <div class="col-12">
+                    <h2 class="section-title"><i class="fas fa-chart-area"></i> Visual Analysis</h2>
+                </div>
+
+                <!-- Radar Chart -->
+                <div class="col-12">
+                    <div class="chart-container">
+                        <div id="radar-chart"></div>
+                    </div>
+                </div>
+
+                <!-- Heatmap -->
+                <div class="col-12">
+                    <div class="chart-container">
+                        <div id="heatmap"></div>
+                    </div>
+                </div>
+
+                <!-- Bar Chart -->
+                <div class="col-12">
+                    <div class="chart-container">
+                        <div id="bar-chart"></div>
+                    </div>
+                </div>
+
+                <!-- Score Distribution -->
+                <div class="col-12">
+                    <div class="chart-container">
+                        <div id="box-plot"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Panel -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="filter-panel">
+                        <h5><i class="fas fa-filter"></i> <strong>Filter & Search</strong></h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Search Competitor</label>
+                                <input type="text" class="form-control" id="searchCompetitor" placeholder="Type competitor name...">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Minimum Score</label>
+                                <input type="range" class="form-range" id="minScoreFilter" min="0" max="10" step="0.5" value="0">
+                                <div class="text-center"><span id="minScoreValue">0.0</span>/10</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Competitive Status</label>
+                                <select class="form-select" id="statusFilter">
+                                    <option value="all">All Statuses</option>
+                                    <option value="advantage">Advantages Only</option>
+                                    <option value="vulnerability">Vulnerabilities Only</option>
+                                    <option value="parity">Parity Only</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button class="reset-filters-btn" onclick="resetFilters()">
+                                <i class="fas fa-redo"></i> Reset Filters
+                            </button>
+                            <span class="filter-results-count" id="filterCount">Showing 10 competitors</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Competitor Details -->
+            <div class="row" id="competitorContainer">
+                <div class="col-12">
+                    <h2 class="section-title"><i class="fas fa-users"></i> Competitor Profiles</h2>
+                </div>
+
+                <!-- Pets at Home -->
+                <div class="col-12">
+                    <div class="competitor-card"
+                         data-competitor="pets at home"
+                         data-score="8.3"
+                         data-tier="market_leader">
+                        <div class="competitor-header">
+                            <div>
+                                <div class="competitor-name">Pets at Home</div>
+                                <small class="text-muted">https://www.petsathome.com/basket</small>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="overall-score">8.3/10</div>
+                                <button class="toggle-card-btn" onclick="toggleCard('pets-at-home')">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <span class="score-badge score-excellent">
+                                Market Leader
+                            </span>
+                            <p class="mt-2 text-muted">Dominant player with exceptional subscription integration and mobile optimization. Sets the benchmark for UK pet food retail basket UX.</p>
+                        </div>
+
+                        <div class="card-body-collapsible" id="pets-at-home">
+                        <div class="mt-3">
+                            <h5><strong>Performance by Criteria</strong></h5>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Shipping Cost & Free Delivery Threshold
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">9.0</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 90%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Subscription & Auto-Delivery Options
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">9.5</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 95%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Basket Summary & Total Clarity
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">8.5</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 85%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Product Details in Cart
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">8.0</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 80%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Mobile Layout & Touch Usability
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">8.8</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 88%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Delivery Timing & Urgency
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">8.2</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 82%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Express Checkout Options
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">9.0</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 90%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Quantity Selection & Editing
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">8.0</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 80%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Checkout CTA Clarity
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">8.5</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 85%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Cross-Sell & Related Products
+                                    <span class="competitive-status status-parity">parity</span>
+                                </div>
+                                <div class="criterion-score" style="color: #38b2ac">7.5</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 75%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Payment Options & Trust Signals
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">8.0</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 80%"></div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-trophy text-success"></i> <strong>Competitive Advantages</strong></h6>
+                                <ul>
+                                    <li>VIP subscription highly visible (9.5/10) with clear 15% savings message and flexible delivery frequency options</li>
+                                    <li>Best-in-class mobile layout (8.8/10) with sticky CTA, large touch targets, and optimized basket summary for small screens</li>
+                                    <li>Excellent shipping transparency with free delivery progress bar and clear threshold messaging</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-exclamation-triangle text-warning"></i> <strong>Vulnerabilities</strong></h6>
+                                <ul>
+                                    <li>Generic cross-sell recommendations lacking personalization based on pet profile</li>
+                                    <li>Delivery timing shows range (2-3 days) rather than specific date</li>
+                                    <li>Product images slightly small on mobile basket view</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="screenshot-gallery">
+                            <div class="screenshot-thumb"
+                                 onclick="openLightbox('https://via.placeholder.com/1920x1080/667eea/ffffff?text=Pets+at+Home+Desktop', 'Pets at Home - Desktop')">
+                                <img src="https://via.placeholder.com/250x400/667eea/ffffff?text=Desktop"
+                                     alt="desktop">
+                                <div class="overlay">
+                                    <i class="fas fa-search-plus"></i>
+                                </div>
+                                <div class="screenshot-badge">Desktop</div>
+                            </div>
+                            <div class="screenshot-thumb"
+                                 onclick="openLightbox('https://via.placeholder.com/375x812/764ba2/ffffff?text=Pets+at+Home+Mobile', 'Pets at Home - Mobile')">
+                                <img src="https://via.placeholder.com/250x400/764ba2/ffffff?text=Mobile"
+                                     alt="mobile">
+                                <div class="overlay">
+                                    <i class="fas fa-search-plus"></i>
+                                </div>
+                                <div class="screenshot-badge">Mobile</div>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Zooplus -->
+                <div class="col-12">
+                    <div class="competitor-card"
+                         data-competitor="zooplus"
+                         data-score="8.0"
+                         data-tier="market_leader">
+                        <div class="competitor-header">
+                            <div>
+                                <div class="competitor-name">Zooplus</div>
+                                <small class="text-muted">https://www.zooplus.co.uk/basket</small>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="overall-score">8.0/10</div>
+                                <button class="toggle-card-btn" onclick="toggleCard('zooplus')">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <span class="score-badge score-excellent">Market Leader</span>
+                            <p class="mt-2 text-muted">Strong contender with exceptional product information clarity and shipping transparency. Subscription offering needs prominence.</p>
+                        </div>
+
+                        <div class="card-body-collapsible" id="zooplus">
+                        <div class="mt-3">
+                            <h5><strong>Performance by Criteria</strong></h5>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Shipping Cost & Free Delivery Threshold
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">8.8</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 88%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Subscription & Auto-Delivery Options
+                                    <span class="competitive-status status-vulnerability">vulnerability</span>
+                                </div>
+                                <div class="criterion-score" style="color: #38b2ac">6.5</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 65%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Basket Summary & Total Clarity
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">8.5</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 85%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Product Details in Cart
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">9.2</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 92%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Mobile Layout & Touch Usability
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">8.0</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 80%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Delivery Timing & Urgency
+                                    <span class="competitive-status status-parity">parity</span>
+                                </div>
+                                <div class="criterion-score" style="color: #38b2ac">7.8</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 78%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Express Checkout Options
+                                    <span class="competitive-status status-parity">parity</span>
+                                </div>
+                                <div class="criterion-score" style="color: #38b2ac">7.0</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 70%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Quantity Selection & Editing
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">8.5</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 85%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Checkout CTA Clarity
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">8.0</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 80%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Cross-Sell & Related Products
+                                    <span class="competitive-status status-parity">parity</span>
+                                </div>
+                                <div class="criterion-score" style="color: #38b2ac">7.8</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 78%"></div>
+                            </div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">
+                                    Payment Options & Trust Signals
+                                    <span class="competitive-status status-advantage">advantage</span>
+                                </div>
+                                <div class="criterion-score" style="color: #48bb78">8.2</div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: 82%"></div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-trophy text-success"></i> <strong>Competitive Advantages</strong></h6>
+                                <ul>
+                                    <li>Best-in-class product information (9.2/10) with crystal clear pack sizes and nutritional details</li>
+                                    <li>Excellent shipping cost transparency (8.8/10) with prominent threshold messaging</li>
+                                    <li>Strong basket summary with clear VAT inclusion statement</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-exclamation-triangle text-warning"></i> <strong>Vulnerabilities</strong></h6>
+                                <ul>
+                                    <li>Subscription not prominently displayed (6.5/10) - easily missed by users</li>
+                                    <li>Express checkout limited to PayPal only (7.0/10)</li>
+                                    <li>Delivery estimates vague (7.8/10) showing ranges instead of specific dates</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="screenshot-gallery">
+                            <div class="screenshot-thumb"
+                                 onclick="openLightbox('https://via.placeholder.com/1920x1080/667eea/ffffff?text=Zooplus+Desktop', 'Zooplus - Desktop')">
+                                <img src="https://via.placeholder.com/250x400/667eea/ffffff?text=Desktop" alt="desktop">
+                                <div class="overlay"><i class="fas fa-search-plus"></i></div>
+                                <div class="screenshot-badge">Desktop</div>
+                            </div>
+                            <div class="screenshot-thumb"
+                                 onclick="openLightbox('https://via.placeholder.com/375x812/764ba2/ffffff?text=Zooplus+Mobile', 'Zooplus - Mobile')">
+                                <img src="https://via.placeholder.com/250x400/764ba2/ffffff?text=Mobile" alt="mobile">
+                                <div class="overlay"><i class="fas fa-search-plus"></i></div>
+                                <div class="screenshot-badge">Mobile</div>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Butternut Box -->
+                <div class="col-12">
+                    <div class="competitor-card"
+                         data-competitor="butternut box"
+                         data-score="7.8"
+                         data-tier="market_leader">
+                        <div class="competitor-header">
+                            <div>
+                                <div class="competitor-name">Butternut Box</div>
+                                <small class="text-muted">https://www.buttnutbox.com/basket</small>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="overall-score">7.8/10</div>
+                                <button class="toggle-card-btn" onclick="toggleCard('butternut-box')">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <span class="score-badge score-excellent">Market Leader</span>
+                            <p class="mt-2 text-muted">Subscription-first model with premium positioning. Exceptional delivery timing but limited express checkout.</p>
+                        </div>
+
+                        <div class="card-body-collapsible" id="butternut-box">
+                        <div class="mt-3">
+                            <h5><strong>Performance by Criteria</strong></h5>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">Shipping Cost & Free Delivery Threshold <span class="competitive-status status-advantage">advantage</span></div>
+                                <div class="criterion-score" style="color: #48bb78">8.5</div>
+                            </div>
+                            <div class="progress-bar-custom"><div class="progress-fill" style="width: 85%"></div></div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">Subscription & Auto-Delivery Options <span class="competitive-status status-advantage">advantage</span></div>
+                                <div class="criterion-score" style="color: #48bb78">9.8</div>
+                            </div>
+                            <div class="progress-bar-custom"><div class="progress-fill" style="width: 98%"></div></div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">Basket Summary & Total Clarity <span class="competitive-status status-advantage">advantage</span></div>
+                                <div class="criterion-score" style="color: #48bb78">8.0</div>
+                            </div>
+                            <div class="progress-bar-custom"><div class="progress-fill" style="width: 80%"></div></div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">Product Details in Cart <span class="competitive-status status-parity">parity</span></div>
+                                <div class="criterion-score" style="color: #38b2ac">7.5</div>
+                            </div>
+                            <div class="progress-bar-custom"><div class="progress-fill" style="width: 75%"></div></div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">Mobile Layout & Touch Usability <span class="competitive-status status-parity">parity</span></div>
+                                <div class="criterion-score" style="color: #38b2ac">7.8</div>
+                            </div>
+                            <div class="progress-bar-custom"><div class="progress-fill" style="width: 78%"></div></div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">Delivery Timing & Urgency <span class="competitive-status status-advantage">advantage</span></div>
+                                <div class="criterion-score" style="color: #48bb78">8.8</div>
+                            </div>
+                            <div class="progress-bar-custom"><div class="progress-fill" style="width: 88%"></div></div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">Express Checkout Options <span class="competitive-status status-parity">parity</span></div>
+                                <div class="criterion-score" style="color: #38b2ac">7.5</div>
+                            </div>
+                            <div class="progress-bar-custom"><div class="progress-fill" style="width: 75%"></div></div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">Quantity Selection & Editing <span class="competitive-status status-parity">parity</span></div>
+                                <div class="criterion-score" style="color: #38b2ac">7.0</div>
+                            </div>
+                            <div class="progress-bar-custom"><div class="progress-fill" style="width: 70%"></div></div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">Checkout CTA Clarity <span class="competitive-status status-advantage">advantage</span></div>
+                                <div class="criterion-score" style="color: #48bb78">8.5</div>
+                            </div>
+                            <div class="progress-bar-custom"><div class="progress-fill" style="width: 85%"></div></div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">Cross-Sell & Related Products <span class="competitive-status status-vulnerability">vulnerability</span></div>
+                                <div class="criterion-score" style="color: #38b2ac">6.5</div>
+                            </div>
+                            <div class="progress-bar-custom"><div class="progress-fill" style="width: 65%"></div></div>
+
+                            <div class="criterion-row">
+                                <div class="criterion-name">Payment Options & Trust Signals <span class="competitive-status status-parity">parity</span></div>
+                                <div class="criterion-score" style="color: #38b2ac">7.2</div>
+                            </div>
+                            <div class="progress-bar-custom"><div class="progress-fill" style="width: 72%"></div></div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-trophy text-success"></i> <strong>Competitive Advantages</strong></h6>
+                                <ul>
+                                    <li>Subscription integration exceptional (9.8/10) - core to business model with clear value proposition</li>
+                                    <li>Delivery timing highly specific (8.8/10) with date picker and personalized scheduling</li>
+                                    <li>Premium CTA design (8.5/10) reinforces brand positioning</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-exclamation-triangle text-warning"></i> <strong>Vulnerabilities</strong></h6>
+                                <ul>
+                                    <li>Cross-sell very limited (6.5/10) - mainly treats, no accessories or complementary products</li>
+                                    <li>Express checkout minimal (7.5/10) - focuses on account creation over quick purchase</li>
+                                    <li>Quantity management basic (7.0/10) - dropdown only, no +/- buttons</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="screenshot-gallery">
+                            <div class="screenshot-thumb" onclick="openLightbox('https://via.placeholder.com/1920x1080/667eea/ffffff?text=Butternut+Desktop', 'Butternut Box - Desktop')">
+                                <img src="https://via.placeholder.com/250x400/667eea/ffffff?text=Desktop" alt="desktop">
+                                <div class="overlay"><i class="fas fa-search-plus"></i></div>
+                                <div class="screenshot-badge">Desktop</div>
+                            </div>
+                            <div class="screenshot-thumb" onclick="openLightbox('https://via.placeholder.com/375x812/764ba2/ffffff?text=Butternut+Mobile', 'Butternut Box - Mobile')">
+                                <img src="https://via.placeholder.com/250x400/764ba2/ffffff?text=Mobile" alt="mobile">
+                                <div class="overlay"><i class="fas fa-search-plus"></i></div>
+                                <div class="screenshot-badge">Mobile</div>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Remaining 7 competitors with condensed format for brevity -->
+                <!-- Tails.com, Amazon, Fetch, VetUK, Pet Supermarket, Jollyes, Petbarn -->
+
+                <div class="col-12">
+                    <div class="competitor-card" data-competitor="tails.com" data-score="7.5" data-tier="strong_contender">
+                        <div class="competitor-header">
+                            <div>
+                                <div class="competitor-name">Tails.com</div>
+                                <small class="text-muted">https://www.tails.com/basket</small>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="overall-score">7.5/10</div>
+                                <button class="toggle-card-btn collapsed" onclick="toggleCard('tails')">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body-collapsible collapsed" id="tails">
+                            <div class="mb-3">
+                                <span class="score-badge score-good">Strong Contender</span>
+                                <p class="mt-2 text-muted">Personalized subscription model with strong delivery messaging but limited express checkout.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="competitor-card" data-competitor="amazon pet supplies" data-score="7.3" data-tier="strong_contender">
+                        <div class="competitor-header">
+                            <div>
+                                <div class="competitor-name">Amazon Pet Supplies</div>
+                                <small class="text-muted">https://www.amazon.co.uk/basket</small>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="overall-score">7.3/10</div>
+                                <button class="toggle-card-btn collapsed" onclick="toggleCard('amazon')">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body-collapsible collapsed" id="amazon">
+                            <div class="mb-3">
+                                <span class="score-badge score-good">Strong Contender</span>
+                                <p class="mt-2 text-muted">Best-in-class express checkout and trust signals, but generic basket not optimized for pet food.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="competitor-card" data-competitor="fetch" data-score="7.0" data-tier="strong_contender">
+                        <div class="competitor-header">
+                            <div>
+                                <div class="competitor-name">Fetch</div>
+                                <small class="text-muted">https://www.fetch.co.uk/basket</small>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="overall-score">7.0/10</div>
+                                <button class="toggle-card-btn collapsed" onclick="toggleCard('fetch')">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body-collapsible collapsed" id="fetch">
+                            <div class="mb-3">
+                                <span class="score-badge score-good">Strong Contender</span>
+                                <p class="mt-2 text-muted">Growing subscription offering but lacks express checkout - major friction point.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="competitor-card" data-competitor="vetuk" data-score="6.5" data-tier="vulnerable">
+                        <div class="competitor-header">
+                            <div>
+                                <div class="competitor-name">VetUK</div>
+                                <small class="text-muted">https://www.vetuk.co.uk/basket</small>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="overall-score">6.5/10</div>
+                                <button class="toggle-card-btn collapsed" onclick="toggleCard('vetuk')">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body-collapsible collapsed" id="vetuk">
+                            <div class="mb-3">
+                                <span class="score-badge score-average">Vulnerable</span>
+                                <p class="mt-2 text-muted">Strong vet branding but subscription barely visible and poor mobile experience.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="competitor-card" data-competitor="pet supermarket" data-score="6.2" data-tier="vulnerable">
+                        <div class="competitor-header">
+                            <div>
+                                <div class="competitor-name">Pet Supermarket</div>
+                                <small class="text-muted">https://www.petsupermarket.co.uk/basket</small>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="overall-score">6.2/10</div>
+                                <button class="toggle-card-btn collapsed" onclick="toggleCard('pet-supermarket')">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body-collapsible collapsed" id="pet-supermarket">
+                            <div class="mb-3">
+                                <span class="score-badge score-average">Vulnerable</span>
+                                <p class="mt-2 text-muted">Price-focused but no subscription offering or express checkout - critical gaps.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="competitor-card" data-competitor="jollyes" data-score="6.0" data-tier="vulnerable">
+                        <div class="competitor-header">
+                            <div>
+                                <div class="competitor-name">Jollyes</div>
+                                <small class="text-muted">https://www.jollyes.co.uk/basket</small>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="overall-score">6.0/10</div>
+                                <button class="toggle-card-btn collapsed" onclick="toggleCard('jollyes')">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body-collapsible collapsed" id="jollyes">
+                            <div class="mb-3">
+                                <span class="score-badge score-average">Vulnerable</span>
+                                <p class="mt-2 text-muted">Physical store presence not leveraged online - minimal subscription program.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="competitor-card" data-competitor="petbarn" data-score="5.8" data-tier="vulnerable">
+                        <div class="competitor-header">
+                            <div>
+                                <div class="competitor-name">Petbarn</div>
+                                <small class="text-muted">https://www.petbarn.co.uk/basket</small>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="overall-score">5.8/10</div>
+                                <button class="toggle-card-btn collapsed" onclick="toggleCard('petbarn')">
+                                    <i class="fas fa-chevron-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body-collapsible collapsed" id="petbarn">
+                            <div class="mb-3">
+                                <span class="score-badge score-average">Vulnerable</span>
+                                <p class="mt-2 text-muted">Baseline UX falling behind market standards - no subscription program visible.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>Generated by <strong>E-commerce UX Competitive Intelligence Agent v1.2.0</strong></p>
+                <p>Powered by Claude AI | Report Date: 2025-11-24 15:30:00</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div id="lightboxModal" class="lightbox-modal" onclick="closeLightbox(event)">
+        <span class="lightbox-close" onclick="closeLightbox(event)">&times;</span>
+        <div class="lightbox-content" onclick="event.stopPropagation()">
+            <img id="lightboxImage" src="" alt="">
+            <div class="lightbox-caption" id="lightboxCaption"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.18.0.min.js"></script>
+    <script>
+        // Sample data for 10 UK pet food retailers
+        const competitors = [
+            {name: 'Pets at Home', scores: [9.0, 9.5, 8.5, 8.0, 8.8, 8.2, 9.0, 8.0, 8.5, 7.5, 8.0]},
+            {name: 'Zooplus', scores: [8.8, 6.5, 8.5, 9.2, 8.0, 7.8, 7.0, 8.5, 8.0, 7.8, 8.2]},
+            {name: 'Butternut Box', scores: [8.5, 9.8, 8.0, 7.5, 7.8, 8.8, 7.5, 7.0, 8.5, 6.5, 7.2]},
+            {name: 'Tails.com', scores: [8.0, 9.2, 7.8, 7.8, 7.5, 8.5, 6.5, 7.5, 8.0, 7.0, 7.2]},
+            {name: 'Amazon Pet Supplies', scores: [9.5, 7.5, 8.5, 8.2, 7.0, 8.0, 9.5, 8.5, 7.5, 8.5, 8.8]},
+            {name: 'Fetch', scores: [7.5, 8.0, 7.2, 7.0, 7.5, 7.8, 6.0, 7.0, 7.5, 6.8, 7.0]},
+            {name: 'VetUK', scores: [7.0, 5.5, 7.5, 7.2, 6.5, 6.8, 5.5, 7.0, 7.0, 6.5, 7.5]},
+            {name: 'Pet Supermarket', scores: [6.5, 5.0, 7.0, 6.8, 6.0, 6.5, 5.0, 6.5, 7.0, 6.0, 6.8]},
+            {name: 'Jollyes', scores: [6.8, 4.5, 6.5, 6.5, 6.2, 6.0, 5.5, 6.5, 6.8, 6.0, 6.5]},
+            {name: 'Petbarn', scores: [6.5, 4.0, 6.8, 6.2, 5.8, 6.2, 5.0, 6.0, 6.5, 5.5, 6.5]}
+        ];
+
+        const criteria = [
+            'Shipping Cost',
+            'Subscription',
+            'Basket Summary',
+            'Product Info',
+            'Mobile Layout',
+            'Delivery Timing',
+            'Express Checkout',
+            'Quantity Mgmt',
+            'CTA Clarity',
+            'Cross-Sell',
+            'Payment/Trust'
+        ];
+
+        // Radar Chart
+        const radarTraces = competitors.map(comp => ({
+            type: 'scatterpolar',
+            r: comp.scores,
+            theta: criteria,
+            fill: 'toself',
+            name: comp.name,
+            hovertemplate: '<b>%{theta}</b><br>Score: %{r:.1f}/10<extra></extra>'
+        }));
+
+        Plotly.newPlot('radar-chart', radarTraces, {
+            polar: {
+                radialaxis: {
+                    visible: true,
+                    range: [0, 10],
+                    tickfont: {size: 10}
+                }
+            },
+            showlegend: true,
+            title: {
+                text: '<b>Competitive UX Comparison</b><br><sub>Overall performance across all criteria</sub>',
+                x: 0.5,
+                xanchor: 'center'
+            },
+            height: 600,
+            legend: {
+                orientation: 'h',
+                yanchor: 'bottom',
+                y: -0.2,
+                xanchor: 'center',
+                x: 0.5
+            }
+        }, {displayModeBar: false, responsive: true});
+
+        // Heatmap
+        const heatmapZ = competitors.map(c => c.scores);
+        const heatmapY = competitors.map(c => c.name);
+
+        Plotly.newPlot('heatmap', [{
+            type: 'heatmap',
+            z: heatmapZ,
+            x: criteria,
+            y: heatmapY,
+            colorscale: [
+                [0, '#d32f2f'],
+                [0.2, '#f57c00'],
+                [0.4, '#fbc02d'],
+                [0.6, '#7cb342'],
+                [0.8, '#388e3c'],
+                [1, '#1b5e20']
+            ],
+            text: heatmapZ,
+            texttemplate: '%{text:.1f}',
+            textfont: {size: 12, color: 'white'},
+            hovertemplate: '<b>%{y}</b><br>%{x}<br>Score: %{z:.1f}/10<extra></extra>',
+            colorbar: {
+                title: 'Score',
+                tickvals: [0, 2, 4, 6, 8, 10],
+                ticktext: ['0', '2', '4', '6', '8', '10']
+            }
+        }], {
+            title: {
+                text: '<b>Feature Adoption Heatmap</b><br><sub>Color-coded performance matrix</sub>',
+                x: 0.5,
+                xanchor: 'center'
+            },
+            xaxis: {tickangle: -45, side: 'bottom'},
+            yaxis: {title: 'Competitors'},
+            height: Math.max(400, competitors.length * 60)
+        }, {displayModeBar: false, responsive: true});
+
+        // Bar Chart
+        const barTraces = competitors.map(comp => ({
+            type: 'bar',
+            name: comp.name,
+            x: criteria,
+            y: comp.scores,
+            hovertemplate: '<b>%{x}</b><br>%{fullData.name}: %{y:.1f}/10<extra></extra>'
+        }));
+
+        Plotly.newPlot('bar-chart', barTraces, {
+            title: {
+                text: '<b>Criteria Performance Comparison</b><br><sub>Scores across all evaluation criteria</sub>',
+                x: 0.5,
+                xanchor: 'center'
+            },
+            xaxis: {title: 'Criteria', tickangle: -45},
+            yaxis: {title: 'Score (0-10)', range: [0, 10]},
+            barmode: 'group',
+            height: 500,
+            legend: {
+                orientation: 'h',
+                yanchor: 'bottom',
+                y: -0.4,
+                xanchor: 'center',
+                x: 0.5
+            }
+        }, {displayModeBar: false, responsive: true});
+
+        // Box Plot
+        const boxTraces = competitors.map(comp => ({
+            type: 'box',
+            y: comp.scores,
+            name: comp.name,
+            boxmean: 'sd',
+            hovertemplate: '<b>%{fullData.name}</b><br>Score: %{y:.1f}<extra></extra>',
+            marker: {size: 8}
+        }));
+
+        Plotly.newPlot('box-plot', boxTraces, {
+            title: {
+                text: '<b>Score Distribution</b><br><sub>Performance consistency across criteria</sub>',
+                x: 0.5,
+                xanchor: 'center'
+            },
+            yaxis: {title: 'Score (0-10)', range: [0, 10]},
+            height: 450,
+            showlegend: false
+        }, {displayModeBar: false, responsive: true});
+
+        // Lightbox functionality
+        function openLightbox(imageSrc, caption) {
+            const modal = document.getElementById('lightboxModal');
+            const img = document.getElementById('lightboxImage');
+            const cap = document.getElementById('lightboxCaption');
+
+            img.src = imageSrc;
+            cap.textContent = caption;
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox(event) {
+            const modal = document.getElementById('lightboxModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            event.stopPropagation();
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeLightbox(event);
+            }
+        });
+
+        // Filter functionality
+        const searchInput = document.getElementById('searchCompetitor');
+        const minScoreSlider = document.getElementById('minScoreFilter');
+        const minScoreValue = document.getElementById('minScoreValue');
+        const statusFilter = document.getElementById('statusFilter');
+        const filterCount = document.getElementById('filterCount');
+
+        minScoreSlider.addEventListener('input', function() {
+            minScoreValue.textContent = this.value;
+            applyFilters();
+        });
+
+        searchInput.addEventListener('input', applyFilters);
+        statusFilter.addEventListener('change', applyFilters);
+
+        function applyFilters() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const minScore = parseFloat(minScoreSlider.value);
+            const status = statusFilter.value;
+
+            const cards = document.querySelectorAll('.competitor-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const competitorName = card.getAttribute('data-competitor');
+                const score = parseFloat(card.getAttribute('data-score'));
+
+                const matchesSearch = competitorName.includes(searchTerm);
+                const matchesScore = score >= minScore;
+
+                let matchesStatus = status === 'all';
+                if (!matchesStatus) {
+                    const statusBadges = card.querySelectorAll('.competitive-status');
+                    statusBadges.forEach(badge => {
+                        if (badge.classList.contains('status-' + status)) {
+                            matchesStatus = true;
+                        }
+                    });
+                }
+
+                if (matchesSearch && matchesScore && matchesStatus) {
+                    card.parentElement.classList.remove('filtered-out');
+                    visibleCount++;
+                } else {
+                    card.parentElement.classList.add('filtered-out');
+                }
+            });
+
+            filterCount.textContent = `Showing ${visibleCount} of ${cards.length} competitors`;
+        }
+
+        function resetFilters() {
+            searchInput.value = '';
+            minScoreSlider.value = 0;
+            minScoreValue.textContent = '0.0';
+            statusFilter.value = 'all';
+            applyFilters();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const totalCards = document.querySelectorAll('.competitor-card').length;
+            filterCount.textContent = `Showing ${totalCards} competitors`;
+        });
+
+        // Toggle card collapse/expand
+        function toggleCard(cardId) {
+            const cardBody = document.getElementById(cardId);
+            const button = document.querySelector(`button[onclick="toggleCard('${cardId}')"]`);
+
+            if (cardBody && button) {
+                cardBody.classList.toggle('collapsed');
+                button.classList.toggle('collapsed');
+            }
+        }
+    </script>
+</body>
+</html>

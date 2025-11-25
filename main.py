@@ -484,43 +484,51 @@ class UXAnalysisOrchestrator:
 
             # Run all analyses in parallel
             if analysis_tasks:
-                analysis_results = await asyncio.gather(*analysis_tasks, return_exceptions=True)
+                try:
+                    analysis_results = await asyncio.gather(*analysis_tasks, return_exceptions=True)
 
-                # Process results and handle any exceptions
-                processed_results = []
-                for i, (capture_data, analysis_result) in enumerate(zip(successful_captures, analysis_results)):
-                    # Check if result is an exception
-                    if isinstance(analysis_result, Exception):
-                        self.console.print(f"  [red]✗ {capture_data['site_name']}: {str(analysis_result)}[/red]")
-                        processed_results.append({
-                            "success": False,
-                            "site_name": capture_data['site_name'],
-                            "url": capture_data['url'],
-                            "error": str(analysis_result)
-                        })
-                    else:
-                        if analysis_result.get("success"):
-                            self.console.print(f"  [green]✓ {capture_data['site_name']}[/green]")
+                    # Process results and handle any exceptions
+                    processed_results = []
+                    for i, (capture_data, analysis_result) in enumerate(zip(successful_captures, analysis_results)):
+                        # Check if result is an exception
+                        if isinstance(analysis_result, Exception):
+                            self.console.print(f"  [red]✗ {capture_data['site_name']}: {str(analysis_result)}[/red]")
+                            processed_results.append({
+                                "success": False,
+                                "site_name": capture_data['site_name'],
+                                "url": capture_data['url'],
+                                "error": str(analysis_result)
+                            })
                         else:
-                            self.console.print(f"  [yellow]⚠ {capture_data['site_name']}: {analysis_result.get('error', 'Unknown error')}[/yellow]")
-                        processed_results.append(analysis_result)
+                            if analysis_result.get("success"):
+                                self.console.print(f"  [green]✓ {capture_data['site_name']}[/green]")
+                            else:
+                                self.console.print(f"  [yellow]⚠ {capture_data['site_name']}: {analysis_result.get('error', 'Unknown error')}[/yellow]")
+                            processed_results.append(analysis_result)
 
-                        # Save individual competitor analysis if audit structure provided
-                        if audit_structure and analysis_result.get("success"):
-                            try:
-                                analysis_path = get_analysis_path(
-                                    audit_structure['competitors'],
-                                    capture_data['site_name']
-                                )
-                                self.report_generator.save_competitor_analysis(
-                                    analysis_result,  # Already flattened
-                                    analysis_path
-                                )
-                            except Exception as e:
-                                self.console.print(f"  [yellow]Warning: Could not save {capture_data['site_name']}: {e}[/yellow]")
+                            # Save individual competitor analysis if audit structure provided
+                            if audit_structure and analysis_result.get("success"):
+                                try:
+                                    analysis_path = get_analysis_path(
+                                        audit_structure['competitors'],
+                                        capture_data['site_name']
+                                    )
+                                    self.report_generator.save_competitor_analysis(
+                                        analysis_result,  # Already flattened
+                                        analysis_path
+                                    )
+                                except Exception as e:
+                                    self.console.print(f"  [yellow]Warning: Could not save {capture_data['site_name']}: {e}[/yellow]")
 
-                # Combine failed captures with processed analysis results
-                results = failed_captures + processed_results
+                    # Combine failed captures with processed analysis results
+                    results = failed_captures + processed_results
+
+                except (EOFError, KeyboardInterrupt):
+                    self.console.print("\n\n[bold yellow]⚠ Analysis cancelled by user during parallel execution[/bold yellow]")
+                    # Return partial results up to this point
+                    results = failed_captures
+                    raise  # Re-raise to be caught by outer handler
+
             else:
                 # No successful captures to analyze
                 results = failed_captures
