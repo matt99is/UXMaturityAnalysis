@@ -5,6 +5,57 @@ All notable changes to the E-commerce UX Competitive Intelligence Agent will be 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] - 2025-11-25
+
+### Added
+- **🔄 Reanalyze Script**: New `reanalyze_screenshots.py` for report regeneration without re-capturing
+  - Regenerate HTML/markdown reports from existing screenshots in seconds
+  - Smart caching: Reuses existing `analysis.json` files (instant), only re-analyzes missing ones
+  - Perfect for testing report design changes, refining criteria, or adding missing competitors
+  - Example: `python3 reanalyze_screenshots.py output/audits/2025-11-24_basket_pages`
+  - **Use Cases:**
+    - Update report template/design (all analyses cached, instant regeneration)
+    - Refine analysis criteria (delete analysis.json to force re-analysis)
+    - Add missing competitors (only new competitor analyzed, others cached)
+
+### Improved
+- **🎨 Advanced HTML Report Filtering**: Complete filtering system overhaul
+  - **Dynamic Filter Dropdown**: Only shows competitive position tiers that have competitors
+    - Displays count per tier: "Strong Contender (9)", "Vulnerable (2)"
+    - Eliminates confusing empty filter options
+  - **Real Plotly Chart Integration**: Charts now update dynamically with filters
+    - Radar chart: Trace visibility toggled via Plotly.restyle()
+    - Bar chart: Trace visibility toggled via Plotly.restyle()
+    - Heatmap: Data filtered and redrawn via Plotly.react()
+    - Instant visual feedback as you filter
+  - **Rankings Table Never Filtered**: Overall Rankings always shows all competitors
+    - Filters now only apply to: Competitor cards, Visual charts
+    - Rankings provide full competitive landscape view regardless of active filters
+  - Combined improvements create seamless, intuitive filtering experience
+
+### Changed
+- **📝 Complete README Rewrite**: Comprehensive documentation reflecting full reality
+  - Added extensive `reanalyze_screenshots.py` documentation with use cases and examples
+  - Updated filtering section to reflect new competitive position-based filtering
+  - Clarified what gets filtered (cards, charts) vs what doesn't (rankings table)
+  - Added "Why This Tool?" section highlighting key differentiators
+  - Reorganized sections for better flow and findability
+  - Updated project structure to show reanalyze script
+  - Enhanced HTML report documentation with v1.3.2 filtering features
+
+### Removed
+- **Code Cleanup**: Removed legacy and redundant code
+  - Removed unused `detect_page_type()` function (was imported but never called)
+  - Removed stub `HTMLReportGenerator` class from `report_generator.py`
+    - Real implementation exists in `html_report_generator.py`
+  - Updated imports to reflect removed functions
+  - No functional changes, pure code quality improvements
+
+### Technical
+- Filter dropdown building logic now scans actual data to populate options
+- Plotly filtering uses native API methods for performance
+- README reduced from 934 to 900 lines while adding comprehensive reanalyze documentation
+
 ## [1.3.1] - 2025-11-24
 
 ### Performance
