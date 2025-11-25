@@ -115,49 +115,68 @@ async def reanalyze_audit(audit_path: str):
             "timestamp": audit_summary.get('timestamp', 'unknown')
         })
 
-    print(f"Reanalyzing {len(competitors_data)} competitors...\n")
-
     # Reuse the existing audit structure
     audit_structure = {
         'audit_root': audit_dir,  # Keep as Path object, not string
         'competitors': {comp['site_name']: audit_dir / comp['site_name'] for comp in competitors_data}
     }
 
-    # Run Phase 2 analysis only
-    print("═══ Phase 2: AI Analysis (Parallel) ═══")
-    print("Claude will now analyze all captured screenshots concurrently\n")
+    # Check which competitors already have analysis.json
+    needs_analysis = []
+    existing_results = []
 
-    results = []
-    analysis_tasks = [
-        orchestrator.analyze_competitor_from_screenshots(comp_data)
-        for comp_data in competitors_data
-    ]
-
-    # Run in parallel
-    analysis_results = await asyncio.gather(*analysis_tasks, return_exceptions=True)
-
-    # Process results
-    for comp_data, analysis_result in zip(competitors_data, analysis_results):
-        if isinstance(analysis_result, Exception):
-            print(f"  [✗] {comp_data['site_name']}: {str(analysis_result)}")
-            results.append({
-                "success": False,
-                "site_name": comp_data['site_name'],
-                "url": comp_data['url'],
-                "error": str(analysis_result)
-            })
+    for comp_data in competitors_data:
+        analysis_path = audit_dir / comp_data['site_name'] / "analysis.json"
+        if analysis_path.exists():
+            # Load existing analysis
+            with open(analysis_path, 'r') as f:
+                existing_analysis = json.load(f)
+            existing_results.append(existing_analysis)
+            print(f"  [↻] {comp_data['site_name']}: Using existing analysis")
         else:
-            if analysis_result.get("success"):
-                print(f"  [✓] {comp_data['site_name']}")
+            needs_analysis.append(comp_data)
 
-                # Save analysis to individual folder
-                analysis_path = Path(audit_structure['competitors'][comp_data['site_name']]) / "analysis.json"
-                with open(analysis_path, 'w') as f:
-                    json.dump(analysis_result, f, indent=2)
+    print(f"\nFound {len(existing_results)} existing analyses, need to analyze {len(needs_analysis)} competitors\n")
+
+    results = existing_results.copy()
+
+    # Only run AI analysis for competitors that don't have analysis.json
+    if needs_analysis:
+        print("═══ Phase 2: AI Analysis (Parallel) ═══")
+        print(f"Analyzing {len(needs_analysis)} competitors concurrently...\n")
+
+        analysis_tasks = [
+            orchestrator.analyze_competitor_from_screenshots(comp_data)
+            for comp_data in needs_analysis
+        ]
+
+        # Run in parallel
+        analysis_results = await asyncio.gather(*analysis_tasks, return_exceptions=True)
+
+        # Process results
+        for comp_data, analysis_result in zip(needs_analysis, analysis_results):
+            if isinstance(analysis_result, Exception):
+                print(f"  [✗] {comp_data['site_name']}: {str(analysis_result)}")
+                results.append({
+                    "success": False,
+                    "site_name": comp_data['site_name'],
+                    "url": comp_data['url'],
+                    "error": str(analysis_result)
+                })
             else:
-                print(f"  [⚠] {comp_data['site_name']}: {analysis_result.get('error', 'Unknown error')}")
+                if analysis_result.get("success"):
+                    print(f"  [✓] {comp_data['site_name']}")
 
-            results.append(analysis_result)
+                    # Save analysis to individual folder
+                    analysis_path = Path(audit_structure['competitors'][comp_data['site_name']]) / "analysis.json"
+                    with open(analysis_path, 'w') as f:
+                        json.dump(analysis_result, f, indent=2)
+                else:
+                    print(f"  [⚠] {comp_data['site_name']}: {analysis_result.get('error', 'Unknown error')}")
+
+                results.append(analysis_result)
+    else:
+        print("All competitors already have analysis.json - skipping AI analysis")
 
     print(f"\n✓ Reanalysis complete!")
 
