@@ -131,6 +131,19 @@ async def reanalyze_audit(audit_path: str):
             # Load existing analysis
             with open(analysis_path, 'r') as f:
                 existing_analysis = json.load(f)
+
+            # Build screenshot_metadata from screenshots_analyzed if missing
+            if not existing_analysis.get('screenshot_metadata') and existing_analysis.get('screenshots_analyzed'):
+                screenshot_metadata = []
+                for screenshot_path in existing_analysis['screenshots_analyzed']:
+                    screenshot_file = Path(screenshot_path)
+                    viewport = 'mobile' if 'mobile' in screenshot_file.name else 'desktop'
+                    screenshot_metadata.append({
+                        'filepath': str(screenshot_path),
+                        'viewport': viewport
+                    })
+                existing_analysis['screenshot_metadata'] = screenshot_metadata
+
             existing_results.append(existing_analysis)
             print(f"  [↻] {comp_data['site_name']}: Using existing analysis")
         else:

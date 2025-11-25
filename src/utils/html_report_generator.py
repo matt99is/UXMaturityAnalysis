@@ -759,7 +759,7 @@ class HTMLReportGenerator:
         }
 
         /* Make competitor cards filterable */
-        .competitor-card.filtered-out {
+        .filtered-out {
             display: none !important;
         }
 
@@ -1035,10 +1035,11 @@ class HTMLReportGenerator:
         }
         /* Strategic Insights Section */
         .exec-summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            display: flex;
+            flex-direction: column;
             gap: 20px;
             margin-bottom: 30px;
+            max-width: 1200px;
         }
         .exec-card {
             background: white;
