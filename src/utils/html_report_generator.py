@@ -1035,11 +1035,15 @@ class HTMLReportGenerator:
         }
         /* Strategic Insights Section */
         .exec-summary-grid {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
-            max-width: 1200px;
+        }
+        @media (max-width: 768px) {
+            .exec-summary-grid {
+                grid-template-columns: 1fr;
+            }
         }
         .exec-card {
             background: white;
@@ -1238,22 +1242,6 @@ class HTMLReportGenerator:
                                 {% endif %}
                             </ul>
                         </div>
-
-                        <!-- Quick Wins -->
-                        <div class="exec-card">
-                            <h4><i class="fas fa-bolt"></i> Quick Wins (Est. 30 days)</h4>
-                            <ul>
-                                {% for win in strategic_insights.quick_wins %}
-                                <li>{{ win.criterion }} ({{ win.missing_count }}/{{ win.total_count }} competitors lack this)</li>
-                                {% endfor %}
-                                {% if not strategic_insights.quick_wins %}
-                                <li class="text-muted">No clear quick wins identified (strong competitive baseline)</li>
-                                {% endif %}
-                            </ul>
-                            {% if strategic_insights.quick_wins %}
-                            <div class="impact"><strong>Est. Impact:</strong> +1.5 points overall score, +8-12% conversion</div>
-                            {% endif %}
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1294,36 +1282,8 @@ class HTMLReportGenerator:
                 </div>
             </div>
 
-            <!-- Charts Section -->
-            <div class="row">
-                <div class="col-12">
-                    <h2 class="section-title"><i class="fas fa-chart-area"></i> Visual Analysis</h2>
-                </div>
-
-                <!-- Radar Chart -->
-                <div class="col-12">
-                    <div class="chart-container">
-                        {{ radar_chart|safe }}
-                    </div>
-                </div>
-
-                <!-- Heatmap -->
-                <div class="col-12">
-                    <div class="chart-container">
-                        {{ heatmap|safe }}
-                    </div>
-                </div>
-
-                <!-- Bar Chart -->
-                <div class="col-12">
-                    <div class="chart-container">
-                        {{ bar_chart|safe }}
-                    </div>
-                </div>
-            </div>
-
             <!-- Filter Panel -->
-            <div class="row">
+            <div class="row mb-4">
                 <div class="col-12">
                     <div class="filter-panel">
                         <h5><i class="fas fa-filter"></i> <strong>Filter & Search</strong></h5>
@@ -1338,12 +1298,13 @@ class HTMLReportGenerator:
                                 <div class="text-center"><span id="minScoreValue">0.0</span>/10</div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Competitive Status</label>
+                                <label class="form-label">Competitive Position</label>
                                 <select class="form-select" id="statusFilter">
-                                    <option value="all">All Statuses</option>
-                                    <option value="advantage">Advantages Only</option>
-                                    <option value="vulnerability">Vulnerabilities Only</option>
-                                    <option value="parity">Parity Only</option>
+                                    <option value="all">All Status</option>
+                                    <option value="market_leader">Market Leader</option>
+                                    <option value="strong_contender">Strong Contender</option>
+                                    <option value="competitive">Competitive</option>
+                                    <option value="vulnerable">Vulnerable</option>
                                 </select>
                             </div>
                         </div>
@@ -1353,6 +1314,34 @@ class HTMLReportGenerator:
                             </button>
                             <span class="filter-results-count" id="filterCount">Showing {{ competitors|length }} competitors</span>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="row">
+                <div class="col-12">
+                    <h2 class="section-title"><i class="fas fa-chart-area"></i> Visual Analysis</h2>
+                </div>
+
+                <!-- Radar Chart -->
+                <div class="col-12">
+                    <div class="chart-container" id="radarChartContainer">
+                        {{ radar_chart|safe }}
+                    </div>
+                </div>
+
+                <!-- Heatmap -->
+                <div class="col-12">
+                    <div class="chart-container" id="heatmapContainer">
+                        {{ heatmap|safe }}
+                    </div>
+                </div>
+
+                <!-- Bar Chart -->
+                <div class="col-12">
+                    <div class="chart-container" id="barChartContainer">
+                        {{ bar_chart|safe }}
                     </div>
                 </div>
             </div>
@@ -1544,10 +1533,12 @@ class HTMLReportGenerator:
         function applyFilters() {
             const searchTerm = searchInput.value.toLowerCase();
             const minScore = parseFloat(minScoreSlider.value);
-            const status = statusFilter.value;
+            const positionFilter = statusFilter.value;
 
             const cards = document.querySelectorAll('.competitor-card');
+            const rankingRows = document.querySelectorAll('.ranking-table tbody tr');
             let visibleCount = 0;
+            let visibleCompetitors = [];
 
             cards.forEach(card => {
                 const competitorName = card.getAttribute('data-competitor');
@@ -1560,28 +1551,50 @@ class HTMLReportGenerator:
                 // Score filter
                 const matchesScore = score >= minScore;
 
-                // Status filter - check if any criteria match the status
-                let matchesStatus = status === 'all';
-                if (!matchesStatus) {
-                    const statusBadges = card.querySelectorAll('.competitive-status');
-                    statusBadges.forEach(badge => {
-                        if (badge.classList.contains('status-' + status)) {
-                            matchesStatus = true;
-                        }
-                    });
+                // Position filter - filter by competitive position tier
+                let matchesPosition = positionFilter === 'all';
+                if (!matchesPosition) {
+                    matchesPosition = tier === positionFilter;
                 }
 
                 // Show/hide card
-                if (matchesSearch && matchesScore && matchesStatus) {
+                if (matchesSearch && matchesScore && matchesPosition) {
                     card.parentElement.classList.remove('filtered-out');
                     visibleCount++;
+                    visibleCompetitors.push(competitorName);
                 } else {
                     card.parentElement.classList.add('filtered-out');
                 }
             });
 
+            // Filter ranking table rows
+            rankingRows.forEach(row => {
+                const competitorCell = row.cells[1];
+                if (competitorCell) {
+                    const competitorName = competitorCell.textContent.trim().toLowerCase();
+                    if (visibleCompetitors.includes(competitorName)) {
+                        row.classList.remove('filtered-out');
+                    } else {
+                        row.classList.add('filtered-out');
+                    }
+                }
+            });
+
             // Update count
             filterCount.textContent = `Showing ${visibleCount} of ${cards.length} competitors`;
+
+            // Update charts with filtered data
+            updateCharts(visibleCompetitors);
+        }
+
+        function updateCharts(visibleCompetitors) {
+            // This function will re-render Plotly charts with only visible competitors
+            // We need to store the original chart data and filter it
+            if (visibleCompetitors.length === 0) return;
+
+            // For now, we'll hide/show traces in Plotly charts
+            // This is a placeholder - full implementation depends on chart structure
+            console.log('Filtering charts for:', visibleCompetitors);
         }
 
         function resetFilters() {
