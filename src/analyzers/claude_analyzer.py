@@ -270,7 +270,7 @@ Be specific and reference what you actually see in the screenshots. Think like a
             # Call Claude API
             response = self.client.messages.create(
                 model=self.model,
-                max_tokens=4096,
+                max_tokens=8192,  # Increased from 4096 to prevent JSON truncation
                 messages=[{
                     "role": "user",
                     "content": content
