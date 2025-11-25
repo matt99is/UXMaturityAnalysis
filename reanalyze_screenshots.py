@@ -13,7 +13,7 @@ import asyncio
 import sys
 from pathlib import Path
 from main import UXAnalysisOrchestrator
-from src.config_loader import ConfigLoader
+from src.config_loader import AnalysisConfig
 import json
 
 async def reanalyze_audit(audit_path: str):
@@ -37,8 +37,8 @@ async def reanalyze_audit(audit_path: str):
     print(f"Analysis type: {analysis_type}")
 
     # Load config for analysis type
-    config_loader = ConfigLoader()
-    analysis_type_config = config_loader.get_analysis_type(analysis_type)
+    config = AnalysisConfig()
+    analysis_type_config = config.get_analysis_type(analysis_type)
 
     if not analysis_type_config:
         print(f"Error: Analysis type '{analysis_type}' not found in config")
