@@ -12,7 +12,7 @@ Example:
 import asyncio
 import sys
 from pathlib import Path
-from main import CompetitiveAnalysisOrchestrator
+from main import UXAnalysisOrchestrator
 from src.config_loader import ConfigLoader
 import json
 
@@ -50,7 +50,7 @@ async def reanalyze_audit(audit_path: str):
     print(f"Found {len(competitor_folders)} competitors to reanalyze\n")
 
     # Create orchestrator
-    orchestrator = CompetitiveAnalysisOrchestrator(
+    orchestrator = UXAnalysisOrchestrator(
         analysis_type=analysis_type,
         output_dir=str(audit_dir.parent)
     )
