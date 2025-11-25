@@ -11,10 +11,11 @@ Example:
 
 import asyncio
 import sys
+import os
+import json
 from pathlib import Path
 from main import UXAnalysisOrchestrator
 from src.config_loader import AnalysisConfig
-import json
 
 async def reanalyze_audit(audit_path: str):
     """Reanalyze all competitors in an existing audit folder."""
@@ -68,10 +69,16 @@ async def reanalyze_audit(audit_path: str):
 
     print(f"Found {len(competitor_folders)} competitors to reanalyze\n")
 
+    # Get API key from environment
+    api_key = os.getenv('ANTHROPIC_API_KEY')
+    if not api_key:
+        print("Error: ANTHROPIC_API_KEY environment variable not set")
+        return
+
     # Create orchestrator
     orchestrator = UXAnalysisOrchestrator(
-        analysis_type=analysis_type,
-        output_dir=str(audit_dir.parent)
+        api_key=api_key,
+        analysis_type=analysis_type
     )
 
     # Build competitor data from existing screenshots
