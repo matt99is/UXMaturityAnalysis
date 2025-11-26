@@ -1,4 +1,4 @@
-name: "Checkout Flow Analysis"
+name: "Checkout Flow UX Maturity Analysis"
 requires_interaction: true
 interaction_prompt: "Please navigate through the checkout process to the final payment step (do not submit payment)"
 interaction_timeout: 300

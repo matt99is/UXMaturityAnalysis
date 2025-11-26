@@ -3,10 +3,10 @@
 Reanalyze existing screenshots without re-capturing.
 
 Usage:
-    python3 reanalyze_screenshots.py <audit_folder>
+    python3 scripts/reanalyze_screenshots.py <audit_folder>
 
 Example:
-    python3 reanalyze_screenshots.py output/audits/2025-11-24_basket_pages
+    python3 scripts/reanalyze_screenshots.py output/audits/2025-11-24_basket_pages
 """
 
 import asyncio
@@ -14,6 +14,10 @@ import sys
 import os
 import json
 from pathlib import Path
+
+# Add parent directory to path so we can import from main and src
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from dotenv import load_dotenv
 from main import UXAnalysisOrchestrator
 from src.config_loader import AnalysisConfig

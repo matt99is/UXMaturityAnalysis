@@ -1,10 +1,10 @@
-# E-commerce UX Competitive Intelligence Agent
+# E-commerce UX Maturity Analysis Agent
 
-**Version:** 1.3.2
+**Version:** 1.3.3
 **Status:** Production Ready
 **Python:** 3.9+
 
-A Python tool that systematically analyzes competitor e-commerce pages and generates competitive intelligence reports using Claude AI and browser automation.
+A Python tool that systematically analyses competitor e-commerce pages and generates UX maturity reports using Claude AI and browser automation.
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -62,7 +62,7 @@ This tool automates competitive UX analysis for e-commerce sites by:
 - ⌨️ **Cancel Anytime**: Press Ctrl+C or skip individual competitors
 
 ### Analysis & Reports
-- 🎯 **Competitive Intelligence Focus**: Threats, opportunities, and market positioning
+- 🎯 **UX Maturity Focus**: Evaluate UX maturity across multiple dimensions
 - 📊 **Research-backed Evaluation**: Baymard Institute and Nielsen Norman Group criteria
 - 📱 **Desktop & Mobile Analysis**: Multi-viewport screenshot capture
 - 🔄 **Reanalyze Capability**: Regenerate reports from existing screenshots (NEW in v1.3.2)
@@ -278,14 +278,14 @@ python3 main.py --manual-mode --screenshots-dir ./my-screenshots --urls https://
 ### Usage
 
 ```bash
-python3 reanalyze_screenshots.py <audit_folder>
+python3 scripts/reanalyze_screenshots.py <audit_folder>
 ```
 
 **Example:**
 
 ```bash
 # Regenerate report from existing basket pages audit
-python3 reanalyze_screenshots.py output/audits/2025-11-24_basket_pages
+python3 scripts/reanalyze_screenshots.py output/audits/2025-11-24_basket_pages
 ```
 
 ### How It Works
@@ -327,7 +327,7 @@ Analyzing 1 competitor...
 You've made filtering improvements to the HTML report template. Regenerate:
 
 ```bash
-python3 reanalyze_screenshots.py output/audits/2025-11-24_basket_pages
+python3 scripts/reanalyze_screenshots.py output/audits/2025-11-24_basket_pages
 ```
 All 11 analyses reused instantly, new HTML report generated in seconds.
 
@@ -339,14 +339,14 @@ You've updated `basket_pages.yaml` with new evaluation points. Delete old `analy
 rm output/audits/2025-11-24_basket_pages/*/analysis.json
 
 # Reanalyze with new criteria
-python3 reanalyze_screenshots.py output/audits/2025-11-24_basket_pages
+python3 scripts/reanalyze_screenshots.py output/audits/2025-11-24_basket_pages
 ```
 
 **Scenario 3: Add Missing Competitor**
 One competitor failed during capture. Add screenshots manually, then:
 
 ```bash
-python3 reanalyze_screenshots.py output/audits/2025-11-24_basket_pages
+python3 scripts/reanalyze_screenshots.py output/audits/2025-11-24_basket_pages
 ```
 Only the new competitor gets analyzed; others reused.
 
@@ -632,7 +632,7 @@ Each competitor card shows:
 3. Check Overall Rankings → Understand competitive landscape
 4. Use Heatmap → Spot patterns and white space
 
-**For Competitive Benchmarking:**
+**For UX Maturity Analysis:**
 1. Check Overall Rankings table → See relative positions
 2. Review Market Leaders card → Identify who to benchmark
 3. Look at Competitive Threats → Understand what you're up against
@@ -699,27 +699,42 @@ python3 main.py --analysis-type landing_pages --config competitors.json
 ```
 BenchmarkAgent/
 ├── main.py                          # Main entry point & orchestration
-├── reanalyze_screenshots.py         # 🆕 Regenerate reports from existing screenshots
-├── config.yaml                      # Legacy config (backward compatibility)
+│
+├── scripts/                         # 📜 User-facing utilities
+│   ├── reanalyze_screenshots.py    #    🆕 Regenerate reports from existing screenshots
+│   ├── generate_index.py           #    Create report dashboard for deployment
+│   └── deploy_netlify.py           #    Deploy reports to Netlify
+│
 ├── criteria_config/                 # ✨ Page-type-specific criteria
-│   ├── homepage_pages.yaml          #    Homepage UX criteria
-│   ├── product_pages.yaml           #    Product page criteria
-│   ├── basket_pages.yaml            #    Basket/cart criteria
-│   └── checkout_pages.yaml          #    Checkout flow criteria
+│   ├── homepage_pages.yaml         #    Homepage UX criteria
+│   ├── product_pages.yaml          #    Product page criteria
+│   ├── basket_pages.yaml           #    Basket/cart criteria
+│   └── checkout_pages.yaml         #    Checkout flow criteria
+│
+├── src/                            # 📦 Core library code
+│   ├── config_loader.py            #    Load criteria from YAML files
+│   ├── analyzers/
+│   │   ├── screenshot_capture.py   #    Playwright browser automation
+│   │   └── claude_analyzer.py      #    Claude API + prompts
+│   └── utils/
+│       ├── report_generator.py     #    Markdown report generation
+│       ├── audit_organizer.py      #    Hierarchical output organisation
+│       ├── html_report_generator.py #   Interactive HTML reports with charts
+│       └── screenshot_annotator.py  #   Screenshot annotations
+│
+├── docs/                            # 📚 Documentation
+│   ├── deployment/                 #    Deployment guides
+│   │   ├── NETLIFY.md             #    Full Netlify deployment guide
+│   │   └── QUICKSTART.md          #    30-second deployment
+│   ├── ARCHITECTURE.md             #    System architecture
+│   ├── BOT_DETECTION_GUIDE.md      #    Handling bot protection
+│   └── config_reference.yaml       #    Config structure reference
+│
 ├── requirements.txt                 # Python dependencies
 ├── .env.example                     # Environment variables template
 ├── competitors.example.json         # Example competitor config
-├── src/
-│   ├── config_loader.py            # Load criteria from YAML files
-│   ├── analyzers/
-│   │   ├── screenshot_capture.py   # Playwright browser automation
-│   │   └── claude_analyzer.py      # Claude API + prompts
-│   └── utils/
-│       ├── report_generator.py     # Markdown report generation
-│       ├── audit_organizer.py      # Hierarchical output organization
-│       ├── html_report_generator.py # Interactive HTML reports with charts
-│       └── screenshot_annotator.py  # Screenshot annotations
-└── output/audits/                   # ✨ Organized by audit run
+│
+└── output/audits/                   # ✨ Organised by audit run
     └── {date}_{analysis_type}/      #    Audit folder
         ├── _comparison_report.md    #    Competitive intelligence report
         ├── _comparison_report.html  #    Interactive HTML report

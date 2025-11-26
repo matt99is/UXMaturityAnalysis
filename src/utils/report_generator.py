@@ -140,7 +140,7 @@ class ReportGenerator:
     def _build_markdown_content(self, analysis_results: List[Dict[str, Any]]) -> str:
         """Build markdown report content with competitive intelligence focus."""
 
-        md = "# Competitive Intelligence Report: UX Analysis\n\n"
+        md = "# UX Maturity Report\n\n"
         md += f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
         md += f"**Competitors Analyzed:** {len(analysis_results)}\n\n"
 

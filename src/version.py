@@ -1,15 +1,15 @@
 """
-Version information for the E-commerce UX Competitive Intelligence Agent.
+Version information for the E-commerce UX Maturity Analysis Agent.
 """
 
 from pathlib import Path
 
-__version__ = "1.3.2"
+__version__ = "1.3.3"
 __version_info__ = tuple(int(x) for x in __version__.split("."))
 
 # Project metadata
-__title__ = "E-commerce UX Competitive Intelligence Agent"
-__description__ = "AI-powered competitive UX analysis for e-commerce sites"
+__title__ = "E-commerce UX Maturity Analysis Agent"
+__description__ = "AI-powered UX maturity analysis for e-commerce sites"
 __author__ = "Matthew Lelonek"
 __license__ = "MIT"
 

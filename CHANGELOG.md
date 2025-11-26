@@ -1,9 +1,72 @@
 # Changelog
 
-All notable changes to the E-commerce UX Competitive Intelligence Agent will be documented in this file.
+All notable changes to the E-commerce UX Maturity Analysis Agent will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.3.3] - 2025-11-26
+
+### Changed
+- **🎨 Rebrand to UX Maturity Analysis**: Complete rebrand from "Competitive Intelligence" to "UX Maturity Analysis"
+  - All reports now titled "UX Maturity Report" instead of "Competitive Intelligence Report"
+  - Project name: "E-commerce UX Maturity Analysis Agent"
+  - Analysis names updated: "Basket Page UX Maturity Analysis", "Product Page UX Maturity Analysis", etc.
+  - Focus shifted from competitive intelligence to UX maturity evaluation
+  - All future reports automatically use new branding
+  - Existing reports retain original branding
+
+- **📁 Project Structure Reorganisation**: Consolidated all user-facing scripts and documentation
+  - Moved `reanalyze_screenshots.py` to `scripts/` directory
+  - Moved deployment documentation to `docs/deployment/` directory
+    - `NETLIFY_DEPLOY.md` → `docs/deployment/NETLIFY.md`
+    - `DEPLOY_QUICKSTART.md` → `docs/deployment/QUICKSTART.md`
+  - Moved `config.yaml` to `docs/config_reference.yaml` (documentation only)
+  - All scripts now in `scripts/`: `reanalyze_screenshots.py`, `generate_index.py`, `deploy_netlify.py`
+  - All documentation now in `docs/` with logical subdirectories
+  - Updated README to reflect new structure
+  - Fixed import paths in moved scripts
+
+### Added
+- **🚀 Netlify Deployment Support**: Complete deployment infrastructure for sharing reports
+  - `scripts/generate_index.py`: Auto-generates professional dashboard listing all reports
+    - Beautiful card-based UI with dates, analysis types, and competitor counts
+    - Report titles pulled from config YAML files (e.g., "Basket Page UX Maturity Analysis")
+    - UK English formatting throughout
+  - `scripts/deploy_netlify.py`: Automated deployment script with CLI support
+  - `netlify.toml`: Netlify configuration with optimal caching headers
+  - `docs/deployment/NETLIFY.md`: Comprehensive deployment guide (3 deployment methods)
+  - `docs/deployment/QUICKSTART.md`: 30-second deployment guide
+  - **Deployment Options:**
+    - Drag & drop to Netlify (30 seconds, no installation)
+    - CLI deployment (automated, repeatable)
+    - GitHub auto-deploy (push to deploy)
+  - **Dashboard Features:**
+    - Lists all reports with formatted dates (e.g., "24 November 2025")
+    - Shows proper analysis names from config files
+    - Displays competitor counts per report
+    - Mobile-responsive design
+
+### Removed
+- Deleted unused `VERSION` file (contained outdated version 1.2.1)
+  - Version now maintained solely in `src/version.py` (single source of truth)
+  - No code referenced the VERSION file
+
+### Documentation
+- Created `NAMING_EXPLANATION.md`: Explains how index generator derives report titles from config files
+- Created `STRUCTURE_AUDIT.md`: Full audit of project structure with before/after
+- Created `REORGANISATION_COMPLETE.md`: Documentation of structure changes
+- Created `REBRAND_COMPLETE.md`: Complete rebrand documentation with examples
+- Updated README.md:
+  - New project structure section
+  - Updated all script paths (`scripts/reanalyze_screenshots.py`)
+  - UK English spelling (organisation, authorised, analysed)
+  - Updated branding to UX Maturity Analysis
+
+### Technical
+- UK English adopted throughout codebase (organisation, analyse, authorise)
+- Index generator loads analysis names from `criteria_config/*.yaml` files
+- Fallback to formatted folder names if config unavailable
 
 ## [1.3.2] - 2025-11-25
 

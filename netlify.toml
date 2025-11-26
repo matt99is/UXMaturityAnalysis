@@ -1,0 +1,37 @@
+# Netlify configuration for Competitive Intelligence Reports
+# https://docs.netlify.com/configure-builds/file-based-configuration/
+
+[build]
+  # No build process needed - we're deploying static HTML
+  publish = "output/audits"
+  command = "echo 'No build needed - static HTML'"
+
+# Redirect rules
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
+
+# Headers for caching
+[[headers]]
+  for = "*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Optional: Password protection (requires Netlify Pro)
+# Uncomment and set password in Netlify dashboard
+# [[redirects]]
+#   from = "/*"
+#   to = "/.netlify/functions/auth"
+#   status = 200
+#   force = true

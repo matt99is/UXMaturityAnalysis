@@ -1,4 +1,4 @@
-name: "E-commerce Basket Page Analysis - UK Retail"
+name: "Basket Page UX Maturity Analysis - UK Retail"
 requires_interaction: true
 interaction_prompt: "🛒 Please add 2-3 items to the basket, then press Enter to continue..."
 interaction_timeout: 300
