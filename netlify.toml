@@ -4,7 +4,15 @@
 [build]
   # No build process needed - we're deploying static HTML
   publish = "output/audits"
-  command = "echo 'No build needed - static HTML'"
+  command = "bash netlify-deploy.sh"
+  ignore = "git diff --quiet HEAD^ HEAD -- output/audits/"
+
+# Disable automatic dependency detection
+[build.environment]
+  # Skip Python dependency installation - we deploy pre-generated HTML
+  NETLIFY_USE_YARN = "false"
+  NETLIFY_USE_NPM = "false"
+  PYTHON_VERSION = "false"
 
 # Redirect rules
 [[redirects]]
