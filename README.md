@@ -87,7 +87,7 @@ This tool automates competitive UX analysis for e-commerce sites by:
 1. **Clone the repository:**
 ```bash
 git clone <repository-url>
-cd BenchmarkAgent
+cd UXMaturityAnalysis
 ```
 
 2. **Install dependencies:**
@@ -697,7 +697,7 @@ python3 main.py --analysis-type landing_pages --config competitors.json
 #### 2. Project Structure
 
 ```
-BenchmarkAgent/
+UXMaturityAnalysis/
 ├── main.py                          # Main entry point & orchestration
 │
 ├── scripts/                         # 📜 User-facing utilities

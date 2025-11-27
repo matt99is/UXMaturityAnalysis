@@ -69,7 +69,7 @@
 ## 📂 New Project Structure
 
 ```
-BenchmarkAgent/
+UXMaturityAnalysis/
 ├── main.py                          ⭐ Main entry point
 │
 ├── scripts/                         📜 All utility scripts
