@@ -110,7 +110,7 @@ def generate_index_html(audits_dir: Path = Path("output/audits")):
     <style>
         body {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
             min-height: 100vh;
             padding: 40px 0;
         }}
@@ -148,10 +148,10 @@ def generate_index_html(audits_dir: Path = Path("output/audits")):
         .report-card:hover {{
             transform: translateY(-5px);
             box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
-            border: 2px solid #10b981;
+            border: 2px solid #8b5cf6;
         }}
         .report-date {{
-            color: #10b981;
+            color: #8b5cf6;
             font-weight: 600;
             font-size: 0.9rem;
             text-transform: uppercase;
@@ -168,7 +168,7 @@ def generate_index_html(audits_dir: Path = Path("output/audits")):
             font-size: 0.9rem;
         }}
         .badge-custom {{
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
             color: white;
             padding: 5px 12px;
             border-radius: 15px;

@@ -14,10 +14,46 @@ Directory structure:
 """
 
 import re
+import json
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 from urllib.parse import urlparse
+
+
+def get_resources_config() -> Optional[Dict]:
+    """
+    Load Resources integration configuration if it exists.
+
+    Returns:
+        Config dict or None if not configured
+    """
+    try:
+        config_path = Path(__file__).parent.parent.parent / "resources_integration_config.json"
+        if config_path.exists():
+            with open(config_path, 'r') as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return None
+
+
+def get_output_base_dir(default_base: str = "output") -> Path:
+    """
+    Get the output base directory, using Resources project if configured.
+
+    Args:
+        default_base: Default output directory if Resources not configured
+
+    Returns:
+        Path object for the base output directory
+    """
+    config = get_resources_config()
+    if config and config.get('resources_project_path'):
+        resources_path = Path(config['resources_project_path'])
+        output_subfolder = config.get('output_subfolder', 'ux-analysis')
+        return resources_path / output_subfolder
+    return Path(default_base) / "audits"
 
 
 def extract_competitor_name(url: str) -> str:
@@ -96,9 +132,10 @@ def create_audit_directory_structure(
     if audit_date is None:
         audit_date = datetime.now().strftime("%Y-%m-%d")
 
-    # Create audit root directory: output/audits/{date}_{analysis_type}
+    # Create audit root directory: use Resources path if configured
     audit_folder_name = f"{audit_date}_{analysis_type}"
-    audit_root = Path(base_dir) / "audits" / audit_folder_name
+    base_output_dir = get_output_base_dir(base_dir)
+    audit_root = base_output_dir / audit_folder_name
     audit_root.mkdir(parents=True, exist_ok=True)
 
     # Create competitor subfolders

@@ -892,6 +892,23 @@ For more examples and documentation, see README.md
         # Display summary
         orchestrator.display_summary(results)
 
+        # Update Resources index if configured
+        try:
+            from src.utils.audit_organizer import get_resources_config
+            import subprocess
+
+            resources_config = get_resources_config()
+            if resources_config and resources_config.get('update_index', True):
+                console.print("\n[cyan]🔄 Updating Resources index...[/cyan]")
+                update_script = Path(__file__).parent / "scripts" / "update_resources_index.py"
+                result = subprocess.run([sys.executable, str(update_script)], capture_output=True, text=True)
+                if result.returncode == 0:
+                    console.print("[green]✅ Resources index updated![/green]")
+                else:
+                    console.print(f"[yellow]⚠️  Index update had issues: {result.stderr}[/yellow]")
+        except Exception as e:
+            console.print(f"[dim]Note: Could not update Resources index: {e}[/dim]")
+
         # Show new organized output structure
         audit_root = audit_structure['audit_root']
         console.print(f"\n[bold green]✅ Analysis complete![/bold green]\n")

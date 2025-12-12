@@ -719,13 +719,13 @@ class HTMLReportGenerator:
         }
         .filter-panel .form-select:focus,
         .filter-panel .form-control:focus {
-            border-color: #10b981;
+            border-color: #8b5cf6;
             box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
         }
         .filter-badge {
             display: inline-block;
             padding: 6px 12px;
-            background: #10b981;
+            background: #8b5cf6;
             color: white;
             border-radius: 20px;
             font-size: 0.85rem;
@@ -735,7 +735,7 @@ class HTMLReportGenerator:
             transition: all 0.3s;
         }
         .filter-badge:hover {
-            background: #059669;
+            background: #7c3aed;
             transform: translateY(-2px);
         }
         .filter-badge.active {
@@ -781,7 +781,7 @@ class HTMLReportGenerator:
             position: relative;
         }
         .screenshot-thumb:hover {
-            border-color: #10b981;
+            border-color: #8b5cf6;
             transform: scale(1.05);
             box-shadow: 0 8px 25px rgba(0,0,0,0.2);
         }
@@ -822,7 +822,7 @@ class HTMLReportGenerator:
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
             padding: 20px 0;
         }
         .container-main {
@@ -836,7 +836,7 @@ class HTMLReportGenerator:
             text-align: center;
             margin-bottom: 40px;
             padding-bottom: 30px;
-            border-bottom: 3px solid #10b981;
+            border-bottom: 3px solid #8b5cf6;
         }
         .header h1 {
             color: #2d3748;
@@ -848,7 +848,7 @@ class HTMLReportGenerator:
             font-size: 1.1rem;
         }
         .stat-card {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
             color: white;
             padding: 25px;
             border-radius: 15px;
@@ -886,7 +886,7 @@ class HTMLReportGenerator:
             background: white;
         }
         .competitor-card:hover {
-            border-color: #10b981;
+            border-color: #8b5cf6;
             box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
             transform: translateY(-2px);
         }
@@ -906,7 +906,7 @@ class HTMLReportGenerator:
         .overall-score {
             font-size: 2rem;
             font-weight: 700;
-            color: #10b981;
+            color: #8b5cf6;
         }
         .score-badge {
             display: inline-block;
@@ -949,7 +949,7 @@ class HTMLReportGenerator:
         }
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(90deg, #8b5cf6 0%, #7c3aed 100%);
             border-radius: 10px;
             transition: width 0.3s ease;
         }
@@ -998,11 +998,11 @@ class HTMLReportGenerator:
             color: #2d3748;
             margin-bottom: 25px;
             padding-bottom: 15px;
-            border-bottom: 3px solid #10b981;
+            border-bottom: 3px solid #8b5cf6;
         }
         .alert-custom {
-            background: linear-gradient(135deg, #10b98115 0%, #05966915 100%);
-            border-left: 4px solid #10b981;
+            background: linear-gradient(135deg, #8b5cf615 0%, #7c3aed15 100%);
+            border-left: 4px solid #8b5cf6;
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 25px;
@@ -1022,7 +1022,7 @@ class HTMLReportGenerator:
         .toggle-card-btn {
             background: none;
             border: none;
-            color: #10b981;
+            color: #8b5cf6;
             cursor: pointer;
             font-size: 1.5rem;
             padding: 0;
@@ -1030,7 +1030,7 @@ class HTMLReportGenerator:
             transition: transform 0.3s ease;
         }
         .toggle-card-btn:hover {
-            color: #059669;
+            color: #7c3aed;
         }
         .toggle-card-btn.collapsed {
             transform: rotate(180deg);
@@ -1055,12 +1055,12 @@ class HTMLReportGenerator:
             transition: all 0.3s ease;
         }
         .exec-card:hover {
-            border-color: #10b981;
+            border-color: #8b5cf6;
             box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
             transform: translateY(-3px);
         }
         .exec-card h4 {
-            color: #10b981;
+            color: #8b5cf6;
             font-size: 1.1rem;
             font-weight: 700;
             margin-bottom: 15px;
@@ -1083,8 +1083,8 @@ class HTMLReportGenerator:
             margin-top: 5px;
         }
         .exec-card .impact {
-            background: linear-gradient(135deg, #10b98115 0%, #05966915 100%);
-            border-left: 3px solid #10b981;
+            background: linear-gradient(135deg, #8b5cf615 0%, #7c3aed15 100%);
+            border-left: 3px solid #8b5cf6;
             padding: 10px;
             border-radius: 6px;
             margin-top: 15px;
@@ -1100,7 +1100,7 @@ class HTMLReportGenerator:
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
         .ranking-table thead {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
             color: white;
         }
         .ranking-table th {
