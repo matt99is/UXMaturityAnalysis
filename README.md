@@ -1,10 +1,10 @@
 # E-commerce UX Maturity Analysis Agent
 
-**Version:** 1.3.3
+**Version:** 1.4.0
 **Status:** Production Ready
 **Python:** 3.9+
 
-A Python tool that systematically analyses competitor e-commerce pages and generates UX maturity reports using Claude AI and browser automation.
+A Python tool that systematically analyses competitor e-commerce pages and generates UX maturity reports using Claude AI and browser automation. Now with Resources project integration for automatic portfolio publishing.
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -22,6 +22,7 @@ A Python tool that systematically analyses competitor e-commerce pages and gener
 - [Configuration](#configuration)
 - [Output Structure](#output-structure)
 - [Interactive HTML Reports](#interactive-html-reports)
+- [Resources Integration](#resources-integration)
 - [Architecture & Extensibility](#architecture--extensibility)
 - [Technical Details](#technical-details)
 - [Roadmap](#roadmap)
@@ -72,6 +73,12 @@ This tool automates competitive UX analysis for e-commerce sites by:
 - 🔍 **Dynamic Filtering**: Filter by competitive position, score, or search
 - 🖼️ **Annotated Screenshots**: Visual badges showing strengths/weaknesses
 - 💡 **Strategic Insights**: Market leaders, opportunities, threats at-a-glance
+- 🟣 **Purple Theme**: Professional color scheme for visual distinction
+
+### Integration (NEW in v1.4.0)
+- 🔗 **Resources Project Integration**: Auto-publish to portfolio site
+- 📝 **Auto Index Updates**: Reports appear on main site automatically
+- 🎯 **Configured Output**: Save directly to deployment-ready location
 
 ---
 
@@ -643,6 +650,95 @@ Each competitor card shows:
 2. Overall Rankings table → Competitive position at a glance
 3. Radar Chart → Visual competitive positioning
 4. Screenshots with annotations → Specific examples
+
+---
+
+## Resources Integration
+
+**NEW in v1.4.0**: The tool now integrates with the [Resources portfolio project](https://github.com/matt99is/Resources) to automatically publish analysis reports to a live website.
+
+### Overview
+
+When configured, analysis reports are:
+- Saved directly to the Resources project (`/ux-analysis/` folder)
+- Automatically added to the Resources index page
+- Published with a professional purple theme
+- Ready for immediate Netlify deployment
+
+### Setup
+
+1. **Clone the Resources project** alongside this repo:
+```bash
+cd ~/Projects
+git clone https://github.com/matt99is/Resources.git
+```
+
+2. **Configuration is already set** in `resources_integration_config.json`:
+```json
+{
+  "resources_project_path": "/Users/matthewlelonek/Projects/Resources",
+  "output_subfolder": "ux-analysis",
+  "update_index": true
+}
+```
+
+3. **Update the path** if your Resources project is in a different location.
+
+### Usage
+
+Run analysis as normal:
+```bash
+python main.py --config competitors.json
+```
+
+The tool will:
+1. ✅ Generate the analysis report
+2. ✅ Save to `Resources/ux-analysis/YYYY-MM-DD_page_type/`
+3. ✅ Update `Resources/index.html` with new report card
+4. ✅ Print confirmation message
+
+Example output:
+```
+✅ Analysis complete!
+
+Results saved to: /Users/matthewlelonek/Projects/Resources/ux-analysis/2025-12-12_basket_pages
+
+🔄 Updating Resources index...
+✅ Resources index updated!
+```
+
+### Deploy to Netlify
+
+After running an analysis:
+
+```bash
+cd Resources
+git add .
+git commit -m "Add new UX analysis report"
+git push
+```
+
+Netlify will auto-deploy, and your new report will be live!
+
+### Disabling Integration
+
+To output to local folder instead:
+
+**Option 1:** Delete or rename `resources_integration_config.json`
+
+**Option 2:** Set `update_index: false` in the config
+
+Reports will then save to `output/audits/` as before.
+
+### Color Theme
+
+Reports now use a **purple theme** (#8b5cf6, #7c3aed) to visually distinguish analysis reports from case studies (green) and guides (blue) in the Resources project.
+
+The purple theme applies to:
+- All gradients and buttons
+- Chart colors and accents
+- Badges and tags
+- Hover states
 
 ---
 

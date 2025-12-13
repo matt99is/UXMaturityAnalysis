@@ -5,6 +5,74 @@ All notable changes to the E-commerce UX Maturity Analysis Agent will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-12-12
+
+### Added
+- **🔗 Resources Project Integration**: Automatic portfolio publishing
+  - New `resources_integration_config.json` for configuration
+  - Reports automatically save to Resources project (`/ux-analysis/` folder)
+  - Auto-updates Resources index page with new report cards
+  - Seamless integration with Netlify deployment workflow
+  - Created `scripts/update_resources_index.py` for index management
+
+- **🎯 Smart Output Path Detection**:
+  - Modified `audit_organizer.py` to detect Resources configuration
+  - Falls back to local `output/audits/` if Resources not configured
+  - Automatically creates directory structure in target location
+
+- **📝 Automatic Index Updates**:
+  - New index updater script scans for reports and extracts metadata
+  - Generates properly formatted cards matching Resources design
+  - Updates section count automatically (e.g., "(2)" → "(3)")
+  - Preserves all existing HTML structure and content
+
+### Changed
+- **🟣 Purple Theme**: Complete color scheme update for visual distinction
+  - Changed from green (#10b981, #059669) to purple (#8b5cf6, #7c3aed)
+  - All gradients, buttons, badges, borders updated
+  - Chart colors and accents now purple
+  - Maintains brand consistency with Resources project:
+    - Green = Case Studies
+    - Blue = Guides
+    - Purple = Analysis Reports
+
+- **📊 Report Output Workflow**:
+  - `main.py` now triggers index update after report generation
+  - Post-generation confirmation shows Resources path when configured
+  - Clear console output indicating integration status
+
+### Technical
+- Modified files:
+  - `main.py`: Added Resources index updater call
+  - `src/utils/audit_organizer.py`: Added config detection, path routing
+  - `src/utils/html_report_generator.py`: Green → purple theme
+  - `scripts/generate_index.py`: Green → purple theme
+
+- New files:
+  - `resources_integration_config.json`: Integration configuration
+  - `scripts/update_resources_index.py`: Index updater utility
+
+### Documentation
+- Updated README.md:
+  - New "Resources Integration" section with setup guide
+  - Updated version to 1.4.0
+  - Added integration features to feature list
+  - Deployment workflow includes Resources commit/push
+
+### Workflow
+**New integrated workflow:**
+1. Run analysis: `python main.py --config competitors.json`
+2. Reports save to `Resources/ux-analysis/YYYY-MM-DD_page_type/`
+3. Resources index auto-updates with new report card
+4. Commit and push Resources project to deploy
+
+### Compatibility
+- Fully backwards compatible
+- Disabling integration: Delete or modify `resources_integration_config.json`
+- Reports still work standalone without Resources project
+
+---
+
 ## [1.3.3] - 2025-11-26
 
 ### Changed
