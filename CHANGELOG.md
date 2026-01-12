@@ -5,6 +5,90 @@ All notable changes to the E-commerce UX Maturity Analysis Agent will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-01-12
+
+### Changed
+- **⏱️ Sequential Analysis**: Reverted to sequential processing to respect API rate limits
+  - Changed from batched parallel back to one-at-a-time analysis
+  - Rate limit: 8,000 output tokens/minute (each analysis generates ~6,000 tokens)
+  - 60-second delay between analyses to stay within limits
+  - Reliable execution without rate limit errors
+  - Trade-off: ~1 minute per competitor vs instant parallel (but parallel was hitting limits)
+
+### Improved
+- **🎯 Dark Pattern Detection**: Significantly enhanced subscription pre-selection detection
+  - Added explicit visual indicator checks (filled radio buttons, checked boxes)
+  - CRITICAL scoring guidance: Dark patterns now score 0-3/10 (severe penalty)
+  - Enhanced evaluation points with specific UI state detection
+  - Added UK CMA dark pattern guidance and regulatory context
+  - Subscription criterion description emphasizes dark pattern detection
+  - Claude explicitly instructed to look for filled circles (•) vs empty circles (○)
+  - Flagged as severe vulnerabilities that may violate consumer protection law
+
+- **📊 Product Page Criteria Enhancement**: Updated all criteria with 2025-2026 research
+  - **Product Imagery**: Added descriptive text/graphics, in-use imagery, mobile gesture support
+  - **Add to Cart**: Added unique styling check, minimal clutter check, post-add feedback
+  - **Pricing Clarity**: Added price per unit, shipping cost visibility
+  - **Product Information**: Added 3-5 feature highlights, specs table, use cases, avoids horizontal tabs
+  - **Reviews & Social Proof**: Added ratings distribution, verification badges, site responses, reviewer context
+  - **Trust & Security**: Completely overhauled with badge counts, HTTPS checks, design quality, third-party ratings
+  - **Mobile Optimization**: Added gesture support, touch target sizes, above-fold critical info
+  - All criteria weights adjusted for competitive exploitation strategy
+
+- **🆕 Express Payment Criterion**: Added new criterion for product page express checkout
+  - Weight: 1.7 (high priority - most sites don't offer this)
+  - Evaluates Apple Pay, Google Pay, PayPal Express, Amazon Pay, Shop Pay buttons
+  - Checks for "Buy Now" immediate purchase options (bypasses cart)
+  - Focuses only on product page elements (not checkout flow)
+  - Research-backed: 2x faster purchase completion with express payment
+
+### Added
+- **Sequential Retry Logic**: Failed analyses now retry sequentially
+  - 60-second delays between retries
+  - Clear progress indicators: "Retry 1/7: competitor_name"
+  - Saves successful retries to analysis.json
+  - Same rate-limit-safe approach as main analysis
+
+### Fixed
+- **🐛 HTML Report Path Issue**: Fixed HTML reports not generating in Resources folder
+  - HTML generator now correctly writes to audit_root directory
+  - Works with both local output and Resources integration paths
+  - Temporary output_dir override ensures correct file placement
+
+- **🐛 Plotly Heatmap Not Showing**: Fixed missing Plotly CDN in HTML reports
+  - Changed from `include_plotlyjs=False` to `include_plotlyjs='cdn'`
+  - Heatmap now loads correctly in all browsers
+  - No longer requires separate Plotly script tag
+
+- **🐛 Retry Logic Structure**: Fixed TypeError when retrying failed competitors
+  - Updated to correctly access nested competitor_info dictionary
+  - Now uses `competitor_info['screenshots']` instead of direct path concatenation
+  - Matches structure from `create_audit_directory_structure()`
+
+### Technical
+- Reduced `max_tokens` from 8192 to 6000 to stay within output token limits
+- Updated `claude_analyzer.py` to use `AsyncAnthropic` for true async support
+- All retry logic now uses sequential processing with 60s delays
+- Updated `reanalyze_screenshots.py` to match sequential processing pattern
+- BATCH_SIZE = 1, DELAY = 60s across all analysis paths
+
+### Documentation
+- Updated CHANGELOG.md with v1.5.0 changes
+- README.md updated to reference report regeneration script
+- Clarified rate limit constraints and performance expectations
+
+### Performance Notes
+**Timing for 10 Competitors:**
+- Sequential: ~15-17 minutes (1 min per competitor + 60s delays)
+- Previously attempted parallel: Rate limit errors
+- Trade-off accepted: Reliability over speed
+
+**Rate Limit Compliance:**
+- Input tokens: 30,000/min (plenty of headroom)
+- Output tokens: 8,000/min (1 analysis per minute = 6,000 tokens, safe)
+
+---
+
 ## [1.4.0] - 2025-12-12
 
 ### Added

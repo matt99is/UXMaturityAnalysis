@@ -119,10 +119,21 @@ async def reanalyze_audit(audit_path: str):
             "timestamp": audit_summary.get('timestamp', 'unknown')
         })
 
-    # Reuse the existing audit structure
+    # Reuse the existing audit structure (match format from create_audit_directory_structure)
+    competitor_paths = {}
+    for comp in competitors_data:
+        comp_name = comp['site_name']
+        comp_root = audit_dir / comp_name
+        comp_screenshots = comp_root / "screenshots"
+
+        competitor_paths[comp_name] = {
+            'root': comp_root,
+            'screenshots': comp_screenshots
+        }
+
     audit_structure = {
         'audit_root': audit_dir,  # Keep as Path object, not string
-        'competitors': {comp['site_name']: audit_dir / comp['site_name'] for comp in competitors_data}
+        'competitors': competitor_paths
     }
 
     # Check which competitors already have analysis.json
@@ -159,39 +170,50 @@ async def reanalyze_audit(audit_path: str):
 
     # Only run AI analysis for competitors that don't have analysis.json
     if needs_analysis:
-        print("═══ Phase 2: AI Analysis (Parallel) ═══")
-        print(f"Analyzing {len(needs_analysis)} competitors concurrently...\n")
+        print("═══ Phase 2: AI Analysis (Sequential) ═══")
 
-        analysis_tasks = [
-            orchestrator.analyze_competitor_from_screenshots(comp_data)
-            for comp_data in needs_analysis
-        ]
+        # Delay between analyses to respect 8,000 output tokens/min rate limit
+        # With max_tokens=6000, we need 1 per minute minimum
+        ANALYSIS_DELAY = 60  # Wait 60 seconds between analyses
 
-        # Run in parallel
-        analysis_results = await asyncio.gather(*analysis_tasks, return_exceptions=True)
+        print(f"Analyzing {len(needs_analysis)} competitors sequentially...")
+        print(f"Rate limit protection: {ANALYSIS_DELAY}s delay between analyses\n")
 
-        # Process results
-        for comp_data, analysis_result in zip(needs_analysis, analysis_results):
-            if isinstance(analysis_result, Exception):
-                print(f"  [✗] {comp_data['site_name']}: {str(analysis_result)}")
+        # Process sequentially
+        for idx, comp_data in enumerate(needs_analysis, 1):
+            print(f"Analyzing {idx}/{len(needs_analysis)}: {comp_data['site_name']}")
+
+            # Analyze this competitor
+            try:
+                analysis_result = await orchestrator.analyze_competitor_from_screenshots(comp_data)
+            except Exception as e:
+                print(f"  [✗] {str(e)}")
                 results.append({
                     "success": False,
                     "site_name": comp_data['site_name'],
                     "url": comp_data['url'],
-                    "error": str(analysis_result)
+                    "error": str(e)
                 })
+                continue
+
+            # Process result
+            if analysis_result.get("success"):
+                print(f"  [✓] Success!")
+
+                # Save analysis to individual folder
+                comp_root = audit_structure['competitors'][comp_data['site_name']]['root']
+                analysis_path = comp_root / "analysis.json"
+                with open(analysis_path, 'w') as f:
+                    json.dump(analysis_result, f, indent=2)
             else:
-                if analysis_result.get("success"):
-                    print(f"  [✓] {comp_data['site_name']}")
+                print(f"  [⚠] {analysis_result.get('error', 'Unknown error')}")
 
-                    # Save analysis to individual folder
-                    analysis_path = Path(audit_structure['competitors'][comp_data['site_name']]) / "analysis.json"
-                    with open(analysis_path, 'w') as f:
-                        json.dump(analysis_result, f, indent=2)
-                else:
-                    print(f"  [⚠] {comp_data['site_name']}: {analysis_result.get('error', 'Unknown error')}")
+            results.append(analysis_result)
 
-                results.append(analysis_result)
+            # Wait between analyses (except for last one)
+            if idx < len(needs_analysis):
+                print(f"Waiting {ANALYSIS_DELAY}s before next analysis...\n")
+                await asyncio.sleep(ANALYSIS_DELAY)
     else:
         print("All competitors already have analysis.json - skipping AI analysis")
 

@@ -1,6 +1,6 @@
 # E-commerce UX Maturity Analysis Agent
 
-**Version:** 1.4.0
+**Version:** 1.5.0
 **Status:** Production Ready
 **Python:** 3.9+
 
@@ -42,13 +42,13 @@ This tool automates competitive UX analysis for e-commerce sites by:
 
 ### Why This Tool?
 
-- **⚡ Blazing Fast**: Parallel AI analysis (8-10x faster than sequential)
 - **🎯 Strategic Focus**: Reports frame findings as competitive advantages vs vulnerabilities
 - **🔄 Reanalysis Ready**: Regenerate reports from cached screenshots without re-capturing
 - **📊 Interactive Reports**: Rich HTML reports with charts, filtering, and annotated screenshots
 - **🎤 Interactive Control**: You control the browser - navigate, close popups, then capture
 - **🔧 Extensible**: Add new page types via YAML config (no code changes needed)
 - **🤖 AI-powered**: Claude Sonnet 4.5 with vision capabilities
+- **⚖️ Rate Limit Compliant**: Sequential analysis ensures reliable operation within API limits
 
 ---
 
@@ -56,7 +56,7 @@ This tool automates competitive UX analysis for e-commerce sites by:
 
 ### Core Capabilities
 - ✨ **Multi-Page-Type Support**: Analyze homepages, product pages, basket pages, and checkout flows
-- ⚡ **Parallel AI Analysis**: 8-10x faster than sequential (10 competitors in ~30-45 seconds)
+- ⚖️ **Sequential AI Analysis**: Rate limit compliant processing (~1 minute per competitor)
 - 🎤 **Interactive Capture Mode**: You control the browser - navigate, close popups, then capture
 - 🔄 **Retry Option**: Not happy with screenshots? Retry before analyzing
 - 📁 **Manual Mode**: Upload your own screenshots for heavily bot-protected sites
@@ -123,6 +123,11 @@ python3 main.py --config competitors.json
 
 You'll be prompted to select analysis type, then the tool opens a browser for each competitor site. You navigate, close popups, and press Enter to capture screenshots.
 
+**Expected Timing:**
+- Screenshot capture: ~30 seconds per competitor (your manual interaction time)
+- AI analysis: ~1 minute per competitor (sequential processing with rate limit delays)
+- Total for 10 competitors: ~15-17 minutes end-to-end
+
 **Specify analysis type** (skip the prompt):
 
 ```bash
@@ -158,12 +163,13 @@ The tool follows a reliable, two-phase workflow:
    - Press Enter when ready → Captures desktop & mobile screenshots
    - Choose: **Y** (Continue) / **R** (Retry) / **S** (Skip)
 
-### Phase 2: AI Analysis (Parallel)
+### Phase 2: AI Analysis (Sequential)
 
-3. **AI Analysis** - Claude analyzes all screenshots concurrently
-   - 8-10x faster than sequential analysis
+3. **AI Analysis** - Claude analyzes screenshots one at a time
+   - ~1 minute per competitor (rate limit compliant)
    - Real-time progress indicators (✓/✗/⚠)
    - Research-backed criteria evaluation
+   - 60-second delays between analyses to respect API limits
 
 4. **Report Generation** - Generates multiple output formats:
    - Interactive HTML report with charts
@@ -219,7 +225,7 @@ Select analysis type (1-4):
      - **R** → Retry screenshots for this site
      - **S** → Skip this competitor entirely
 
-3. **Analysis & Report** - Claude analyzes all screenshots in parallel and generates reports
+3. **Analysis & Report** - Claude analyzes all screenshots sequentially and generates reports
 
 ### Skip the Prompt (Specify Analysis Type)
 
@@ -318,8 +324,10 @@ Found 11 competitors to reanalyze
 
 Found 10 existing analyses, need to analyze 1 competitor
 
-═══ Phase 2: AI Analysis (Parallel) ═══
-Analyzing 1 competitor...
+═══ Phase 2: AI Analysis (Sequential) ═══
+Analyzing 1 competitor sequentially...
+Rate limit protection: 60s delay between analyses
+
   [✓] petshop.co.uk
 
 ✓ Reanalysis complete!
@@ -874,23 +882,31 @@ MOBILE_VIEWPORT_HEIGHT=812
 
 ### Performance
 
-- **Parallel AI Analysis**: 8-10x faster than sequential
-  - 10 competitors: ~30-45 seconds (vs 5 minutes sequential)
-  - Uses `asyncio.gather()` for concurrent API calls
+- **Sequential AI Analysis**: Rate limit compliant processing
+  - ~1 minute per competitor (~10-11 minutes for 10 competitors)
+  - 60-second delays between analyses to respect 8,000 output tokens/min limit
+  - Trade-off: Reliability over speed (prevents API rate limit errors)
 - **Smart Caching**: Reanalyze script reuses existing analyses
 - **Optimized Images**: Automatic JPEG compression for Claude API
+- **API Rate Limits**:
+  - Input: 30,000 tokens/min (rarely limiting)
+  - Output: 8,000 tokens/min (primary constraint)
+  - Each analysis generates ~6,000 output tokens
 
 ---
 
 ## Roadmap
 
 **Recently Completed** ✅
+- [x] 🛡️ Dark pattern detection enhancements (v1.5.0)
+- [x] 📦 Product page criteria enhancements with 2025-2026 research (v1.5.0)
+- [x] 💳 Express payment options criterion (v1.5.0)
+- [x] ⚖️ Sequential analysis for API rate limit compliance (v1.5.0)
+- [x] 🔗 Resources project integration (v1.4.0)
 - [x] 🔄 Reanalyze script for report regeneration (v1.3.2)
 - [x] 🎨 Advanced filtering with dynamic dropdowns and chart updates (v1.3.2)
-- [x] ⚡ Parallel AI analysis - 8-10x speedup (v1.3.1)
 - [x] 🎯 Strategic insights and rankings (v1.3.0)
 - [x] 📊 Interactive HTML reports with charts (v1.2.0)
-- [x] 🖼️ Screenshot annotations (v1.2.0)
 
 **Future Enhancements Planned:**
 - [ ] Multi-step journey support (homepage → product → add to cart → basket)
@@ -910,7 +926,7 @@ This project uses [Semantic Versioning](https://semver.org/):
 - **MINOR** version for added functionality in a backward compatible manner
 - **PATCH** version for backward compatible bug fixes
 
-**Current Version:** 1.3.2
+**Current Version:** 1.5.0
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and upgrade instructions.
 

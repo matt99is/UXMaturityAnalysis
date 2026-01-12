@@ -2,8 +2,6 @@
 HTML Report Generator with Interactive Visualizations
 
 Generates beautiful, interactive HTML reports with:
-- Radar charts for competitor comparison
-- Bar charts for criteria rankings
 - Heatmaps for feature matrices
 - Screenshot galleries
 - Executive summaries
@@ -30,135 +28,6 @@ class HTMLReportGenerator:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
         self.annotator = ScreenshotAnnotator()
-
-    def _create_radar_chart(self, results: List[Dict[str, Any]]) -> str:
-        """
-        Create interactive radar chart comparing all competitors across criteria.
-
-        Args:
-            results: List of competitor analysis results
-
-        Returns:
-            HTML string with embedded chart
-        """
-        fig = go.Figure()
-
-        # Filter successful results
-        successful_results = [r for r in results if r.get('success') and r.get('criteria_scores')]
-
-        if not successful_results:
-            return "<p class='text-muted'>No data available for radar chart</p>"
-
-        # Add trace for each competitor
-        for result in successful_results:
-            criteria_names = [c['criterion_name'] for c in result['criteria_scores']]
-            scores = [c['score'] for c in result['criteria_scores']]
-
-            fig.add_trace(go.Scatterpolar(
-                r=scores,
-                theta=criteria_names,
-                fill='toself',
-                name=result.get('site_name', 'Unknown'),
-                hovertemplate='<b>%{theta}</b><br>Score: %{r:.1f}/10<extra></extra>'
-            ))
-
-        fig.update_layout(
-            polar=dict(
-                radialaxis=dict(
-                    visible=True,
-                    range=[0, 10],
-                    tickfont=dict(size=10)
-                )
-            ),
-            showlegend=True,
-            title=dict(
-                text="<b>Competitive UX Comparison</b><br><sub>Overall performance across all criteria</sub>",
-                x=0.5,
-                xanchor='center'
-            ),
-            height=600,
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=-0.2,
-                xanchor="center",
-                x=0.5
-            )
-        )
-
-        return fig.to_html(include_plotlyjs='cdn', div_id='radar-chart', config={'displayModeBar': False})
-
-    def _create_criteria_bar_chart(self, results: List[Dict[str, Any]]) -> str:
-        """
-        Create bar chart showing top performers for each criterion.
-
-        Args:
-            results: List of competitor analysis results
-
-        Returns:
-            HTML string with embedded chart
-        """
-        successful_results = [r for r in results if r.get('success') and r.get('criteria_scores')]
-
-        if not successful_results:
-            return "<p class='text-muted'>No data available for bar chart</p>"
-
-        # Aggregate data by criterion
-        criteria_data = {}
-        for result in successful_results:
-            site_name = result.get('site_name', 'Unknown')
-            for criterion in result['criteria_scores']:
-                crit_name = criterion['criterion_name']
-                if crit_name not in criteria_data:
-                    criteria_data[crit_name] = []
-                criteria_data[crit_name].append({
-                    'competitor': site_name,
-                    'score': criterion['score']
-                })
-
-        # Create grouped bar chart
-        fig = go.Figure()
-
-        competitors = list(set([r.get('site_name', 'Unknown') for r in successful_results]))
-
-        for competitor in competitors:
-            criterion_names = []
-            scores = []
-
-            for crit_name, data in criteria_data.items():
-                criterion_names.append(crit_name)
-                comp_score = next((d['score'] for d in data if d['competitor'] == competitor), 0)
-                scores.append(comp_score)
-
-            fig.add_trace(go.Bar(
-                name=competitor,
-                x=criterion_names,
-                y=scores,
-                hovertemplate='<b>%{x}</b><br>%{fullData.name}: %{y:.1f}/10<extra></extra>'
-            ))
-
-        fig.update_layout(
-            title=dict(
-                text="<b>Criteria Performance Comparison</b><br><sub>Scores across all evaluation criteria</sub>",
-                x=0.5,
-                xanchor='center'
-            ),
-            xaxis_title="Criteria",
-            yaxis_title="Score (0-10)",
-            barmode='group',
-            height=500,
-            xaxis={'tickangle': -45},
-            yaxis={'range': [0, 10]},
-            legend=dict(
-                orientation="h",
-                yanchor="bottom",
-                y=-0.4,
-                xanchor="center",
-                x=0.5
-            )
-        )
-
-        return fig.to_html(include_plotlyjs=False, div_id='bar-chart', config={'displayModeBar': False})
 
     def _create_heatmap(self, results: List[Dict[str, Any]]) -> str:
         """
@@ -223,7 +92,7 @@ class HTMLReportGenerator:
             xaxis={'tickangle': -45, 'side': 'bottom'}
         )
 
-        return fig.to_html(include_plotlyjs=False, div_id='heatmap', config={'displayModeBar': False})
+        return fig.to_html(include_plotlyjs='cdn', div_id='heatmap', config={'displayModeBar': False})
 
 
     def _get_executive_summary(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -1326,24 +1195,10 @@ class HTMLReportGenerator:
                     <h2 class="section-title"><i class="fas fa-chart-area"></i> Visual Analysis</h2>
                 </div>
 
-                <!-- Radar Chart -->
-                <div class="col-12">
-                    <div class="chart-container" id="radarChartContainer">
-                        {{ radar_chart|safe }}
-                    </div>
-                </div>
-
                 <!-- Heatmap -->
                 <div class="col-12">
                     <div class="chart-container" id="heatmapContainer">
                         {{ heatmap|safe }}
-                    </div>
-                </div>
-
-                <!-- Bar Chart -->
-                <div class="col-12">
-                    <div class="chart-container" id="barChartContainer">
-                        {{ bar_chart|safe }}
                     </div>
                 </div>
             </div>
@@ -1582,28 +1437,6 @@ class HTMLReportGenerator:
             // If no competitors visible, show all
             const showAll = !visibleCompetitors || visibleCompetitors.length === 0;
 
-            // Update Radar Chart
-            const radarDiv = document.getElementById('radar-chart');
-            if (radarDiv && radarDiv.data) {
-                const visibility = radarDiv.data.map(trace => {
-                    if (showAll) return true;
-                    return visibleCompetitors.includes(trace.name.toLowerCase()) ? true : 'legendonly';
-                });
-                Plotly.restyle('radar-chart', { visible: visibility },
-                    Array.from({length: radarDiv.data.length}, (_, i) => i));
-            }
-
-            // Update Bar Chart
-            const barDiv = document.getElementById('bar-chart');
-            if (barDiv && barDiv.data) {
-                const visibility = barDiv.data.map(trace => {
-                    if (showAll) return true;
-                    return visibleCompetitors.includes(trace.name.toLowerCase()) ? true : 'legendonly';
-                });
-                Plotly.restyle('bar-chart', { visible: visibility },
-                    Array.from({length: barDiv.data.length}, (_, i) => i));
-            }
-
             // Update Heatmap (requires data filtering and redraw)
             const heatmapDiv = document.getElementById('heatmap');
             if (heatmapDiv && heatmapDiv.data) {
@@ -1729,9 +1562,7 @@ class HTMLReportGenerator:
         # Annotate screenshots with findings
         successful_competitors = self._prepare_annotated_screenshots(successful_competitors)
 
-        # Generate all charts
-        radar_chart = self._create_radar_chart(successful_competitors)
-        bar_chart = self._create_criteria_bar_chart(successful_competitors)
+        # Generate heatmap
         heatmap = self._create_heatmap(successful_competitors)
 
         # Get executive summary, strategic insights, and rankings
@@ -1748,8 +1579,6 @@ class HTMLReportGenerator:
         html_content = template.render(
             analysis_type=analysis_type,
             timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            radar_chart=radar_chart,
-            bar_chart=bar_chart,
             heatmap=heatmap,
             summary=summary,
             strategic_insights=strategic_insights,

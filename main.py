@@ -263,67 +263,95 @@ class UXAnalysisOrchestrator:
             self.console.print("\n[dim]Proceeding without retry...[/dim]")
             return results
 
-        # Retry each failed competitor
-        self.console.print("\n[bold cyan]═══ Retrying Failed Analyses ═══[/bold cyan]")
+        # Retry failed competitors sequentially
+        self.console.print("\n[bold cyan]═══ Retrying Failed Analyses (Sequential) ═══[/bold cyan]")
         self.console.print(f"[dim]Using existing screenshots from audit folder[/dim]\n")
 
-        updated_results = []
-        retry_count = 0
+        # Separate successful from failed
+        successful_results = [r for r in results if r.get('success')]
 
-        for result in results:
-            if result.get('success'):
-                # Keep successful results as-is
-                updated_results.append(result)
-            else:
-                retry_count += 1
-                self.console.print(f"[bold]Retry {retry_count}/{len(failed)}: {result['site_name']}[/bold]")
+        # Delay between retries
+        RETRY_DELAY = 60  # Wait 60 seconds between retries
 
-                # Load screenshots from audit folder
-                competitor_dir = audit_structure['competitors'].get(result['site_name'])
-                if not competitor_dir:
-                    self.console.print(f"  [red]✗ Could not find competitor directory[/red]")
-                    updated_results.append(result)  # Keep original failure
-                    continue
+        self.console.print(f"[bold]Retrying {len(failed)} failed competitor(s) sequentially...[/bold]")
+        self.console.print(f"[dim]Rate limit protection: {RETRY_DELAY}s delay between retries[/dim]\n")
 
-                screenshots_dir = competitor_dir / 'screenshots'
-                screenshot_paths = [
-                    str(screenshots_dir / 'desktop.png'),
-                    str(screenshots_dir / 'mobile.png')
-                ]
+        retry_results = []
+        skipped_failures = []
 
-                # Check if screenshots exist
-                from pathlib import Path
-                if not all(Path(p).exists() for p in screenshot_paths):
-                    self.console.print(f"  [red]✗ Screenshots not found[/red]")
-                    updated_results.append(result)  # Keep original failure
-                    continue
+        for idx, result in enumerate(failed, 1):
+            self.console.print(f"[cyan]Retry {idx}/{len(failed)}:[/cyan] {result['site_name']}")
 
-                # Prepare capture data for retry
-                capture_data = {
-                    'site_name': result['site_name'],
-                    'url': result['url'],
-                    'screenshot_paths': screenshot_paths,
-                    'screenshot_metadata': result.get('screenshot_metadata', [])
-                }
+            # Load screenshots from audit folder
+            competitor_info = audit_structure['competitors'].get(result['site_name'])
+            if not competitor_info:
+                self.console.print(f"  [red]✗ Could not find competitor directory[/red]")
+                skipped_failures.append(result)
+                continue
 
-                # Re-analyze
+            screenshots_dir = competitor_info['screenshots']
+            screenshot_paths = [
+                str(screenshots_dir / 'desktop.png'),
+                str(screenshots_dir / 'mobile.png')
+            ]
+
+            # Check if screenshots exist
+            from pathlib import Path
+            if not all(Path(p).exists() for p in screenshot_paths):
+                self.console.print(f"  [red]✗ Screenshots not found[/red]")
+                skipped_failures.append(result)
+                continue
+
+            # Prepare capture data for retry
+            capture_data = {
+                'site_name': result['site_name'],
+                'url': result['url'],
+                'screenshot_paths': screenshot_paths,
+                'screenshot_metadata': result.get('screenshot_metadata', [])
+            }
+
+            # Retry analysis
+            try:
                 retry_result = await self.analyze_competitor_from_screenshots(capture_data)
+            except Exception as e:
+                self.console.print(f"  [red]✗ {str(e)}[/red]")
+                retry_results.append({
+                    "success": False,
+                    "site_name": result['site_name'],
+                    "url": result['url'],
+                    "error": str(e)
+                })
+                continue
 
-                # Save retry result if successful
-                if retry_result.get("success") and audit_structure:
+            # Process retry result
+            if retry_result.get("success"):
+                self.console.print(f"  [green]✓ Success![/green]")
+
+                # Save retry result
+                if audit_structure:
                     try:
                         analysis_path = get_analysis_path(
                             audit_structure['competitors'],
                             result['site_name']
                         )
                         self.report_generator.save_competitor_analysis(
-                            retry_result,  # Already flattened
+                            retry_result,
                             analysis_path
                         )
                     except Exception as e:
                         self.console.print(f"  [yellow]Warning: Could not save analysis: {e}[/yellow]")
+            else:
+                self.console.print(f"  [yellow]⚠ {retry_result.get('error', 'Unknown error')}[/yellow]")
 
-                updated_results.append(retry_result)
+            retry_results.append(retry_result)
+
+            # Wait between retries (except for last one)
+            if idx < len(failed):
+                self.console.print(f"[dim]Waiting {RETRY_DELAY}s before next retry...[/dim]\n")
+                await asyncio.sleep(RETRY_DELAY)
+
+        # Combine all results
+        updated_results = successful_results + retry_results + skipped_failures
 
         # Show retry summary
         retry_success_count = sum(1 for r in updated_results if r.get('success'))
@@ -466,74 +494,82 @@ class UXAnalysisOrchestrator:
             if not self.manual_mode:
                 await self.screenshot_capturer.close_browser()
 
-            # PHASE 2: Analyze all screenshots in parallel
-            self.console.print("\n[bold cyan]═══ Phase 2: AI Analysis (Parallel) ═══[/bold cyan]")
-            self.console.print("[dim]Claude will now analyze all captured screenshots concurrently[/dim]\n")
+            # PHASE 2: Analyze all screenshots sequentially
+            self.console.print("\n[bold cyan]═══ Phase 2: AI Analysis (Sequential) ═══[/bold cyan]")
+            self.console.print("[dim]Claude will analyze screenshots one at a time[/dim]\n")
 
             # Separate successful captures from failed ones
             successful_captures = [d for d in captured_data if d.get("success")]
             failed_captures = [d for d in captured_data if not d.get("success")]
 
-            self.console.print(f"[bold]Analyzing {len(successful_captures)} competitors in parallel...[/bold]")
+            # Delay between analyses to respect 8,000 output tokens/min rate limit
+            # With max_tokens=6000, we need 1 per minute minimum (60s delay)
+            ANALYSIS_DELAY = 60  # Wait 60 seconds between analyses
 
-            # Create analysis tasks for all successful captures
-            analysis_tasks = [
-                self.analyze_competitor_from_screenshots(capture_data)
-                for capture_data in successful_captures
-            ]
+            self.console.print(f"[bold]Analyzing {len(successful_captures)} competitors sequentially...[/bold]")
+            self.console.print(f"[dim]Rate limit protection: {ANALYSIS_DELAY}s delay between analyses[/dim]\n")
 
-            # Run all analyses in parallel
-            if analysis_tasks:
+            # Analyze competitors sequentially
+            processed_results = []
+            if successful_captures:
                 try:
-                    analysis_results = await asyncio.gather(*analysis_tasks, return_exceptions=True)
+                    for idx, capture_data in enumerate(successful_captures, 1):
+                        self.console.print(f"[cyan]Analyzing {idx}/{len(successful_captures)}:[/cyan] {capture_data['site_name']}")
 
-                    # Process results and handle any exceptions
-                    processed_results = []
-                    for i, (capture_data, analysis_result) in enumerate(zip(successful_captures, analysis_results)):
-                        # Check if result is an exception
-                        if isinstance(analysis_result, Exception):
-                            self.console.print(f"  [red]✗ {capture_data['site_name']}: {str(analysis_result)}[/red]")
+                        # Analyze this competitor
+                        try:
+                            analysis_result = await self.analyze_competitor_from_screenshots(capture_data)
+                        except Exception as e:
+                            self.console.print(f"  [red]✗ {capture_data['site_name']}: {str(e)}[/red]")
                             processed_results.append({
                                 "success": False,
                                 "site_name": capture_data['site_name'],
                                 "url": capture_data['url'],
-                                "error": str(analysis_result)
+                                "error": str(e)
                             })
-                        else:
-                            if analysis_result.get("success"):
-                                self.console.print(f"  [green]✓ {capture_data['site_name']}[/green]")
-                            else:
-                                self.console.print(f"  [yellow]⚠ {capture_data['site_name']}: {analysis_result.get('error', 'Unknown error')}[/yellow]")
-                            processed_results.append(analysis_result)
+                            continue
 
-                            # Save individual competitor analysis if audit structure provided
-                            if audit_structure and analysis_result.get("success"):
-                                try:
-                                    analysis_path = get_analysis_path(
-                                        audit_structure['competitors'],
-                                        capture_data['site_name']
-                                    )
-                                    self.report_generator.save_competitor_analysis(
-                                        analysis_result,  # Already flattened
-                                        analysis_path
-                                    )
-                                except Exception as e:
-                                    self.console.print(f"  [yellow]Warning: Could not save {capture_data['site_name']}: {e}[/yellow]")
+                        # Process result
+                        if analysis_result.get("success"):
+                            self.console.print(f"  [green]✓ {capture_data['site_name']}[/green]")
+                        else:
+                            self.console.print(f"  [yellow]⚠ {capture_data['site_name']}: {analysis_result.get('error', 'Unknown error')}[/yellow]")
+
+                        processed_results.append(analysis_result)
+
+                        # Save individual competitor analysis if audit structure provided
+                        if audit_structure and analysis_result.get("success"):
+                            try:
+                                analysis_path = get_analysis_path(
+                                    audit_structure['competitors'],
+                                    capture_data['site_name']
+                                )
+                                self.report_generator.save_competitor_analysis(
+                                    analysis_result,
+                                    analysis_path
+                                )
+                            except Exception as e:
+                                self.console.print(f"  [yellow]Warning: Could not save {capture_data['site_name']}: {e}[/yellow]")
+
+                        # Wait between analyses (except for last one)
+                        if idx < len(successful_captures):
+                            self.console.print(f"[dim]Waiting {ANALYSIS_DELAY}s before next analysis...[/dim]\n")
+                            await asyncio.sleep(ANALYSIS_DELAY)
 
                     # Combine failed captures with processed analysis results
                     results = failed_captures + processed_results
 
                 except (EOFError, KeyboardInterrupt):
-                    self.console.print("\n\n[bold yellow]⚠ Analysis cancelled by user during parallel execution[/bold yellow]")
+                    self.console.print("\n\n[bold yellow]⚠ Analysis cancelled by user[/bold yellow]")
                     # Return partial results up to this point
-                    results = failed_captures
+                    results = failed_captures + processed_results
                     raise  # Re-raise to be caught by outer handler
 
             else:
                 # No successful captures to analyze
                 results = failed_captures
 
-            self.console.print(f"\n[bold green]✓ Parallel analysis complete![/bold green]")
+            self.console.print(f"\n[bold green]✓ Sequential analysis complete![/bold green]")
 
             # PHASE 2.5: Retry failed analyses if any
             failed_results = [r for r in results if not r.get('success')]
@@ -583,11 +619,21 @@ class UXAnalysisOrchestrator:
             # Generate interactive HTML report
             try:
                 html_filename = f"{audit_root.name}_report.html"
+                html_output_path = audit_root / html_filename
+
+                # Temporarily override output_dir to write to audit_root
+                original_output_dir = self.html_report_generator.output_dir
+                self.html_report_generator.output_dir = audit_root
+
                 html_path = self.html_report_generator.generate_html_report(
                     results=results,
                     analysis_type=self.analysis_type_config.name,
-                    output_filename=f"audits/{audit_root.name}/{html_filename}"
+                    output_filename=html_filename
                 )
+
+                # Restore original output_dir
+                self.html_report_generator.output_dir = original_output_dir
+
                 self.console.print(f"[green]📊 Interactive HTML report:[/green] {html_path}")
             except Exception as e:
                 self.console.print(f"[yellow]Warning: Could not generate HTML report: {e}[/yellow]")

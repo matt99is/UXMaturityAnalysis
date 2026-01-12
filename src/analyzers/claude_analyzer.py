@@ -10,7 +10,7 @@ import base64
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 import anthropic
-from anthropic import Anthropic
+from anthropic import AsyncAnthropic
 import json
 from PIL import Image
 import io
@@ -25,7 +25,7 @@ class ClaudeUXAnalyzer:
     """
 
     def __init__(self, api_key: str, model: str = "claude-sonnet-4-5-20250929"):
-        self.client = Anthropic(api_key=api_key)
+        self.client = AsyncAnthropic(api_key=api_key)
         self.model = model
 
     def _build_analysis_prompt(
@@ -75,9 +75,16 @@ For each criterion, provide:
 3. How it compares to best practices and benchmarks mentioned above
 4. Competitive assessment: Is this a strength (threat to us) or weakness (opportunity for us)?
 
+**CRITICAL SCORING GUIDANCE:**
+- **Dark Patterns MUST be heavily penalized**: If you detect subscription pre-selected by default, pre-checked boxes committing to recurring payments, or hidden opt-outs, score that criterion 0-3/10 regardless of other factors
+- **Visual Evidence Required**: For subscription options, explicitly state whether radio buttons/checkboxes appear selected in the screenshot
+- **Look for UI State**: Filled circles (•) vs empty circles (○), checked boxes (☑) vs unchecked (☐), highlighted/active states
+- **Default Selection**: If you cannot determine which option is selected by default, note this uncertainty
+
 **Competitive Intelligence Focus:**
 - Frame strengths as "competitive advantages" (threats we must counter)
 - Frame weaknesses as "exploitable vulnerabilities" (opportunities to differentiate)
+- **Flag dark patterns as severe vulnerabilities** - these damage trust and may violate regulations
 - Assess the user experience quality based on the criteria and benchmarks provided
 - Identify unmet user needs in the customer journey
 - Evaluate their competitive position relative to market leaders
@@ -267,10 +274,10 @@ Be specific and reference what you actually see in the screenshots. Think like a
         content = image_content + [{"type": "text", "text": prompt}]
 
         try:
-            # Call Claude API
-            response = self.client.messages.create(
+            # Call Claude API (async for parallel execution)
+            response = await self.client.messages.create(
                 model=self.model,
-                max_tokens=8192,  # Increased from 4096 to prevent JSON truncation
+                max_tokens=6000,  # Reduced to stay within 8,000 output tokens/min rate limit
                 messages=[{
                     "role": "user",
                     "content": content

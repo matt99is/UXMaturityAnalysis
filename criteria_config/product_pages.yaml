@@ -12,14 +12,31 @@ analysis_context: |
   - Mobile product page experience is critical (65%+ of product browsing on mobile)
   - Clear pricing and delivery information reduces pre-checkout abandonment
   - Product information completeness directly correlates with lower return rates
+  - 82% of sites have severe UX issues on product pages (Baymard 2025)
+  - Only 49% of top e-commerce sites have "decent" or "good" product page UX
 
   **Domain Expertise:**
-  - Baymard Institute research on product page conversion optimization
-  - Nielsen Norman Group guidelines for product imagery and detail presentation
+  - Baymard Institute 2025 research (18,000+ product page elements benchmarked)
+  - Nielsen Norman Group 2025 guidelines for product imagery and detail presentation
   - Social proof and review display best practices (star ratings, verified purchase badges)
   - Mobile product page patterns (sticky add-to-cart, swipeable image galleries)
   - Subscription/recurring purchase integration (Subscribe & Save models)
+  - Dark pattern detection (pre-selected options, hidden costs, manipulative defaults)
+  - UK CMA Online Choice Architecture guidance on ethical defaults
   - Cross-sell and upsell positioning strategies
+  - Express payment options and "Buy Now" functionality
+  - Trust signal optimization (badges, security, credibility factors)
+
+  **COMPETITIVE EXPLOITATION STRATEGY:**
+  Focus on areas where most competitors fail to achieve "Good" rating vs market average:
+  - 87% don't respond to negative reviews
+  - 78% don't structure product descriptions with feature highlights
+  - 56% have bloated "Buy" sections that dilute primary CTA
+  - 52% don't include descriptive text/graphics on product images
+  - 43% lack ratings distribution summaries
+  - 40% don't support mobile pinch-to-zoom gestures
+  - 86% don't show price per unit for multi-quantity items
+  - 27% of users miss content in horizontal tab layouts
 
 viewports:
   - name: "desktop"
@@ -32,97 +49,155 @@ viewports:
 criteria:
   - id: "product_imagery"
     name: "Product Imagery & Gallery"
-    weight: 1.5
+    weight: 1.6
     description: "Quality, quantity, and interactivity of product images and visual presentation"
     evaluation_points:
-      - "High-resolution images available"
-      - "Multiple angles and views"
-      - "Zoom functionality"
-      - "360-degree or video capabilities"
+      - "High-resolution images available (zoom capability present)"
+      - "Multiple angles and views (minimum 4-5 distinct views)"
+      - "360-degree view, video, or animated product demonstration"
+      - "Descriptive text or graphics on images highlighting key features"
+      - "In-use/contextual imagery showing product in real-world scenarios"
+      - "Mobile pinch-to-zoom and tap-to-zoom gesture support"
     benchmarks:
       - source: "Baymard Institute"
         finding: "56% of users cite product images as the most important factor in purchase decisions"
       - source: "Nielsen Norman Group"
         finding: "Sites with 5+ product images per item see 19% higher conversion rates"
+      - source: "Baymard Institute (2025)"
+        finding: "52% of sites don't include descriptive text or graphics for product images"
+      - source: "Baymard Institute (2025)"
+        finding: "40% of mobile sites don't support pinch or tap-to-zoom gestures"
 
   - id: "add_to_basket"
     name: "Add to Basket/Cart Prominence"
-    weight: 1.6
+    weight: 1.7
     description: "Visibility, clarity, and usability of the primary purchase action"
     evaluation_points:
-      - "CTA button visibility and contrast"
-      - "Clear, action-oriented button text"
-      - "Button size appropriate for touch"
-      - "Stock availability clearly indicated"
+      - "CTA button uses unique styling not replicated elsewhere on page"
+      - "Button positioned in dedicated 'Buy' section with minimal clutter"
+      - "High contrast and visual prominence (largest/boldest button)"
+      - "Clear, action-oriented button text ('Add to Basket', 'Add to Cart')"
+      - "Button size meets minimum 44x44 pixels for mobile touch targets"
+      - "Stock availability clearly indicated near CTA"
+      - "Post-add feedback visible (cart badge update, confirmation, etc.)"
     benchmarks:
       - source: "Baymard Institute"
         finding: "Large, high-contrast CTAs can increase conversions by 32%"
       - source: "Nielsen Norman Group"
         finding: "Add to cart buttons should be at least 44x44 pixels for mobile"
+      - source: "Baymard Institute (2025)"
+        finding: "56% of sites have bloated 'Buy' sections with competing elements that reduce CTA effectiveness"
+
+  - id: "express_payment_options"
+    name: "Express Payment & Buy Now Options"
+    weight: 1.7
+    description: "Availability and prominence of express payment buttons (Apple Pay, Google Pay, etc.) and 'Buy Now' options directly on the product page to enable immediate purchase"
+    evaluation_points:
+      - "Apple Pay button visible on product page"
+      - "Google Pay button visible on product page"
+      - "PayPal Express or 'Buy with PayPal' button visible"
+      - "Amazon Pay or 'Buy with Amazon' button visible"
+      - "Shop Pay or other express payment options visible"
+      - "'Buy Now' or immediate purchase button (bypasses cart) present"
+      - "Express payment buttons positioned prominently (near or alongside 'Add to Cart')"
+      - "Clear visual distinction between 'Add to Cart' and express payment options"
+    benchmarks:
+      - source: "Nielsen Norman Group"
+        finding: "Shoppers demand hassle-free checkout with one-click or saved payment methods; reduces friction significantly"
+      - source: "Baymard Institute"
+        finding: "Express checkout options on product page reduce steps to purchase and cart abandonment"
+      - source: "Industry Research"
+        finding: "Sites with Apple Pay/Google Pay on product page see 2x faster purchase completion"
 
   - id: "pricing_clarity"
     name: "Pricing & Offer Transparency"
     weight: 1.4
     description: "Clarity of pricing, discounts, savings, and promotional offers"
     evaluation_points:
-      - "Price clearly displayed above fold"
-      - "Discount/savings calculations visible"
-      - "No hidden fees or surprises"
-      - "Comparison to original price (if applicable)"
+      - "Price clearly displayed above fold with high visibility"
+      - "Discount/savings calculations visible and prominent"
+      - "Original price struck through or de-emphasized when on sale"
+      - "Percentage or amount saved highlighted clearly"
+      - "Price per unit displayed for multi-quantity or variant items"
+      - "Shipping cost visible or estimatable on product page"
+      - "No hidden fees - all major costs disclosed upfront"
     benchmarks:
       - source: "Baymard Institute"
         finding: "49% of cart abandonments due to unexpected costs revealed later"
       - source: "Nielsen Norman Group"
         finding: "Showing savings amounts increases purchase likelihood by 27%"
+      - source: "Baymard Institute (2025)"
+        finding: "86% of sites don't display 'price per unit' for multi-quantity items"
+      - source: "Baymard Institute (2025)"
+        finding: "18% of sites have one or more discount display pitfalls (blending, poor placement, redundancy)"
 
   - id: "product_information"
     name: "Product Information Completeness"
-    weight: 1.3
+    weight: 1.5
     description: "Comprehensiveness and organization of product details and specifications"
     evaluation_points:
-      - "Key specs prominently displayed"
-      - "Detailed description accessible"
-      - "Size/dimension information"
-      - "Material/ingredient details"
+      - "Minimum 3-5 feature highlights in scannable format (bullets, bold, visual hierarchy)"
+      - "Specifications table or organized list visible (dimensions, weight, materials)"
+      - "Use case or 'how to use' information present"
+      - "Product variants clearly displayed (sizes, colors, options)"
+      - "Content organization avoids horizontal tabs (uses vertical sections/accordions)"
+      - "Description addresses key buying questions (materials, compatibility, care instructions)"
     benchmarks:
       - source: "Baymard Institute"
         finding: "83% of users need detailed product information before purchasing"
-      - source: "Nielsen Norman Group"
-        finding: "Tabbed interfaces for product details reduce cognitive load by 41%"
+      - source: "Nielsen Norman Group (2025)"
+        finding: "20% of e-commerce task failures attributed to incomplete or unclear product information"
+      - source: "Baymard Institute (2025)"
+        finding: "Only 22% of sites structure descriptions with feature highlights (78% don't)"
+      - source: "Baymard Institute (2025)"
+        finding: "27% of users overlook content hidden in horizontal tab layouts"
 
   - id: "social_proof"
     name: "Reviews & Social Proof"
-    weight: 1.4
+    weight: 1.6
     description: "Visibility and prominence of customer reviews, ratings, and testimonials"
     evaluation_points:
-      - "Star rating visible above fold"
-      - "Review count displayed"
-      - "Recent reviews accessible"
-      - "Review authenticity indicators"
+      - "Star rating visible above fold with clear visual prominence"
+      - "Review count displayed alongside rating (e.g., '4.5 stars (127 reviews)')"
+      - "Ratings distribution summary visible (breakdown of 5★, 4★, 3★, etc.)"
+      - "Recent reviews accessible and displayed on product page"
+      - "Review verification indicators (verified purchase badges)"
+      - "Site responses to negative reviews visible"
+      - "Reviewer context information (size worn, use case, verified buyer)"
     benchmarks:
       - source: "Baymard Institute"
-        finding: "95% of users read reviews before purchasing, 58% won't buy without reviews"
+        finding: "95% of users read reviews before purchasing; 58% won't buy without reviews"
       - source: "Nielsen Norman Group"
         finding: "Products with reviews see 270% higher conversion rates"
+      - source: "Baymard Institute (2025)"
+        finding: "43% of sites don't provide ratings distribution summary"
+      - source: "Baymard Institute (2025)"
+        finding: "87% of sites don't respond to negative reviews; 53% of users seek out negative reviews"
 
   - id: "subscription_purchase_options"
     name: "Subscription/Auto-Delivery Options"
-    weight: 1.5
-    description: "Visibility, prominence, value proposition, and ethics of subscription purchasing options"
+    weight: 1.2
+    description: "Visibility, prominence, value proposition, and ethics of subscription purchasing options. CRITICAL: Detect dark patterns where subscription is pre-selected by default."
     evaluation_points:
-      - "Subscription option visibility above the fold"
-      - "Prominence relative to one-time purchase (equal vs favored)"
-      - "Whether subscription is pre-selected by default (dark pattern check)"
-      - "Clarity of subscription terms (frequency, cancellation, flexibility)"
-      - "Value proposition clearly communicated (% savings, benefits)"
-      - "Opt-out mechanism easily accessible"
+      - "Subscription option visibility above the fold (if applicable to product category)"
+      - "Prominence relative to one-time purchase (equal vs favored positioning)"
+      - "CRITICAL DARK PATTERN CHECK: Look for visual indicators that subscription is pre-selected by default - checked radio buttons, selected checkboxes, highlighted subscription option, or subscription appearing as the primary/default choice"
+      - "Visual inspection: Is the radio button/checkbox for subscription filled/checked in the screenshot? Is one-time purchase option visually de-emphasized or requiring user action to select?"
+      - "If subscription exists: Can you clearly see which option (one-time vs subscription) is currently selected in the UI? What is the default?"
+      - "Clarity of subscription terms visible on page (frequency, delivery schedule, cancellation policy)"
+      - "Value proposition clearly communicated with specific savings (% off or £/$ amount)"
+      - "Opt-out mechanism: Is switching to one-time purchase easy and obvious, or hidden/difficult?"
     benchmarks:
       - source: "Baymard Institute"
         finding: "Pre-selected subscriptions reduce trust and increase abandonment by 23%"
       - source: "UK CMA Online Choice Architecture (2022)"
-        finding: "Pre-selected default options are 27% more likely to be chosen than non-default options (analysis of 58 studies)"
+        finding: "Pre-selected default options are 27% more likely to be chosen than non-default options (analysis of 58 studies) - this is a manipulative dark pattern"
+      - source: "UK CMA Guidance (2022)"
+        finding: "Pre-selecting options that cost consumers money or commit them to ongoing payments is considered a dark pattern and may breach consumer protection law"
       - source: "Nielsen Norman Group"
         finding: "Users need clear cancellation terms before committing to subscriptions"
+      - source: "Dark Pattern Detection"
+        finding: "Pre-selected subscriptions exploit inattentive users and violate informed consent principles"
 
   - id: "delivery_fulfillment_options"
     name: "Delivery & Fulfillment Options"
@@ -146,18 +221,26 @@ criteria:
 
   - id: "trust_security"
     name: "Trust & Security Indicators"
-    weight: 1.1
-    description: "Presence of trust signals, return policy, and security assurances"
+    weight: 1.6
+    description: "Presence of trust signals, return policy, security assurances, and credibility indicators"
     evaluation_points:
-      - "Return policy easily accessible"
-      - "Security badges visible"
-      - "Warranty information"
-      - "Customer service contact options"
+      - "Security/trust badges visible (Norton, Google Trusted Store, BBB, McAfee) - count"
+      - "SSL/HTTPS visible in browser address bar"
+      - "Return policy easily accessible (link visible on product page)"
+      - "Privacy policy or data usage disclosure visible"
+      - "Customer service contact options visible (phone, chat, email) - count"
+      - "Professional design quality (no typos, clear visual hierarchy, proper formatting)"
+      - "User review verification indicators (verified purchase badges)"
+      - "Third-party ratings or accreditations visible"
     benchmarks:
-      - source: "Baymard Institute"
-        finding: "48% of users look for return policy before purchasing"
-      - source: "Nielsen Norman Group"
-        finding: "Visible return policies increase trust by 35%"
+      - source: "Baymard Institute (2025)"
+        finding: "Trust badges can improve conversion rates by up to 42%"
+      - source: "Baymard Institute (2025)"
+        finding: "Top trust seals: Norton SSL (35.4%), Google Trusted Store (20.9%), BBB (15.7%)"
+      - source: "Nielsen Norman Group (2025)"
+        finding: "Design quality is the first indicator of trustworthiness; typos and poor navigation destroy trust"
+      - source: "Nielsen Norman Group (2025)"
+        finding: "Up-front disclosure of policies, fees, and data usage reduces cart abandonment"
 
   - id: "cross_sell_upsell"
     name: "Cross-sell & Upsell Effectiveness"
@@ -176,15 +259,22 @@ criteria:
 
   - id: "mobile_product_experience"
     name: "Mobile Product Page Optimization"
-    weight: 1.3
+    weight: 1.5
     description: "Product page experience optimized for mobile devices"
     evaluation_points:
-      - "Easy image gallery navigation on mobile"
-      - "Sticky add-to-cart button"
-      - "Readable product details without zooming"
-      - "Fast mobile page load"
+      - "Easy image gallery navigation on mobile (swipeable carousel)"
+      - "Pinch-to-zoom and tap-to-zoom gesture support for images"
+      - "Sticky add-to-cart button visible while scrolling"
+      - "Readable product details without horizontal scrolling or zooming"
+      - "Minimum 44x44 pixel touch targets for all interactive elements"
+      - "Critical information (price, primary image, CTA) visible above fold"
+      - "Fast mobile page load (target: under 2.5 seconds)"
     benchmarks:
       - source: "Google Mobile Best Practices"
         finding: "Mobile product pages should load in under 2.5 seconds"
       - source: "Baymard Institute"
         finding: "61% of mobile users won't return to a site with poor mobile experience"
+      - source: "Baymard Institute (2025)"
+        finding: "40% of mobile sites don't support pinch or tap-to-zoom gestures"
+      - source: "Nielsen Norman Group (2025)"
+        finding: "84% difference in how users treat info above vs. below fold - critical info must be visible"
