@@ -4,6 +4,8 @@ Reanalyze existing screenshots without re-capturing.
 
 Usage:
     python3 scripts/reanalyze_screenshots.py <audit_folder>
+    python3 scripts/reanalyze_screenshots.py <audit_folder> --force-observe
+    python3 scripts/reanalyze_screenshots.py <audit_folder> --force
 
 Example:
     python3 scripts/reanalyze_screenshots.py output/audits/2025-11-24_basket_pages
