@@ -63,17 +63,23 @@ class UXAnalysisOrchestrator:
     def __init__(
         self,
         api_key: str,
-        model: str = "claude-sonnet-4-5-20250929",
+        model: str = None,
         analysis_type: str = "basket_pages",
         config_path: str = "config.yaml",
         manual_mode: bool = False,
         screenshots_dir: str = None
     ):
+        resolved_model = (
+            model
+            or os.getenv("CLAUDE_MODEL")
+            or os.getenv("claude_model")
+            or "claude-sonnet-4-5-20250929"
+        )
         self.console = Console()
         self.analysis_config = AnalysisConfig(config_path)
         self.analysis_type_config = self.analysis_config.get_analysis_type(analysis_type)
         self.screenshot_capturer = ScreenshotCapture()
-        self.claude_analyzer = ClaudeUXAnalyzer(api_key=api_key, model=model)
+        self.claude_analyzer = ClaudeUXAnalyzer(api_key=api_key, model=resolved_model)
         self.report_generator = ReportGenerator()
         self.html_report_generator = HTMLReportGenerator()
         self.manual_mode = manual_mode
@@ -836,8 +842,11 @@ For more examples and documentation, see README.md
 
     parser.add_argument(
         "--model",
-        default="claude-sonnet-4-5-20250929",
-        help="Claude model to use (default: claude-sonnet-4-5-20250929)"
+        default=None,
+        help=(
+            "Claude model to use (default: CLAUDE_MODEL/claude_model from .env, "
+            "then claude-sonnet-4-5-20250929)"
+        )
     )
 
     parser.add_argument(
@@ -862,6 +871,13 @@ For more examples and documentation, see README.md
         print("Error: ANTHROPIC_API_KEY not found in environment variables")
         print("Please create a .env file with your API key (see .env.example)")
         sys.exit(1)
+
+    selected_model = (
+        args.model
+        or os.getenv("CLAUDE_MODEL")
+        or os.getenv("claude_model")
+        or "claude-sonnet-4-5-20250929"
+    )
 
     # Parse competitor list
     competitors = []
@@ -963,7 +979,7 @@ For more examples and documentation, see README.md
         f"Analysis Type: {get_page_type_display_name(analysis_type)}\n"
         f"Competitors: {len(competitors)}\n"
         f"Mode: {mode_desc}\n"
-        f"Model: {args.model}"
+        f"Model: {selected_model}"
         + (f"\n[magenta]Screenshots Dir: {args.screenshots_dir}[/magenta]" if args.manual_mode else ""),
         title="Starting Analysis"
     ))
@@ -979,7 +995,7 @@ For more examples and documentation, see README.md
 
     orchestrator = UXAnalysisOrchestrator(
         api_key=api_key,
-        model=args.model,
+        model=selected_model,
         analysis_type=analysis_type,
         manual_mode=args.manual_mode,
         screenshots_dir=args.screenshots_dir
