@@ -37,7 +37,7 @@ This tool automates competitive UX analysis for e-commerce sites by:
 
 1. **Capturing screenshots** of competitor pages (desktop & mobile viewports) in interactive mode
 2. **Analyzing UX** against research-backed criteria (Baymard Institute, Nielsen Norman Group)
-3. **Generating competitive intelligence reports** focused on threats, opportunities, and market positioning
+3. **Generating UX maturity reports** focused on threats, opportunities, and market positioning
 4. **Providing strategic insights** for competitive differentiation
 
 ### Why This Tool?
@@ -182,7 +182,7 @@ The tool follows a reliable two-phase workflow with a two-pass AI analysis stage
 
 6. **Report Generation** - Generates multiple output formats:
    - Interactive HTML report with charts
-   - Markdown competitive intelligence report
+   - Markdown UX maturity report
    - Individual JSON analyses per competitor
 
 ### Two Modes Available
@@ -488,7 +488,7 @@ output/
 ├── index.html                           # Master index for all audit runs
 └── audits/
     └── 2026-02-24_basket_pages/         # Audit folder
-        ├── _comparison_report.md         # Markdown competitive intelligence report
+        ├── _comparison_report.md         # Markdown UX maturity report
         ├── 2026-02-24_basket_pages_report.html  # Interactive HTML report
         ├── _audit_summary.json           # Audit metadata
         ├── nike/                         # Competitor folder
@@ -757,7 +757,7 @@ python3 main.py --analysis-type landing_pages --config competitors.json
 **No code changes required!** The system automatically:
 - Loads your new YAML config
 - Makes it available as an analysis type option
-- Generates competitive intelligence reports using your criteria
+- Generates UX maturity reports using your criteria
 
 #### 2. Project Structure
 
@@ -768,7 +768,8 @@ UXMaturityAnalysis/
 ├── scripts/                         # 📜 User-facing utilities
 │   ├── reanalyze_screenshots.py    #    🆕 Regenerate reports from existing screenshots
 │   ├── generate_index.py           #    (Legacy) create audits-only index for deployment
-│   └── deploy_netlify.py           #    Deploy reports to Netlify
+│   ├── deploy_netlify.py           #    Deploy reports to Netlify
+│   └── update_resources_index.py   #    (Legacy) Resources-site index updater
 │
 ├── criteria_config/                 # ✨ Page-type-specific criteria
 │   ├── homepage_pages.yaml         #    Homepage UX criteria

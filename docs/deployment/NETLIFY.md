@@ -1,6 +1,6 @@
 # Netlify Deployment Guide
 
-Deploy your competitive intelligence reports to Netlify for easy sharing via URL.
+Deploy your UX maturity reports to Netlify for easy sharing via URL.
 
 ## Why Netlify?
 

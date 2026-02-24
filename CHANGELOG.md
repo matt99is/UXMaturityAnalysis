@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Audit runs are written to `output/audits/` under this repository
   - Report discovery/index generation now reflects in-repo output layout
 
+- **🔌 Resources auto-publish runtime integration retired from default flow**
+  - Runtime output no longer redirects to external Resources project paths
+  - Legacy helper scripts remain in `scripts/` for historical/manual use
+
 - **🤖 Model selection defaults now respect environment config**
   - `--model` remains highest priority
   - If omitted, `CLAUDE_MODEL` (or `claude_model`) from `.env` is used
