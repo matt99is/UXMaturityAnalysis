@@ -155,6 +155,121 @@ Be specific and reference what you actually see in the screenshots. Think like a
 """
         return prompt
 
+    def _build_observation_prompt(
+        self,
+        analysis_name: str,
+        observation_focus: List[str],
+        site_name: str,
+        url: str
+    ) -> str:
+        """
+        Build pass 1 observation prompt.
+
+        The model acts as a witness only and documents what is visible in
+        screenshots for later analysis.
+        """
+        page_specific = ""
+        if observation_focus:
+            page_specific = "\n\nPAGE-SPECIFIC OBSERVATIONS\n"
+            for item in observation_focus:
+                page_specific += f"- {item}\n"
+
+        prompt = f"""You are documenting the visual state of a webpage as evidence for a UX audit.
+Describe only what you can see in the screenshots. Do not evaluate or recommend.
+Be a precise witness. If something is unclear or not visible, say so explicitly.
+
+Page: {site_name} - {analysis_name}
+URL: {url}
+
+For each section below, document what is visible in BOTH the desktop and mobile screenshots.
+Be precise about interactive states: selected vs unselected, checked vs unchecked, highlighted vs default.
+Quote visible text verbatim where relevant.
+
+---
+
+PRICING & OFFERS
+- All prices shown, their format and visual prominence
+- Any strikethrough or original prices alongside sale prices
+- Subscription or recurring billing options - state explicitly which option appears selected or highlighted by default
+- Free delivery thresholds or shipping cost messaging visible
+
+INTERACTIVE STATES
+- Any pre-selected options (radio buttons, checkboxes, toggles, dropdowns)
+- Default form field values visible
+- Highlighted, active, or visually emphasised options
+- Any opt-in or opt-out states and their default position
+
+CALLS TO ACTION
+- Primary CTA button: exact text, colour, size, and placement
+- Secondary CTAs visible
+- Express payment buttons (Apple Pay, Google Pay, PayPal, etc.)
+
+TRUST SIGNALS
+- Reviews or ratings visible - star rating and review count if shown
+- Trust badges, guarantees, security indicators
+- Returns or refund policy text visible
+
+FORMS & INPUTS
+- All visible input fields and their current state
+- Pre-filled values
+- Required field indicators
+{page_specific}
+NAVIGATION & STRUCTURE
+- Header content and main navigation visible
+- Breadcrumbs or progress indicators
+- Sticky elements (headers, CTAs)
+
+DARK PATTERNS (document any of the following if present)
+- Pre-selected subscription or recurring billing options
+- Pre-checked boxes for add-ons, marketing, or optional extras
+- Hidden, de-emphasised, or small opt-out options
+- Urgency or scarcity messaging (countdown timers, low stock warnings)
+- Misleading button text or confusing UI hierarchy
+
+---
+
+Return your observations as JSON with this exact structure:
+{{
+  "site_name": "{site_name}",
+  "url": "{url}",
+  "analysis_name": "{analysis_name}",
+  "desktop": {{
+    "pricing_and_offers": "<observations>",
+    "interactive_states": "<observations>",
+    "calls_to_action": "<observations>",
+    "trust_signals": "<observations>",
+    "forms_and_inputs": "<observations>",
+    "page_specific": "<observations>",
+    "navigation_and_structure": "<observations>",
+    "dark_patterns": "<observations or 'None observed'>"
+  }},
+  "mobile": {{
+    "pricing_and_offers": "<observations>",
+    "interactive_states": "<observations>",
+    "calls_to_action": "<observations>",
+    "trust_signals": "<observations>",
+    "forms_and_inputs": "<observations>",
+    "page_specific": "<observations>",
+    "navigation_and_structure": "<observations>",
+    "dark_patterns": "<observations or 'None observed'>"
+  }},
+  "notable_states": [
+    "<any unusual, deceptive, or noteworthy UI state observed - one item per entry>"
+  ]
+}}
+
+The notable_states array is critical. Include every anomaly, dark pattern, unusual default,
+or noteworthy state you observed - even if it seems minor. Each entry should be a plain
+English sentence describing exactly what was seen.
+
+IMPORTANT JSON FORMATTING RULES:
+- All string values MUST properly escape special characters
+- Use \\n+ for newlines within strings
+- Use \\" for quotes within strings
+- Do NOT include any text outside the JSON object
+"""
+        return prompt
+
     def _load_image_as_base64(self, image_path: str) -> str:
         """
         Load image, convert to JPEG, and encode as base64.
@@ -223,6 +338,103 @@ Be specific and reference what you actually see in the screenshots. Think like a
         img.save(buffer, format='JPEG', quality=70, optimize=True)
         buffer.seek(0)
         return base64.b64encode(buffer.read()).decode("utf-8")
+
+
+    async def _observe_screenshots(
+        self,
+        screenshot_paths: List[str],
+        analysis_name: str,
+        observation_focus: List[str],
+        site_name: str,
+        url: str
+    ) -> Dict[str, Any]:
+        """
+        Pass 1: Observe screenshots and document visual evidence.
+
+        Sends screenshots with observation prompt (no scoring) and returns
+        structured observation JSON with notable_states array.
+
+        Args:
+            screenshot_paths: Paths to screenshot files
+            analysis_name: Name of analysis type
+            observation_focus: Page-specific observation prompts from config
+            site_name: Competitor site name
+            url: URL analyzed
+
+        Returns:
+            Structured observation result with notable_states array
+        """
+        # Build the observation prompt
+        prompt = self._build_observation_prompt(
+            analysis_name, observation_focus, site_name, url
+        )
+
+        # Prepare image content for API
+        image_content = []
+        for path in screenshot_paths:
+            if not Path(path).exists():
+                continue
+
+            image_data = self._load_image_as_base64(path)
+            image_content.append({
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": "image/jpeg",
+                    "data": image_data
+                }
+            })
+
+        # Add text prompt
+        content = image_content + [{"type": "text", "text": prompt}]
+
+        try:
+            # Call Claude API (async for parallel execution)
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=3000,  # Pass 1 uses fewer tokens - observation only
+                messages=[{
+                    "role": "user",
+                    "content": content
+                }]
+            )
+
+            # Extract response text
+            response_text = response.content[0].text
+
+            # Parse JSON from response
+            if "```json" in response_text:
+                json_start = response_text.find("```json") + 7
+                json_end = response_text.find("```", json_start)
+                json_text = response_text[json_start:json_end].strip()
+            elif "```" in response_text:
+                json_start = response_text.find("```") + 3
+                json_end = response_text.find("```", json_start)
+                json_text = response_text[json_start:json_end].strip()
+            else:
+                json_text = response_text
+
+            # Parse JSON
+            observation_result = json.loads(json_text)
+
+            return {
+                "success": True,
+                "observation": observation_result
+            }
+
+        except json.JSONDecodeError as e:
+            return {
+                "success": False,
+                "error": f"Failed to parse observation response as JSON: {e}",
+                "raw_response": response_text if 'response_text' in locals() else None
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
 
     async def analyze_screenshots(
         self,
