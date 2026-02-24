@@ -447,6 +447,38 @@ class HTMLReportGenerator:
 
         return competitor_results
 
+    def _attach_notable_states(
+        self,
+        competitor_results: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """Load notable_states from observation files into competitor payloads."""
+        for result in competitor_results:
+            result["notable_states"] = []
+            observation_file = result.get("observation_file")
+            if not observation_file:
+                continue
+
+            obs_path = Path(observation_file)
+            if not obs_path.exists():
+                continue
+
+            try:
+                with open(obs_path, "r", encoding="utf-8") as f:
+                    observation = json.load(f)
+
+                notable_states = observation.get("notable_states", [])
+                if isinstance(notable_states, list):
+                    result["notable_states"] = [
+                        str(state).strip()
+                        for state in notable_states
+                        if str(state).strip()
+                    ]
+            except (OSError, json.JSONDecodeError):
+                # Keep report generation resilient if observation files are missing or malformed.
+                continue
+
+        return competitor_results
+
     def _get_html_template(self) -> str:
         """
         Return HTML template string with lightbox and filtering.
@@ -855,6 +887,33 @@ class HTMLReportGenerator:
         .status-advantage { background: #48bb78; color: white; }
         .status-parity { background: #4299e1; color: white; }
         .status-vulnerability { background: #f56565; color: white; }
+        .notable-states-callout {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .notable-states-callout h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #856404;
+        }
+        .notable-states-callout ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #533f03;
+            font-size: 13px;
+        }
+        .evidence-citation {
+            background: #f8f9fa;
+            border-left: 3px solid #6c757d;
+            padding: 6px 10px;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #495057;
+            font-style: italic;
+        }
         .footer {
             text-align: center;
             padding: 30px;
@@ -1249,6 +1308,17 @@ class HTMLReportGenerator:
                         <div class="card-body-collapsible{% if loop.index > 3 %} collapsed{% endif %}"
                              id="{{ competitor.site_name|lower|replace(' ', '-')|replace('.', '-') }}">
 
+                        {% if competitor.notable_states %}
+                        <div class="notable-states-callout">
+                            <h4>Flagged anomalies (observation pass)</h4>
+                            <ul>
+                                {% for state in competitor.notable_states %}
+                                <li>{{ state|e }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
                         <!-- Criteria Scores -->
                         <div class="mt-3">
                             <h5><strong>Performance by Criteria</strong></h5>
@@ -1271,6 +1341,10 @@ class HTMLReportGenerator:
                             <div class="progress-bar-custom">
                                 <div class="progress-fill" style="width: {{ criterion.score * 10 }}%"></div>
                             </div>
+                            {% set evidence = criterion.evidence if criterion.evidence is defined else '' %}
+                            {% if evidence and evidence != 'Not documented in observation' %}
+                            <div class="evidence-citation"><strong>Evidence:</strong> {{ evidence|e }}</div>
+                            {% endif %}
                             {% endfor %}
                         </div>
 
@@ -1558,6 +1632,9 @@ class HTMLReportGenerator:
         # Filter successful competitors for display
         # Must have both success=True AND overall_score to be included
         successful_competitors = [r for r in results if r.get('success') and r.get('overall_score') is not None]
+
+        # Load notable observation states for report callouts
+        successful_competitors = self._attach_notable_states(successful_competitors)
 
         # Annotate screenshots with findings
         successful_competitors = self._prepare_annotated_screenshots(successful_competitors)
