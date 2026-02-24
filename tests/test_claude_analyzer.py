@@ -146,6 +146,8 @@ async def test_observe_screenshots_returns_observation_on_success(
     assert result["observation"]["notable_states"] == [
         "Annual subscription pre-selected by default"
     ]
+    assert result["observation"]["screenshots_analyzed"] == [str(screenshot)]
+    assert result["observation"]["model_used"] == analyzer.model
 
 
 @pytest.mark.asyncio
