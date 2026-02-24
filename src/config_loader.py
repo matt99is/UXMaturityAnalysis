@@ -50,6 +50,7 @@ class AnalysisType(BaseModel):
     name: str
     description: str
     analysis_context: Optional[str] = None  # Market/domain-specific context for AI prompts
+    observation_focus: List[str] = Field(default_factory=list)
     interaction: InteractionConfig = InteractionConfig()  # Default to no interaction
     navigation: Dict[str, Any]
     screenshot_config: ScreenshotConfig
@@ -111,6 +112,7 @@ class AnalysisConfig:
                     "name": criteria_config.get("name", analysis_type_name),
                     "description": f"Analysis for {criteria_config.get('name', analysis_type_name)}",
                     "analysis_context": criteria_config.get("analysis_context"),  # Optional context for prompts
+                    "observation_focus": criteria_config.get("observation_focus", []),
                     "navigation": {},
                     "screenshot_config": {
                         "viewports": criteria_config.get("viewports", []),
