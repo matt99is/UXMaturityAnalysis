@@ -914,6 +914,11 @@ class HTMLReportGenerator:
             color: #495057;
             font-style: italic;
         }
+        .evidence-missing {
+            border-left-color: #adb5bd;
+            color: #6c757d;
+            background: #f1f3f5;
+        }
         .footer {
             text-align: center;
             padding: 30px;
@@ -1342,8 +1347,12 @@ class HTMLReportGenerator:
                                 <div class="progress-fill" style="width: {{ criterion.score * 10 }}%"></div>
                             </div>
                             {% set evidence = criterion.evidence if criterion.evidence is defined else '' %}
-                            {% if evidence and evidence != 'Not documented in observation' %}
+                            {% if evidence %}
+                            {% if evidence == 'Not documented in observation' %}
+                            <div class="evidence-citation evidence-missing"><strong>Evidence:</strong> {{ evidence|e }}</div>
+                            {% else %}
                             <div class="evidence-citation"><strong>Evidence:</strong> {{ evidence|e }}</div>
+                            {% endif %}
                             {% endif %}
                             {% endfor %}
                         </div>
