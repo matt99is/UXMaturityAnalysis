@@ -25,7 +25,11 @@ from src.config_loader import AnalysisConfig
 # Load environment variables from .env file
 load_dotenv()
 
-async def reanalyze_audit(audit_path: str):
+async def reanalyze_audit(
+    audit_path: str,
+    force_observe: bool = False,
+    force: bool = False,
+):
     """Reanalyze all competitors in an existing audit folder."""
 
     audit_dir = Path(audit_path)
@@ -136,18 +140,23 @@ async def reanalyze_audit(audit_path: str):
         'competitors': competitor_paths
     }
 
-    # Check which competitors already have analysis.json
+    for comp in competitors_data:
+        comp['competitor_paths'] = competitor_paths.get(comp['site_name'])
+
+    # Check which competitors need (re)analysis
     needs_analysis = []
     existing_results = []
 
     for comp_data in competitors_data:
-        analysis_path = audit_dir / comp_data['site_name'] / "analysis.json"
-        if analysis_path.exists():
-            # Load existing analysis
+        comp_dir = audit_dir / comp_data['site_name']
+        analysis_path = comp_dir / "analysis.json"
+        observation_path = comp_dir / "observation.json"
+
+        if not force and analysis_path.exists():
+            # Load existing analysis (skip both passes)
             with open(analysis_path, 'r') as f:
                 existing_analysis = json.load(f)
 
-            # Build screenshot_metadata from screenshots_analyzed if missing
             if not existing_analysis.get('screenshot_metadata') and existing_analysis.get('screenshots_analyzed'):
                 screenshot_metadata = []
                 for screenshot_path in existing_analysis['screenshots_analyzed']:
@@ -162,6 +171,12 @@ async def reanalyze_audit(audit_path: str):
             existing_results.append(existing_analysis)
             print(f"  [↻] {comp_data['site_name']}: Using existing analysis")
         else:
+            comp_data['_skip_observe'] = (not force_observe) and observation_path.exists()
+            if comp_data['_skip_observe']:
+                print(
+                    f"  [→] {comp_data['site_name']}: Will skip observation "
+                    "(observation.json exists)"
+                )
             needs_analysis.append(comp_data)
 
     print(f"\nFound {len(existing_results)} existing analyses, need to analyze {len(needs_analysis)} competitors\n")
@@ -173,8 +188,7 @@ async def reanalyze_audit(audit_path: str):
         print("═══ Phase 2: AI Analysis (Sequential) ═══")
 
         # Delay between analyses to respect 8,000 output tokens/min rate limit
-        # With max_tokens=6000, we need 1 per minute minimum
-        ANALYSIS_DELAY = 60  # Wait 60 seconds between analyses
+        ANALYSIS_DELAY = 90  # Two-pass: ~9000 output tokens per competitor, 8000/min limit
 
         print(f"Analyzing {len(needs_analysis)} competitors sequentially...")
         print(f"Rate limit protection: {ANALYSIS_DELAY}s delay between analyses\n")
@@ -232,9 +246,29 @@ async def reanalyze_audit(audit_path: str):
         print(f"  - {report_type}: {path}")
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(__doc__)
-        sys.exit(1)
+    import argparse
 
-    audit_path = sys.argv[1]
-    asyncio.run(reanalyze_audit(audit_path))
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("audit_folder", help="Path to the audit folder to reanalyze")
+    parser.add_argument(
+        "--force-observe",
+        action="store_true",
+        help="Re-run pass 1 (observation) even if observation.json exists",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-run both passes even if analysis.json exists",
+    )
+    args = parser.parse_args()
+
+    asyncio.run(
+        reanalyze_audit(
+            args.audit_folder,
+            force_observe=args.force_observe,
+            force=args.force,
+        )
+    )
