@@ -221,3 +221,5 @@ async def test_analyze_screenshots_with_observation_sends_no_images(
     assert result["success"] is True
     call_content = captured_calls[0]["messages"][0]["content"]
     assert all(item["type"] == "text" for item in call_content)
+    assert len(call_content) == 1
+    assert "notable_states" in call_content[0]["text"]
