@@ -42,6 +42,8 @@ from src.utils.html_report_generator import HTMLReportGenerator
 from src.utils.audit_organizer import (
     extract_competitor_name,
     create_audit_directory_structure,
+    get_output_base_dir,
+    generate_reports_index,
     get_screenshot_path,
     get_analysis_path,
     get_comparison_report_path,
@@ -734,10 +736,15 @@ class UXAnalysisOrchestrator:
                 )
                 self.console.print(f"[green]Audit summary:[/green] {summary_path}")
 
+            # Update project-level index listing all audit reports
+            index_path = generate_reports_index(get_output_base_dir("output"))
+            self.console.print(f"[green]Reports index:[/green] {index_path}")
+
             return {
                 "markdown": md_path,
                 "html": html_path,
                 "summary": summary_path if audit_summary else None,
+                "index": str(index_path),
                 "audit_root": str(audit_root)
             }
         else:
@@ -759,10 +766,14 @@ class UXAnalysisOrchestrator:
                 self.console.print(f"[yellow]Warning: Could not generate HTML report: {e}[/yellow]")
                 html_path = None
 
+            index_path = generate_reports_index(get_output_base_dir("output"))
+            self.console.print(f"[green]Reports index:[/green] {index_path}")
+
             return {
                 "json": json_path,
                 "markdown": md_path,
-                "html": html_path
+                "html": html_path,
+                "index": str(index_path),
             }
 
     def display_summary(self, results: List[Dict[str, Any]]):

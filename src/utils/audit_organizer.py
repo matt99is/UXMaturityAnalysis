@@ -15,9 +15,10 @@ Directory structure:
 
 import re
 import json
+from html import escape
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from urllib.parse import urlparse
 
 
@@ -40,7 +41,7 @@ def get_resources_config() -> Optional[Dict]:
 
 def get_output_base_dir(default_base: str = "output") -> Path:
     """
-    Get the output base directory, using Resources project if configured.
+    Get the output base directory inside this project.
 
     Args:
         default_base: Default output directory if Resources not configured
@@ -48,12 +49,178 @@ def get_output_base_dir(default_base: str = "output") -> Path:
     Returns:
         Path object for the base output directory
     """
-    config = get_resources_config()
-    if config and config.get('resources_project_path'):
-        resources_path = Path(config['resources_project_path'])
-        output_subfolder = config.get('output_subfolder', 'ux-analysis')
-        return resources_path / output_subfolder
-    return Path(default_base) / "audits"
+    project_root = Path(__file__).resolve().parents[2]
+    return project_root / default_base / "audits"
+
+
+def _load_summary(summary_path: Path) -> Dict[str, Any]:
+    """Load audit summary JSON safely."""
+    if not summary_path.exists():
+        return {}
+
+    try:
+        with open(summary_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _first_existing_file(audit_root: Path, candidates: List[str], suffix: str) -> Optional[str]:
+    """Return the first existing filename from explicit candidates or by suffix scan."""
+    for candidate in candidates:
+        if (audit_root / candidate).exists():
+            return candidate
+
+    matches = sorted(
+        [p.name for p in audit_root.iterdir() if p.is_file() and p.suffix == suffix]
+    )
+    return matches[0] if matches else None
+
+
+def collect_audit_runs(audits_root: Path) -> List[Dict[str, Any]]:
+    """
+    Collect metadata and report links for all audit runs.
+
+    Args:
+        audits_root: Path to output/audits
+
+    Returns:
+        List of dictionaries sorted newest-first by folder name.
+    """
+    if not audits_root.exists():
+        return []
+
+    runs: List[Dict[str, Any]] = []
+    audit_dirs = sorted([d for d in audits_root.iterdir() if d.is_dir()], key=lambda p: p.name, reverse=True)
+
+    for audit_dir in audit_dirs:
+        summary = _load_summary(get_audit_summary_path(audit_dir))
+        parts = audit_dir.name.split("_", 1)
+        date_from_name = parts[0] if parts else "unknown"
+        type_from_name = parts[1] if len(parts) > 1 else "unknown"
+
+        html_report = _first_existing_file(
+            audit_dir,
+            ["_comparison_report.html", f"{audit_dir.name}_report.html"],
+            ".html",
+        )
+        md_report = _first_existing_file(audit_dir, ["_comparison_report.md"], ".md")
+        summary_file = "_audit_summary.json" if get_audit_summary_path(audit_dir).exists() else None
+
+        runs.append(
+            {
+                "folder": audit_dir.name,
+                "date": summary.get("audit_date", date_from_name),
+                "analysis_type": summary.get("analysis_type_name") or summary.get("analysis_type") or type_from_name,
+                "total": summary.get("total_competitors"),
+                "successful": summary.get("successful_analyses"),
+                "failed": summary.get("failed_analyses"),
+                "runtime_seconds": summary.get("runtime_seconds"),
+                "html_report": f"audits/{audit_dir.name}/{html_report}" if html_report else None,
+                "markdown_report": f"audits/{audit_dir.name}/{md_report}" if md_report else None,
+                "summary_file": f"audits/{audit_dir.name}/{summary_file}" if summary_file else None,
+            }
+        )
+
+    return runs
+
+
+def generate_reports_index(audits_root: Path) -> Path:
+    """
+    Generate/update output/index.html with links to all audit reports.
+
+    Args:
+        audits_root: Path to output/audits
+
+    Returns:
+        Path to generated output/index.html
+    """
+    output_root = audits_root.parent
+    output_root.mkdir(parents=True, exist_ok=True)
+    audits_root.mkdir(parents=True, exist_ok=True)
+
+    runs = collect_audit_runs(audits_root)
+
+    rows = []
+    for run in runs:
+        total = run["total"] if run["total"] is not None else "-"
+        successful = run["successful"] if run["successful"] is not None else "-"
+        failed = run["failed"] if run["failed"] is not None else "-"
+        runtime = run["runtime_seconds"] if run["runtime_seconds"] is not None else "-"
+
+        links = []
+        if run["html_report"]:
+            links.append(f'<a href="{escape(run["html_report"])}">HTML</a>')
+        if run["markdown_report"]:
+            links.append(f'<a href="{escape(run["markdown_report"])}">Markdown</a>')
+        if run["summary_file"]:
+            links.append(f'<a href="{escape(run["summary_file"])}">Summary JSON</a>')
+        links_html = " | ".join(links) if links else "No reports"
+
+        rows.append(
+            "<tr>"
+            f"<td>{escape(str(run['date']))}</td>"
+            f"<td>{escape(str(run['analysis_type']))}</td>"
+            f"<td>{escape(str(total))}</td>"
+            f"<td>{escape(str(successful))}</td>"
+            f"<td>{escape(str(failed))}</td>"
+            f"<td>{escape(str(runtime))}</td>"
+            f"<td>{links_html}</td>"
+            f"<td><code>{escape(run['folder'])}</code></td>"
+            "</tr>"
+        )
+
+    generated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    table_body = "\n".join(rows) if rows else "<tr><td colspan='8'>No audits found yet.</td></tr>"
+
+    html = f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UX Analysis Reports Index</title>
+  <style>
+    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 24px; color: #1f2937; }}
+    h1 {{ margin: 0 0 8px; }}
+    .meta {{ color: #6b7280; margin-bottom: 16px; }}
+    table {{ width: 100%; border-collapse: collapse; }}
+    th, td {{ border: 1px solid #e5e7eb; padding: 10px; text-align: left; font-size: 14px; }}
+    th {{ background: #f9fafb; }}
+    tr:nth-child(even) td {{ background: #fcfcfd; }}
+    a {{ color: #1d4ed8; text-decoration: none; }}
+    a:hover {{ text-decoration: underline; }}
+  </style>
+</head>
+<body>
+  <h1>UX Analysis Reports</h1>
+  <div class="meta">Generated: {escape(generated_at)} | Total audits: {len(runs)}</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Analysis Type</th>
+        <th>Total</th>
+        <th>Successful</th>
+        <th>Failed</th>
+        <th>Runtime (s)</th>
+        <th>Reports</th>
+        <th>Audit Folder</th>
+      </tr>
+    </thead>
+    <tbody>
+      {table_body}
+    </tbody>
+  </table>
+</body>
+</html>
+"""
+
+    index_path = output_root / "index.html"
+    with open(index_path, "w", encoding="utf-8") as f:
+        f.write(html)
+
+    return index_path
 
 
 def extract_competitor_name(url: str) -> str:
