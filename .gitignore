@@ -54,3 +54,6 @@ Thumbs.db
 
 # Playwright
 .playwright/
+
+# Codex/Code runtime artifacts
+.code/agents/
