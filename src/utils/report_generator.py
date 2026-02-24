@@ -530,6 +530,25 @@ class ReportGenerator:
         md += f"**URL:** {url}\n\n"
         md += f"**Competitive Score:** {overall_score:.1f}/10\n\n"
 
+        # Flagged anomalies from observation pass
+        notable = []
+        observation_file = analysis.get("observation_file")
+        if observation_file:
+            obs_path = Path(observation_file)
+            if obs_path.exists():
+                try:
+                    with open(obs_path) as f:
+                        obs = json.load(f)
+                    notable = obs.get("notable_states", [])
+                except (OSError, json.JSONDecodeError):
+                    pass
+
+        if notable:
+            md += "**Flagged anomalies (observation pass):**\n"
+            for state in notable:
+                md += f"- {state}\n"
+            md += "\n"
+
         # Competitive position
         if overall_score >= 7.5:
             position = "Market Leader"
