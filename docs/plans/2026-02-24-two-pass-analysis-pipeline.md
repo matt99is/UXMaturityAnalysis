@@ -1,7 +1,5 @@
 # Two-Pass Analysis Pipeline Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
 **Goal:** Replace the single-call UX analysis with a two-pass pipeline — observe first (pass 1, with screenshots), score second (pass 2, text-only) — to eliminate attention dilution and build an auditable evidence trail.
 
 **Architecture:** Pass 1 sends screenshots with a focused observation prompt (no scoring) and saves `observation.json` per competitor. Pass 2 sends the observation JSON as text with the criteria and scores against documented evidence, requiring citation for every score. The `notable_states` array in pass 1 acts as a forcing function — every flagged anomaly must be addressed in the scoring.
