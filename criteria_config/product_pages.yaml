@@ -46,6 +46,14 @@ viewports:
     width: 375
     height: 812
 
+observation_focus:
+  - "Product variants (size, colour, quantity) and which are selected by default"
+  - "Subscription vs one-time purchase toggle - state explicitly which option is pre-selected (look for filled radio buttons, highlighted cards, checked checkboxes)"
+  - "Image gallery state - number of images visible, zoom controls, swipe indicators"
+  - "Stock availability messaging (in stock, low stock, out of stock)"
+  - "Express payment buttons visible (Apple Pay, Google Pay, PayPal, Shop Pay)"
+  - "Sticky add-to-cart button presence on mobile"
+
 criteria:
   - id: "product_imagery"
     name: "Product Imagery & Gallery"

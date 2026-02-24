@@ -27,6 +27,15 @@ viewports:
     width: 375
     height: 812
 
+observation_focus:
+  - "Hero messaging - headline text and primary value proposition verbatim"
+  - "Promotional banners or offers - exact text of any active promotions"
+  - "Navigation structure - main categories visible in header"
+  - "Featured categories or product collections visible"
+  - "Any personalisation indicators or location-based content"
+  - "Cookie consent or GDPR banner - visibility and default option state"
+  - "Newsletter or subscription signup - visibility and placement"
+
 criteria:
   - id: "value_proposition"
     name: "Value Proposition Clarity"

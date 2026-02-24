@@ -28,6 +28,15 @@ viewports:
     width: 375
     height: 812
 
+observation_focus:
+  - "Cart contents - all items, quantities, individual prices, subtotals"
+  - "Order summary breakdown (subtotal, shipping cost, discounts applied, total)"
+  - "Free delivery threshold - current status and how close the user is"
+  - "Upsell or cross-sell placements - location and content"
+  - "Coupon or promo code input - visibility and state"
+  - "Quantity adjustment controls - +/- buttons or dropdown state"
+  - "Item removal option - visibility and placement"
+
 # UX Analysis Criteria - optimized for UK retail basket pages
 # Total weight: 92 points across 11 criteria
 criteria:

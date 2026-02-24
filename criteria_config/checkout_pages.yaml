@@ -34,6 +34,15 @@ viewports:
     width: 375
     height: 812
 
+observation_focus:
+  - "Form fields visible - which are pre-filled, which are empty, which are required"
+  - "Payment method options - all options listed and which (if any) is pre-selected"
+  - "Order summary - visibility, collapsed or expanded state"
+  - "Progress indicator - current step label and total steps shown"
+  - "Guest checkout vs account creation - default option shown"
+  - "Save card or address checkbox - default state (checked or unchecked)"
+  - "Express checkout options visible at top of checkout"
+
 criteria:
   - id: "form_design"
     name: "Form Design & Usability"
