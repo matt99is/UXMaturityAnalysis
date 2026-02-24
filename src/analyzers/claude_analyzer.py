@@ -196,8 +196,9 @@ Be specific and reference what you actually see in the screenshots. Think like a
         """
         Build pass 1 observation prompt.
 
-        The model acts as a witness only and documents what is visible in
-        screenshots for later analysis.
+        The model acts as a witness only - no scoring, no evaluation.
+        All interactive states, defaults, and anomalies are documented
+        so pass 2 can score against concrete evidence.
         """
         page_specific = ""
         if observation_focus:
@@ -296,8 +297,8 @@ English sentence describing exactly what was seen.
 IMPORTANT JSON FORMATTING RULES:
 - All string values MUST properly escape special characters
 - Use \\n+ for newlines within strings
-        - Use \\" for quotes within strings
-        - Do NOT include any text outside the JSON object
+- Use \\" for quotes within strings
+- Do NOT include any text outside the JSON object
 """
         return prompt
 
