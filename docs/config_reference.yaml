@@ -33,6 +33,10 @@
 #    - List of viewport sizes to capture (desktop, mobile, tablet)
 #    - Each viewport needs: name, width, height
 #
+# 2.5 Observation Focus (two-pass pipeline)
+#    - observation_focus: list of prompts used in pass 1 (observation)
+#    - Helps force model attention to page-specific UI states/defaults
+#
 # 3. Criteria Definition
 #    - List of evaluation criteria (the core of the analysis)
 #    - Each criterion needs: id, name, weight, description, evaluation_points, benchmarks
@@ -65,6 +69,12 @@ example_basket_pages_config:
     - name: "mobile"
       width: 375
       height: 812
+
+  # Optional pass-1 focus hints (two-pass analysis)
+  observation_focus:
+    - "Cart contents and totals"
+    - "Default state of subscription options"
+    - "Coupon input visibility and state"
 
   # UX Evaluation Criteria
   # Total weight: 92 points across 11 criteria
@@ -193,6 +203,10 @@ example_homepage_config:
 #      - name: "mobile"
 #        width: 375
 #        height: 812
+#
+#    observation_focus:          # Optional but recommended for two-pass pipeline
+#      - "State/defaults to capture in pass 1"
+#      - "Page-specific anomalies to check"
 #
 #    criteria:
 #      - id: "unique_criterion_id"
