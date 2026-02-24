@@ -370,13 +370,12 @@ class UXAnalysisOrchestrator:
         capture_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Analyze a competitor using previously captured screenshots.
+        Analyze a competitor using a two-pass pipeline.
 
-        Args:
-            capture_data: Dictionary with screenshot paths and metadata from capture phase
+        Pass 1 observes screenshots and stores structured visual evidence.
+        Pass 2 scores criteria using only observation text as input.
 
-        Returns:
-            Analysis result dictionary
+        If observation.json already exists for this competitor, pass 1 is skipped.
         """
         site_name = capture_data["site_name"]
         url = capture_data["url"]
@@ -385,8 +384,69 @@ class UXAnalysisOrchestrator:
 
         self.console.print(f"\n[bold cyan]Analyzing:[/bold cyan] {site_name}")
 
+        observation_path = None
+        if competitor_paths:
+            observation_path = Path(competitor_paths["root"]) / "observation.json"
+
         try:
-            # Convert criteria to dict format for analyzer
+            # Pass 1: Observe screenshots
+            observation = None
+
+            if observation_path and observation_path.exists():
+                self.console.print(
+                    f"  [dim]↻ Loading existing observation from {observation_path.name}[/dim]"
+                )
+                with open(observation_path, "r", encoding="utf-8") as f:
+                    observation = json.load(f)
+            else:
+                self.console.print("  [cyan]Pass 1: Observing screenshots...[/cyan]")
+                observation_focus = list(
+                    getattr(self.analysis_type_config, "observation_focus", [])
+                )
+
+                observe_result = await self.claude_analyzer._observe_screenshots(
+                    screenshot_paths=screenshot_paths,
+                    analysis_name=self.analysis_type_config.name,
+                    observation_focus=observation_focus,
+                    site_name=site_name,
+                    url=url,
+                )
+
+                if not observe_result.get("success"):
+                    self.console.print(
+                        f"  [red]Observation failed: {observe_result.get('error')}[/red]"
+                    )
+                    return {
+                        "success": False,
+                        "site_name": site_name,
+                        "url": url,
+                        "error": f"Pass 1 observation failed: {observe_result.get('error')}",
+                        "screenshots": screenshot_paths,
+                    }
+
+                observation = observe_result["observation"]
+
+                if observation_path:
+                    observation_path.parent.mkdir(parents=True, exist_ok=True)
+                    with open(observation_path, "w", encoding="utf-8") as f:
+                        json.dump(observation, f, indent=2)
+                    self.console.print(
+                        f"  [green]✓ Observation saved ({len(observation.get('notable_states', []))} notable states)[/green]"
+                    )
+                else:
+                    self.console.print(
+                        f"  [green]✓ Observation complete ({len(observation.get('notable_states', []))} notable states)[/green]"
+                    )
+
+            notable = observation.get("notable_states", []) if observation else []
+            if notable:
+                self.console.print("  [yellow]Notable states:[/yellow]")
+                for state in notable:
+                    self.console.print(f"    [yellow]• {state}[/yellow]")
+
+            # Pass 2: Score criteria using observation text only
+            self.console.print("  [cyan]Pass 2: Scoring against criteria...[/cyan]")
+
             criteria_dicts = [
                 {
                     "id": c.id,
@@ -405,28 +465,41 @@ class UXAnalysisOrchestrator:
                 analysis_name=self.analysis_type_config.name,
                 site_name=site_name,
                 url=url,
-                analysis_context=self.analysis_type_config.analysis_context
+                analysis_context=self.analysis_type_config.analysis_context,
+                observation=observation,
             )
 
             if not analysis_result.get("success"):
-                self.console.print(f"  [red]Analysis failed: {analysis_result.get('error')}[/red]")
+                self.console.print(f"  [red]Scoring failed: {analysis_result.get('error')}[/red]")
                 return {
                     "success": False,
                     "site_name": site_name,
                     "url": url,
                     "error": analysis_result.get("error"),
-                    "screenshots": screenshot_paths
+                    "screenshots": screenshot_paths,
                 }
 
-            self.console.print(f"  [green]✓ Analysis complete![/green]")
+            result_data = (
+                analysis_result.get("analysis", {}).copy()
+                if "analysis" in analysis_result
+                else analysis_result.copy()
+            )
+            result_data["success"] = True
+            result_data["site_name"] = site_name
+            result_data["url"] = url
+            result_data["observation_file"] = str(observation_path) if observation_path else None
+            result_data["screenshots_analyzed"] = screenshot_paths
+            result_data["model_used"] = self.claude_analyzer.model
+            result_data["screenshot_metadata"] = capture_data.get("screenshot_metadata", [])
 
-            # Flatten the analysis structure - Claude's data is nested under 'analysis' key
-            # We want to merge it with screenshot_metadata at the top level
-            result = analysis_result.get("analysis", {}).copy() if "analysis" in analysis_result else analysis_result.copy()
-            result["success"] = True  # Ensure success flag is set
-            result["screenshot_metadata"] = capture_data.get("screenshot_metadata", [])
+            self.console.print("  [green]✓ Analysis complete[/green]")
 
-            return result
+            if competitor_paths:
+                analysis_file_path = Path(competitor_paths["root"]) / "analysis.json"
+                with open(analysis_file_path, "w", encoding="utf-8") as f:
+                    json.dump(result_data, f, indent=2)
+
+            return result_data
 
         except Exception as e:
             self.console.print(f"  [red]Error: {str(e)}[/red]")
@@ -435,7 +508,7 @@ class UXAnalysisOrchestrator:
                 "site_name": site_name,
                 "url": url,
                 "error": str(e),
-                "screenshots": screenshot_paths
+                "screenshots": screenshot_paths,
             }
 
     async def analyze_competitors(
@@ -504,7 +577,7 @@ class UXAnalysisOrchestrator:
 
             # Delay between analyses to respect 8,000 output tokens/min rate limit
             # With max_tokens=6000, we need 1 per minute minimum (60s delay)
-            ANALYSIS_DELAY = 60  # Wait 60 seconds between analyses
+            ANALYSIS_DELAY = 90  # Two-pass: ~9000 output tokens per competitor, 8000/min limit
 
             self.console.print(f"[bold]Analyzing {len(successful_captures)} competitors sequentially...[/bold]")
             self.console.print(f"[dim]Rate limit protection: {ANALYSIS_DELAY}s delay between analyses[/dim]\n")
