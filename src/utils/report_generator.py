@@ -555,6 +555,9 @@ class ReportGenerator:
                 except (OSError, json.JSONDecodeError):
                     notable = []
 
+        if not notable and isinstance(analysis.get("notable_states"), list):
+            notable = [str(state).strip() for state in analysis["notable_states"] if str(state).strip()]
+
         if notable:
             md += "**Flagged anomalies (observation pass):**\n"
             for state in notable:
