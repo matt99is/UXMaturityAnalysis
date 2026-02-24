@@ -78,6 +78,67 @@ def _first_existing_file(audit_root: Path, candidates: List[str], suffix: str) -
     return matches[0] if matches else None
 
 
+def _resolve_output_and_audits_roots(base_path: Path) -> tuple[Path, Path]:
+    """Resolve output root and audits root from a path that may be either."""
+    if base_path.name == "audits":
+        return base_path.parent, base_path
+    return base_path, base_path / "audits"
+
+
+def _extract_legacy_timestamp(path: Path) -> str:
+    """Extract YYYYMMDD_HHMMSS timestamp from a legacy report filename."""
+    match = re.search(r"(\d{8}_\d{6})", path.name)
+    if match:
+        return match.group(1)
+    return datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y%m%d_%H%M%S")
+
+
+def collect_legacy_runs(output_root: Path) -> List[Dict[str, Any]]:
+    """Collect flat-output legacy report sets saved directly under output/."""
+    if not output_root.exists():
+        return []
+
+    run_map: Dict[str, Dict[str, Any]] = {}
+
+    def upsert(ts: str) -> Dict[str, Any]:
+        if ts not in run_map:
+            try:
+                date_text = datetime.strptime(ts, "%Y%m%d_%H%M%S").strftime("%Y-%m-%d")
+            except ValueError:
+                date_text = "legacy"
+
+            run_map[ts] = {
+                "folder": f"legacy_{ts}",
+                "date": date_text,
+                "analysis_type": "Legacy (flat output)",
+                "total": None,
+                "successful": None,
+                "failed": None,
+                "runtime_seconds": None,
+                "html_report": None,
+                "markdown_report": None,
+                "summary_file": None,
+                "json_report": None,
+            }
+        return run_map[ts]
+
+    for html_file in output_root.glob("competitive_intelligence_*.html"):
+        ts = _extract_legacy_timestamp(html_file)
+        upsert(ts)["html_report"] = html_file.name
+
+    for md_file in output_root.glob("ux_analysis_report_*.md"):
+        ts = _extract_legacy_timestamp(md_file)
+        upsert(ts)["markdown_report"] = md_file.name
+
+    for json_file in output_root.glob("ux_analysis_*.json"):
+        if json_file.name.startswith("ux_analysis_report_"):
+            continue
+        ts = _extract_legacy_timestamp(json_file)
+        upsert(ts)["json_report"] = json_file.name
+
+    return [run_map[key] for key in sorted(run_map.keys(), reverse=True)]
+
+
 def collect_audit_runs(audits_root: Path) -> List[Dict[str, Any]]:
     """
     Collect metadata and report links for all audit runs.
@@ -126,21 +187,26 @@ def collect_audit_runs(audits_root: Path) -> List[Dict[str, Any]]:
     return runs
 
 
-def generate_reports_index(audits_root: Path) -> Path:
+def generate_reports_index(base_path: Path) -> Path:
     """
-    Generate/update output/index.html with links to all audit reports.
+    Generate/update output/index.html with links to all audit and legacy reports.
 
     Args:
-        audits_root: Path to output/audits
+        base_path: Path to output/ or output/audits
 
     Returns:
         Path to generated output/index.html
     """
-    output_root = audits_root.parent
+    output_root, audits_root = _resolve_output_and_audits_roots(base_path)
     output_root.mkdir(parents=True, exist_ok=True)
     audits_root.mkdir(parents=True, exist_ok=True)
 
-    runs = collect_audit_runs(audits_root)
+    runs = collect_audit_runs(audits_root) + collect_legacy_runs(output_root)
+    runs = sorted(
+        runs,
+        key=lambda run: (str(run.get("date", "")), str(run.get("folder", ""))),
+        reverse=True,
+    )
 
     rows = []
     for run in runs:
@@ -156,6 +222,8 @@ def generate_reports_index(audits_root: Path) -> Path:
             links.append(f'<a href="{escape(run["markdown_report"])}">Markdown</a>')
         if run["summary_file"]:
             links.append(f'<a href="{escape(run["summary_file"])}">Summary JSON</a>')
+        if run.get("json_report"):
+            links.append(f'<a href="{escape(run["json_report"])}">JSON</a>')
         links_html = " | ".join(links) if links else "No reports"
 
         rows.append(

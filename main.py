@@ -736,7 +736,7 @@ class UXAnalysisOrchestrator:
                 self.console.print(f"[green]Audit summary:[/green] {summary_path}")
 
             # Update project-level index listing all audit reports
-            index_path = generate_reports_index(get_output_base_dir("output"))
+            index_path = generate_reports_index(Path(self.report_generator.output_dir))
             self.console.print(f"[green]Reports index:[/green] {index_path}")
 
             return {

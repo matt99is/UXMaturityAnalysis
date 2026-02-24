@@ -48,3 +48,19 @@ def test_generate_reports_index_writes_index_file(tmp_path: Path):
     assert "UX Analysis Reports" in content
     assert "audits/2026-02-23_checkout_pages/_comparison_report.html" in content
 
+
+def test_generate_reports_index_from_output_root_includes_legacy_files(tmp_path: Path):
+    output_root = tmp_path / "output"
+    output_root.mkdir(parents=True)
+
+    (output_root / "competitive_intelligence_20260224_120000.html").write_text("<html></html>", encoding="utf-8")
+    (output_root / "ux_analysis_report_20260224_120000.md").write_text("# report", encoding="utf-8")
+    (output_root / "ux_analysis_20260224_120000.json").write_text("{}", encoding="utf-8")
+
+    index_path = generate_reports_index(output_root)
+
+    assert index_path == output_root / "index.html"
+    content = index_path.read_text(encoding="utf-8")
+    assert "competitive_intelligence_20260224_120000.html" in content
+    assert "ux_analysis_report_20260224_120000.md" in content
+    assert "ux_analysis_20260224_120000.json" in content
