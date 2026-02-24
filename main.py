@@ -403,9 +403,16 @@ class UXAnalysisOrchestrator:
 
             if use_existing:
                 self.console.print(f"  [dim]↻ Loading existing observation from {observation_path.name}[/dim]")
-                with open(observation_path, 'r') as f:
-                    observation = json.load(f)
-            else:
+                try:
+                    with open(observation_path, 'r') as f:
+                        observation = json.load(f)
+                except (json.JSONDecodeError, OSError) as exc:
+                    self.console.print(
+                        f"  [yellow]⚠ Existing observation invalid ({exc}); re-running pass 1[/yellow]"
+                    )
+                    use_existing = False
+
+            if not use_existing:
                 self.console.print(f"  [cyan]Pass 1: Observing screenshots...[/cyan]")
                 observation_focus = list(getattr(self.analysis_type_config, 'observation_focus', []))
 
