@@ -708,7 +708,6 @@ class UXAnalysisOrchestrator:
             # Generate interactive HTML report
             try:
                 html_filename = f"{audit_root.name}_report.html"
-                html_output_path = audit_root / html_filename
 
                 # Temporarily override output_dir to write to audit_root
                 original_output_dir = self.html_report_generator.output_dir
