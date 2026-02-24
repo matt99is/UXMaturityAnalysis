@@ -146,3 +146,76 @@ async def test_observe_screenshots_returns_observation_on_success(
     assert result["observation"]["notable_states"] == [
         "Annual subscription pre-selected by default"
     ]
+
+
+@pytest.mark.asyncio
+async def test_analyze_screenshots_with_observation_sends_no_images(
+    analyzer: ClaudeUXAnalyzer,
+) -> None:
+    """When observation is provided, analyze_screenshots sends text-only content."""
+    observation = {
+        "notable_states": ["Test state"],
+        "desktop": {},
+        "mobile": {},
+    }
+    criteria = [
+        {
+            "id": "test",
+            "name": "Test Criterion",
+            "weight": 1.0,
+            "description": "Test",
+            "evaluation_points": [],
+            "benchmarks": [],
+        }
+    ]
+    mock_result = {
+        "site_name": "example.com",
+        "url": "https://example.com",
+        "analysis_type": "Product Page",
+        "overall_score": 7,
+        "competitive_position": {
+            "tier": "strong_contender",
+            "positioning": "test",
+            "key_differentiator": "test",
+        },
+        "criteria_scores": [
+            {
+                "criterion_id": "test",
+                "criterion_name": "Test Criterion",
+                "score": 7,
+                "evidence": "test",
+                "observations": "test",
+                "comparison_to_benchmarks": "test",
+                "competitive_status": "parity",
+            }
+        ],
+        "strengths": [],
+        "competitive_advantages": [],
+        "weaknesses": [],
+        "exploitable_vulnerabilities": [],
+        "unmet_user_needs": [],
+        "key_findings": [],
+    }
+
+    mock_response = MagicMock()
+    mock_response.content = [MagicMock(text=json.dumps(mock_result))]
+
+    captured_calls = []
+
+    async def mock_create(**kwargs):
+        captured_calls.append(kwargs)
+        return mock_response
+
+    with patch.object(analyzer.client.messages, "create", new=mock_create):
+        result = await analyzer.analyze_screenshots(
+            screenshot_paths=[],
+            criteria=criteria,
+            analysis_name="Product Page",
+            site_name="example.com",
+            url="https://example.com",
+            observation=observation,
+        )
+
+    assert result["success"] is True
+    call_content = captured_calls[0]["messages"][0]["content"]
+    assert all(item["type"] == "text" for item in call_content)

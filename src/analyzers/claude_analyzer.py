@@ -445,104 +445,6 @@ IMPORTANT JSON FORMATTING RULES:
         img.save(buffer, format='JPEG', quality=70, optimize=True)
         buffer.seek(0)
         return base64.b64encode(buffer.read()).decode("utf-8")
-
-
-    async def _observe_screenshots(
-        self,
-        screenshot_paths: List[str],
-        analysis_name: str,
-        observation_focus: List[str],
-        site_name: str,
-        url: str
-    ) -> Dict[str, Any]:
-        """
-        Pass 1: Observe screenshots and document visual evidence.
-
-        Sends screenshots with observation prompt (no scoring) and returns
-        structured observation JSON with notable_states array.
-
-        Args:
-            screenshot_paths: Paths to screenshot files
-            analysis_name: Name of analysis type
-            observation_focus: Page-specific observation prompts from config
-            site_name: Competitor site name
-            url: URL analyzed
-
-        Returns:
-            Structured observation result with notable_states array
-        """
-        # Build the observation prompt
-        prompt = self._build_observation_prompt(
-            analysis_name, observation_focus, site_name, url
-        )
-
-        # Prepare image content for API
-        image_content = []
-        for path in screenshot_paths:
-            if not Path(path).exists():
-                continue
-
-            image_data = self._load_image_as_base64(path)
-            image_content.append({
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": "image/jpeg",
-                    "data": image_data
-                }
-            })
-
-        # Add text prompt
-        content = image_content + [{"type": "text", "text": prompt}]
-
-        try:
-            # Call Claude API (async for parallel execution)
-            response = await self.client.messages.create(
-                model=self.model,
-                max_tokens=3000,  # Pass 1 uses fewer tokens - observation only
-                messages=[{
-                    "role": "user",
-                    "content": content
-                }]
-            )
-
-            # Extract response text
-            response_text = response.content[0].text
-
-            # Parse JSON from response
-            if "```json" in response_text:
-                json_start = response_text.find("```json") + 7
-                json_end = response_text.find("```", json_start)
-                json_text = response_text[json_start:json_end].strip()
-            elif "```" in response_text:
-                json_start = response_text.find("```") + 3
-                json_end = response_text.find("```", json_start)
-                json_text = response_text[json_start:json_end].strip()
-            else:
-                json_text = response_text
-
-            # Parse JSON
-            observation_result = json.loads(json_text)
-
-            return {
-                "success": True,
-                "observation": observation_result
-            }
-
-        except json.JSONDecodeError as e:
-            return {
-                "success": False,
-                "error": f"Failed to parse observation response as JSON: {e}",
-                "raw_response": response_text if 'response_text' in locals() else None
-            }
-
-        except Exception as e:
-            return {
-                "success": False,
-                "error": str(e)
-            }
-
-
     async def analyze_screenshots(
         self,
         screenshot_paths: List[str],
@@ -550,7 +452,8 @@ IMPORTANT JSON FORMATTING RULES:
         analysis_name: str,
         site_name: str,
         url: str,
-        analysis_context: Optional[str] = None
+        analysis_context: Optional[str] = None,
+        observation: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Analyze UX from screenshots using Claude.
@@ -562,6 +465,7 @@ IMPORTANT JSON FORMATTING RULES:
             site_name: Competitor site name
             url: URL analyzed
             analysis_context: Optional market/domain context for prompts
+            observation: Optional pass-1 observation for text-only pass 2
 
         Returns:
             Structured analysis results
@@ -571,26 +475,28 @@ IMPORTANT JSON FORMATTING RULES:
         """
 
         # Build the analysis prompt
-        prompt = self._build_analysis_prompt(criteria, analysis_name, site_name, url, analysis_context)
+        prompt = self._build_analysis_prompt(criteria, analysis_name, site_name, url, analysis_context, observation)
 
-        # Prepare image content for API
-        image_content = []
-        for path in screenshot_paths:
-            if not Path(path).exists():
-                continue
-
-            image_data = self._load_image_as_base64(path)
-            image_content.append({
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": "image/jpeg",  # Always JPEG for consistency
-                    "data": image_data
-                }
-            })
-
-        # Add text prompt
-        content = image_content + [{"type": "text", "text": prompt}]
+        if observation:
+            # Pass 2: text-only - observation replaces images
+            # Full output token budget goes to scoring
+            content = [{"type": "text", "text": prompt}]
+        else:
+            # Single-pass or legacy: include images
+            image_content = []
+            for path in screenshot_paths:
+                if not Path(path).exists():
+                    continue
+                image_data = self._load_image_as_base64(path)
+                image_content.append({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/jpeg",
+                        "data": image_data
+                    }
+                })
+            content = image_content + [{"type": "text", "text": prompt}]
 
         try:
             # Call Claude API (async for parallel execution)
@@ -678,7 +584,8 @@ IMPORTANT JSON FORMATTING RULES:
         analysis_name: str,
         site_name: str,
         url: str,
-        analysis_context: Optional[str] = None
+        analysis_context: Optional[str] = None,
+        observation: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Synchronous version of analyze_screenshots for easier integration.
@@ -695,7 +602,13 @@ IMPORTANT JSON FORMATTING RULES:
                 # We're already in an async context
                 return asyncio.create_task(
                     self.analyze_screenshots(
-                        screenshot_paths, criteria, analysis_name, site_name, url, analysis_context
+                        screenshot_paths,
+                        criteria,
+                        analysis_name,
+                        site_name,
+                        url,
+                        analysis_context,
+                        observation,
                     )
                 )
         except RuntimeError:
@@ -704,7 +617,13 @@ IMPORTANT JSON FORMATTING RULES:
         # Create new event loop for sync call
         return asyncio.run(
             self.analyze_screenshots(
-                screenshot_paths, criteria, analysis_name, site_name, url, analysis_context
+                screenshot_paths,
+                criteria,
+                analysis_name,
+                site_name,
+                url,
+                analysis_context,
+                observation,
             )
         )
 
