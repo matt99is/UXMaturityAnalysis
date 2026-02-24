@@ -91,6 +91,7 @@ Nothing in notable_states should be silently ignored.
 
         # Determine source description for prompt
         source_desc = "the visual evidence documented below" if observation else f"the provided screenshot(s) of {site_name}'s page (URL: {url})"
+        evidence_instruction = "\n5. Cite direct evidence from the observation for every score" if observation else ""
 
         prompt = f"""You are a competitive intelligence analyst specializing in e-commerce UX strategy.
 {context_section}{observation_section}**IMPORTANT: Frame your analysis from a COMPETITIVE INTELLIGENCE perspective, not as recommendations to the competitor.**
@@ -101,9 +102,10 @@ Analyze {source_desc} for {analysis_name} against the following criteria:
 
 For each criterion, provide:
 1. A score from 0-10 (where 10 is excellent, adhering to best practices)
-2. Specific observations of what you see in the screenshot (be detailed and reference visible elements)
+2. Specific observations from the provided evidence (be detailed and reference visible elements)
 3. How it compares to best practices and benchmarks mentioned above
 4. Competitive assessment: Is this a strength (threat to us) or weakness (opportunity for us)?
+{evidence_instruction}
 
 **CRITICAL SCORING GUIDANCE:**
 - **Dark Patterns MUST be heavily penalized**: If you detect subscription pre-selected by default, pre-checked boxes committing to recurring payments, or hidden opt-outs, score that criterion 0-3/10 regardless of other factors
