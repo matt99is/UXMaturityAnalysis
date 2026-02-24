@@ -1,10 +1,10 @@
 # E-commerce UX Maturity Analysis Agent
 
-**Version:** 1.5.0
+**Version:** 1.6.0
 **Status:** Production Ready
 **Python:** 3.9+
 
-A Python tool that systematically analyses competitor e-commerce pages and generates UX maturity reports using Claude AI and browser automation. Now with Resources project integration for automatic portfolio publishing.
+A Python tool that systematically analyses competitor e-commerce pages and generates UX maturity reports using Claude AI and browser automation.
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -22,7 +22,7 @@ A Python tool that systematically analyses competitor e-commerce pages and gener
 - [Configuration](#configuration)
 - [Output Structure](#output-structure)
 - [Interactive HTML Reports](#interactive-html-reports)
-- [Resources Integration](#resources-integration)
+- [Reports Index](#reports-index)
 - [Architecture & Extensibility](#architecture--extensibility)
 - [Technical Details](#technical-details)
 - [Roadmap](#roadmap)
@@ -47,7 +47,7 @@ This tool automates competitive UX analysis for e-commerce sites by:
 - **📊 Interactive Reports**: Rich HTML reports with charts, filtering, and annotated screenshots
 - **🎤 Interactive Control**: You control the browser - navigate, close popups, then capture
 - **🔧 Extensible**: Add new page types via YAML config (no code changes needed)
-- **🤖 AI-powered**: Claude Sonnet 4.5 with vision capabilities
+- **🤖 AI-powered**: Claude Sonnet with environment-configurable model defaults
 - **⚖️ Rate Limit Compliant**: Sequential analysis ensures reliable operation within API limits
 
 ---
@@ -66,7 +66,13 @@ This tool automates competitive UX analysis for e-commerce sites by:
 - 🎯 **UX Maturity Focus**: Evaluate UX maturity across multiple dimensions
 - 📊 **Research-backed Evaluation**: Baymard Institute and Nielsen Norman Group criteria
 - 📱 **Desktop & Mobile Analysis**: Multi-viewport screenshot capture
+- 🧪 **Two-Pass Pipeline**: Observe first, score second, with explicit evidence trail
 - 🔄 **Reanalyze Capability**: Regenerate reports from existing screenshots (NEW in v1.3.2)
+
+### Output & Indexing
+- 📁 **Project-Local Storage**: Reports are written to `output/` inside this repository
+- 🗂️ **Audit History Index**: Auto-generated `output/index.html` lists all report runs
+- 🧾 **Evidence Preservation**: Each competitor now stores `observation.json` + `analysis.json`
 
 ### HTML Reports
 - 📈 **Interactive Charts**: Radar, heatmap, and bar charts with Plotly
@@ -74,13 +80,6 @@ This tool automates competitive UX analysis for e-commerce sites by:
 - 🖼️ **Annotated Screenshots**: Visual badges showing strengths/weaknesses
 - 💡 **Strategic Insights**: Market leaders, opportunities, threats at-a-glance
 - 🟣 **Purple Theme**: Professional color scheme for visual distinction
-
-### Integration (NEW in v1.4.0)
-- 🔗 **Resources Project Integration**: Auto-publish to portfolio site
-- 📝 **Auto Index Updates**: Reports appear on main site automatically
-- 🎯 **Configured Output**: Save directly to deployment-ready location
-
----
 
 ## Quick Start
 
@@ -125,8 +124,8 @@ You'll be prompted to select analysis type, then the tool opens a browser for ea
 
 **Expected Timing:**
 - Screenshot capture: ~30 seconds per competitor (your manual interaction time)
-- AI analysis: ~1 minute per competitor (sequential processing with rate limit delays)
-- Total for 10 competitors: ~15-17 minutes end-to-end
+- AI analysis: ~1.5 minutes per competitor (two-pass processing + rate-limit delays)
+- Total for 10 competitors: ~20-25 minutes end-to-end (site/page complexity dependent)
 
 **Specify analysis type** (skip the prompt):
 
@@ -147,7 +146,7 @@ python3 main.py --manual-mode --screenshots-dir ./screenshots --config competito
 
 ## How It Works
 
-The tool follows a reliable, two-phase workflow:
+The tool follows a reliable two-phase workflow with a two-pass AI analysis stage:
 
 ### Phase 1: Screenshot Capture (Interactive)
 
@@ -163,15 +162,25 @@ The tool follows a reliable, two-phase workflow:
    - Press Enter when ready → Captures desktop & mobile screenshots
    - Choose: **Y** (Continue) / **R** (Retry) / **S** (Skip)
 
-### Phase 2: AI Analysis (Sequential)
+### Phase 2: AI Analysis (Sequential, Two-Pass)
 
-3. **AI Analysis** - Claude analyzes screenshots one at a time
-   - ~1 minute per competitor (rate limit compliant)
+3. **Pass 1: Observation**
+   - Claude receives screenshots and returns structured visual observations
+   - Output is saved as `observation.json` per competitor
+   - `notable_states` capture anomalies/defaults that must be addressed in scoring
+
+4. **Pass 2: Scoring from Evidence (Text-only)**
+   - Claude scores criteria against the observation JSON (no image payload)
+   - Each criterion includes an evidence citation
+   - More stable scoring because attention is focused on criteria, not visual scanning
+
+5. **Sequential Execution & Rate Limits**
+   - ~1.5 minutes per competitor (rate limit compliant)
    - Real-time progress indicators (✓/✗/⚠)
    - Research-backed criteria evaluation
-   - 60-second delays between analyses to respect API limits
+   - 90-second delays between analyses to respect API limits
 
-4. **Report Generation** - Generates multiple output formats:
+6. **Report Generation** - Generates multiple output formats:
    - Interactive HTML report with charts
    - Markdown competitive intelligence report
    - Individual JSON analyses per competitor
@@ -249,7 +258,7 @@ python3 main.py --urls \
 ### Specify Claude Model
 
 ```bash
-python3 main.py --model claude-sonnet-4-5-20250929 --config competitors.json
+python3 main.py --model claude-sonnet-4-6 --config competitors.json
 ```
 
 ### Manual Mode (For Bot-Protected Sites)
@@ -292,6 +301,10 @@ python3 main.py --manual-mode --screenshots-dir ./my-screenshots --urls https://
 
 ```bash
 python3 scripts/reanalyze_screenshots.py <audit_folder>
+
+# Optional flags
+python3 scripts/reanalyze_screenshots.py <audit_folder> --force-observe
+python3 scripts/reanalyze_screenshots.py <audit_folder> --force
 ```
 
 **Example:**
@@ -307,7 +320,9 @@ python3 scripts/reanalyze_screenshots.py output/audits/2025-11-24_basket_pages
 2. **Finds all competitor folders** with screenshots
 3. **Checks for existing analyses**:
    - Reuses `analysis.json` if present (instant)
-   - Only re-runs AI analysis for missing analyses
+   - Reuses `observation.json` by default when available
+   - Re-runs pass 1 with `--force-observe`
+   - Re-runs both passes with `--force`
 4. **Generates fresh reports** with current template and logic
 
 ### Smart Caching
@@ -326,14 +341,14 @@ Found 10 existing analyses, need to analyze 1 competitor
 
 ═══ Phase 2: AI Analysis (Sequential) ═══
 Analyzing 1 competitor sequentially...
-Rate limit protection: 60s delay between analyses
+Rate limit protection: 90s delay between analyses
 
   [✓] petshop.co.uk
 
 ✓ Reanalysis complete!
 ✓ Reports generated:
   - markdown: output/audits/2025-11-24_basket_pages/_comparison_report.md
-  - html: output/audits/2025-11-24_basket_pages/_comparison_report.html
+  - html: output/audits/2025-11-24_basket_pages/2025-11-24_basket_pages_report.html
 ```
 
 ### Use Cases
@@ -368,7 +383,7 @@ Only the new competitor gets analyzed; others reused.
 ### Output
 
 Same structure as main script:
-- Updated `_comparison_report.html` (interactive)
+- Updated `{audit_folder}_report.html` (interactive)
 - Updated `_comparison_report.md` (markdown)
 - Individual `analysis.json` files (if re-analyzed)
 
@@ -438,6 +453,11 @@ viewports:
     width: 375
     height: 812
 
+observation_focus:
+  - "Cart contents and totals visible"
+  - "Default state of subscription/one-time options"
+  - "Coupon field visibility and state"
+
 criteria:
   - id: "shipping_cost_transparency"
     name: "Shipping Cost & Free Delivery Threshold"
@@ -453,6 +473,7 @@ criteria:
 
 **Key Features:**
 - **Dynamic AI Context**: The `analysis_context` field provides market-specific expertise
+- **Two-pass Focus Control**: `observation_focus` steers pass 1 evidence capture per page type
 - **Automatic Integration**: No code changes needed - just edit YAML and run
 - Each criterion is evaluated against Baymard Institute and Nielsen Norman Group benchmarks
 
@@ -463,41 +484,37 @@ criteria:
 The tool organizes output by audit run with hierarchical structure:
 
 ```
-output/audits/
-└── 2025-11-24_basket_pages/          # Audit folder
-    ├── _comparison_report.md          # Markdown competitive intelligence report
-    ├── _comparison_report.html        # Interactive HTML report with charts
-    ├── _audit_summary.json            # Audit metadata
-    ├── nike/                          # Competitor folder
-    │   ├── screenshots/
-    │   │   ├── desktop.png            # Desktop viewport screenshot
-    │   │   └── mobile.png             # Mobile viewport screenshot
-    │   └── analysis.json              # Individual analysis results
-    ├── adidas/
-    │   ├── screenshots/
-    │   │   ├── desktop.png
-    │   │   └── mobile.png
-    │   └── analysis.json
-    └── underarmour/
-        ├── screenshots/
-        │   ├── desktop.png
-        │   └── mobile.png
-        └── analysis.json
+output/
+├── index.html                           # Master index for all audit runs
+└── audits/
+    └── 2026-02-24_basket_pages/         # Audit folder
+        ├── _comparison_report.md         # Markdown competitive intelligence report
+        ├── 2026-02-24_basket_pages_report.html  # Interactive HTML report
+        ├── _audit_summary.json           # Audit metadata
+        ├── nike/                         # Competitor folder
+        │   ├── screenshots/
+        │   │   ├── desktop.png           # Desktop viewport screenshot
+        │   │   └── mobile.png            # Mobile viewport screenshot
+        │   ├── observation.json          # Pass 1 observation evidence
+        │   └── analysis.json             # Pass 2 scored analysis
+        └── ...
 ```
 
 ### File Descriptions
 
-- **`_comparison_report.html`**: Interactive report with charts, filtering, annotations
+- **`output/index.html`**: Master index listing all audit runs and report links
+- **`{audit_folder}_report.html`**: Interactive report with charts, filtering, annotations
 - **`_comparison_report.md`**: Markdown report with strategic insights and competitive analysis
 - **`_audit_summary.json`**: Metadata about the audit (timestamp, analysis type, competitors)
 - **`screenshots/`**: Desktop and mobile PNG screenshots for each competitor
-- **`analysis.json`**: Individual competitor analysis with scores, strengths, vulnerabilities
+- **`observation.json`**: Pass 1 visual state observations + notable states
+- **`analysis.json`**: Pass 2 scoring with evidence citations, strengths, vulnerabilities
 
 ---
 
 ## Interactive HTML Reports
 
-The tool generates **rich, interactive HTML reports** (`_comparison_report.html`) with visualizations and filtering capabilities.
+The tool generates **rich, interactive HTML reports** (`{audit_folder}_report.html`) with visualizations and filtering capabilities.
 
 ### Report Sections
 
@@ -596,6 +613,10 @@ All charts update dynamically based on active filters!
 
 Each competitor card shows:
 
+**Observation callout (two-pass evidence):**
+- Flagged anomalies from pass 1 (`notable_states`) shown at top of each profile
+- Per-criterion evidence citations surfaced directly below criterion bars
+
 **Competitive Position Tier** (badge at top):
 - 🟢 **Market Leader**: Score significantly above average
 - 🟡 **Strong Contender**: Score at or near average
@@ -661,92 +682,32 @@ Each competitor card shows:
 
 ---
 
-## Resources Integration
+## Reports Index
 
-**NEW in v1.4.0**: The tool now integrates with the [Resources portfolio project](https://github.com/matt99is/Resources) to automatically publish analysis reports to a live website.
+The tool now maintains a project-local report index automatically.
 
-### Overview
+### Where reports are saved
 
-When configured, analysis reports are:
-- Saved directly to the Resources project (`/ux-analysis/` folder)
-- Automatically added to the Resources index page
-- Published with a professional purple theme
-- Ready for immediate Netlify deployment
+- Audit runs: `output/audits/{date}_{analysis_type}/`
+- Master index: `output/index.html`
 
-### Setup
+### What the index includes
 
-1. **Clone the Resources project** alongside this repo:
-```bash
-cd ~/Projects
-git clone https://github.com/matt99is/Resources.git
-```
+- All structured audit runs under `output/audits/`
+- Links to available HTML, Markdown, and summary JSON files per run
+- Legacy flat reports (if present) so historical exports remain discoverable
 
-2. **Configuration is already set** in `resources_integration_config.json`:
-```json
-{
-  "resources_project_path": "/Users/matthewlelonek/Projects/Resources",
-  "output_subfolder": "ux-analysis",
-  "update_index": true
-}
-```
+### How it updates
 
-3. **Update the path** if your Resources project is in a different location.
+- `output/index.html` is regenerated automatically after report generation
+- No separate indexing step is required for normal analysis or reanalysis workflows
 
-### Usage
-
-Run analysis as normal:
-```bash
-python main.py --config competitors.json
-```
-
-The tool will:
-1. ✅ Generate the analysis report
-2. ✅ Save to `Resources/ux-analysis/YYYY-MM-DD_page_type/`
-3. ✅ Update `Resources/index.html` with new report card
-4. ✅ Print confirmation message
-
-Example output:
-```
-✅ Analysis complete!
-
-Results saved to: /Users/matthewlelonek/Projects/Resources/ux-analysis/2025-12-12_basket_pages
-
-🔄 Updating Resources index...
-✅ Resources index updated!
-```
-
-### Deploy to Netlify
-
-After running an analysis:
+### Viewing locally
 
 ```bash
-cd Resources
-git add .
-git commit -m "Add new UX analysis report"
-git push
+python3 -m http.server 8000 --directory output
+# Open http://localhost:8000
 ```
-
-Netlify will auto-deploy, and your new report will be live!
-
-### Disabling Integration
-
-To output to local folder instead:
-
-**Option 1:** Delete or rename `resources_integration_config.json`
-
-**Option 2:** Set `update_index: false` in the config
-
-Reports will then save to `output/audits/` as before.
-
-### Color Theme
-
-Reports now use a **purple theme** (#8b5cf6, #7c3aed) to visually distinguish analysis reports from case studies (green) and guides (blue) in the Resources project.
-
-The purple theme applies to:
-- All gradients and buttons
-- Chart colors and accents
-- Badges and tags
-- Hover states
 
 ---
 
@@ -806,7 +767,7 @@ UXMaturityAnalysis/
 │
 ├── scripts/                         # 📜 User-facing utilities
 │   ├── reanalyze_screenshots.py    #    🆕 Regenerate reports from existing screenshots
-│   ├── generate_index.py           #    Create report dashboard for deployment
+│   ├── generate_index.py           #    (Legacy) create audits-only index for deployment
 │   └── deploy_netlify.py           #    Deploy reports to Netlify
 │
 ├── criteria_config/                 # ✨ Page-type-specific criteria
@@ -838,14 +799,17 @@ UXMaturityAnalysis/
 ├── .env.example                     # Environment variables template
 ├── competitors.example.json         # Example competitor config
 │
-└── output/audits/                   # ✨ Organised by audit run
-    └── {date}_{analysis_type}/      #    Audit folder
-        ├── _comparison_report.md    #    Competitive intelligence report
-        ├── _comparison_report.html  #    Interactive HTML report
-        ├── _audit_summary.json      #    Audit metadata
-        └── {competitor}/            #    Competitor folders
-            ├── screenshots/         #    Screenshots
-            └── analysis.json        #    Individual analysis
+└── output/
+    ├── index.html                   #    Master index of all audits
+    └── audits/                      #    Organised by audit run
+        └── {date}_{analysis_type}/  #    Audit folder
+            ├── _comparison_report.md
+            ├── {audit_folder}_report.html
+            ├── _audit_summary.json
+            └── {competitor}/
+                ├── screenshots/
+                ├── observation.json
+                └── analysis.json
 ```
 
 ---
@@ -873,36 +837,44 @@ Configure in `.env`:
 ANTHROPIC_API_KEY=your_api_key_here
 
 # Optional (defaults provided)
-CLAUDE_MODEL=claude-sonnet-4-5-20250929
+CLAUDE_MODEL=claude-sonnet-4-6
 VIEWPORT_WIDTH=1920
 VIEWPORT_HEIGHT=1080
 MOBILE_VIEWPORT_WIDTH=375
 MOBILE_VIEWPORT_HEIGHT=812
 ```
 
+Model selection precedence:
+1. `--model` CLI argument
+2. `CLAUDE_MODEL` (or `claude_model`) from `.env`
+3. Built-in fallback (`claude-sonnet-4-5-20250929`)
+
 ### Performance
 
 - **Sequential AI Analysis**: Rate limit compliant processing
-  - ~1 minute per competitor (~10-11 minutes for 10 competitors)
-  - 60-second delays between analyses to respect 8,000 output tokens/min limit
+  - ~1.5 minutes per competitor for two-pass analysis
+  - 90-second delays between analyses to respect 8,000 output tokens/min limit
   - Trade-off: Reliability over speed (prevents API rate limit errors)
-- **Smart Caching**: Reanalyze script reuses existing analyses
+- **Smart Caching**: Reanalyze script reuses existing analyses/observations where possible
 - **Optimized Images**: Automatic JPEG compression for Claude API
 - **API Rate Limits**:
   - Input: 30,000 tokens/min (rarely limiting)
   - Output: 8,000 tokens/min (primary constraint)
-  - Each analysis generates ~6,000 output tokens
+  - Two-pass output budget per competitor is typically higher than single-pass
 
 ---
 
 ## Roadmap
 
 **Recently Completed** ✅
+- [x] 🧭 Two-pass analysis pipeline with `observation.json` evidence (v1.6.0)
+- [x] 🗂️ Project-level reports index at `output/index.html` (v1.6.0)
+- [x] 📁 Enforced in-project report output under `output/audits/` (v1.6.0)
+- [x] 🤖 Environment-based default Claude model selection (v1.6.0)
 - [x] 🛡️ Dark pattern detection enhancements (v1.5.0)
 - [x] 📦 Product page criteria enhancements with 2025-2026 research (v1.5.0)
 - [x] 💳 Express payment options criterion (v1.5.0)
 - [x] ⚖️ Sequential analysis for API rate limit compliance (v1.5.0)
-- [x] 🔗 Resources project integration (v1.4.0)
 - [x] 🔄 Reanalyze script for report regeneration (v1.3.2)
 - [x] 🎨 Advanced filtering with dynamic dropdowns and chart updates (v1.3.2)
 - [x] 🎯 Strategic insights and rankings (v1.3.0)
@@ -926,7 +898,7 @@ This project uses [Semantic Versioning](https://semver.org/):
 - **MINOR** version for added functionality in a backward compatible manner
 - **PATCH** version for backward compatible bug fixes
 
-**Current Version:** 1.5.0
+**Current Version:** 1.6.0
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and upgrade instructions.
 
@@ -940,8 +912,8 @@ Or programmatically:
 
 ```python
 from src.version import __version__, get_version_info
-print(f"Version: {__version__}")  # 1.3.2
-print(f"Version Info: {get_version_info()}")  # (1, 3, 2)
+print(f"Version: {__version__}")  # 1.6.0
+print(f"Version Info: {get_version_info()}")  # (1, 6, 0)
 ```
 
 ---

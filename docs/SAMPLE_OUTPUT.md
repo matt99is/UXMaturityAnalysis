@@ -1,32 +1,40 @@
-# Sample Competitive Intelligence Report Output
+# Sample UX Maturity Report Output
 
-This document shows what the competitive intelligence report looks like.
+This document shows representative report output.
+
+Note: Current versions (v1.6.0+) use a two-pass pipeline and add `observation.json`
+for each competitor, plus a project-level index at `output/index.html`.
 
 ## Directory Structure
 
 After running analysis, you get:
 
 ```
-output/audits/2025-11-20_homepage_pages/
-├── _comparison_report.md          # Main competitive intelligence report
-├── _audit_summary.json            # Metadata about the audit run
-├── ebay/
-│   ├── screenshots/
-│   │   ├── desktop.png
-│   │   └── mobile.png
-│   └── analysis.json              # Individual competitor analysis
-└── etsy/
-    ├── screenshots/
-    │   ├── desktop.png
-    │   └── mobile.png
-    └── analysis.json
+output/
+├── index.html
+└── audits/2025-11-20_homepage_pages/
+    ├── 2025-11-20_homepage_pages_report.html
+    ├── _comparison_report.md
+    ├── _audit_summary.json
+    ├── ebay/
+    │   ├── screenshots/
+    │   │   ├── desktop.png
+    │   │   └── mobile.png
+    │   ├── observation.json
+    │   └── analysis.json
+    └── etsy/
+        ├── screenshots/
+        │   ├── desktop.png
+        │   └── mobile.png
+        ├── observation.json
+        └── analysis.json
 ```
 
 ---
 
 ## Sample: _comparison_report.md
 
-# Competitive Intelligence Report: UX Analysis
+# UX Maturity Report: Competitive Analysis
 
 **Generated:** 2025-11-20 15:45:23
 
@@ -247,7 +255,7 @@ This analysis was conducted using:
 - **AI Analysis:** Claude (Anthropic) for UX evaluation
 - **Benchmarks:** Baymard Institute and Nielsen Norman Group research
 
-- **AI Model:** claude-sonnet-4-5-20250929
+- **AI Model:** claude-sonnet-4-6
 
 Each competitor's basket page was evaluated against 10 key UX criteria, weighted by importance for conversion optimization.
 
@@ -350,7 +358,7 @@ Each competitor's basket page was evaluated against 10 key UX criteria, weighted
     "output/audits/2025-11-20_homepage_pages/ebay/screenshots/desktop.png",
     "output/audits/2025-11-20_homepage_pages/ebay/screenshots/mobile.png"
   ],
-  "model_used": "claude-sonnet-4-5-20250929"
+  "model_used": "claude-sonnet-4-6"
 }
 ```
 
@@ -363,7 +371,7 @@ Each competitor's basket page was evaluated against 10 key UX criteria, weighted
 ❌ "They should add security badges..."
 ❌ "Consider implementing faster page loads..."
 
-### Competitive Intelligence Report Says:
+### UX Maturity Report Says:
 ✅ "Exploitable vulnerability: Missing security badges"
 ✅ "Opportunity: Slow page loads create differentiation gap"
 ✅ "Threat: Their superior search sets market standard we must match"

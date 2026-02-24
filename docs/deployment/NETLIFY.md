@@ -17,14 +17,14 @@ Deploy your competitive intelligence reports to Netlify for easy sharing via URL
 
 ### Option 1: Drag & Drop (Easiest - 30 seconds)
 
-1. Generate the index page:
+1. Generate reports (index is auto-generated at `output/index.html`):
    ```bash
-   python3 scripts/generate_index.py
+   python3 main.py --config competitors.json --analysis-type product_pages
    ```
 
 2. Go to **https://app.netlify.com/drop**
 
-3. Drag the `output/audits` folder onto the page
+3. Drag the `output` folder onto the page
 
 4. **Done!** Get your shareable link like:
    ```
@@ -52,7 +52,7 @@ Deploy your competitive intelligence reports to Netlify for easy sharing via URL
 
 3. Initialize your site:
    ```bash
-   cd output/audits
+   cd output
    netlify init
    ```
 
@@ -75,8 +75,7 @@ python3 scripts/deploy_netlify.py
 ```
 
 The script will:
-- ✓ Generate index.html with all reports
-- ✓ Deploy to Netlify
+- ✓ Deploy the static report site
 - ✓ Give you the live URL
 
 ---
@@ -87,7 +86,7 @@ The script will:
 
 1. Create a GitHub repo for reports:
    ```bash
-   cd output/audits
+   cd output
    git init
    git add .
    git commit -m "Initial reports"
@@ -110,8 +109,7 @@ The script will:
 
 ```bash
 # After generating new reports
-python3 scripts/generate_index.py  # Update index
-cd output/audits
+cd output
 git add .
 git commit -m "New basket analysis Dec 2024"
 git push
@@ -159,23 +157,24 @@ After deployment, your site will have:
 ```
 https://your-site.netlify.app/
 ├── index.html                           ← Report dashboard (homepage)
-├── 2025-11-24_basket_pages/
-│   ├── 2025-11-24_basket_pages_report.html  ← Interactive report
-│   ├── _comparison_report.md
-│   ├── zooplus/
-│   │   └── screenshots/
-│   │       ├── desktop.png
-│   │       └── mobile.png
-│   └── morrisons/
-│       └── screenshots/
-└── 2025-11-21_product_pages/
-    └── ...
+└── audits/
+    ├── 2025-11-24_basket_pages/
+    │   ├── 2025-11-24_basket_pages_report.html  ← Interactive report
+    │   ├── _comparison_report.md
+    │   ├── zooplus/
+    │   │   └── screenshots/
+    │   │       ├── desktop.png
+    │   │       └── mobile.png
+    │   └── morrisons/
+    │       └── screenshots/
+    └── 2025-11-21_product_pages/
+        └── ...
 ```
 
 **URLs:**
 - Homepage: `https://your-site.netlify.app/`
-- Basket report: `https://your-site.netlify.app/2025-11-24_basket_pages/2025-11-24_basket_pages_report.html`
-- Product report: `https://your-site.netlify.app/2025-11-21_product_pages/...`
+- Basket report: `https://your-site.netlify.app/audits/2025-11-24_basket_pages/2025-11-24_basket_pages_report.html`
+- Product report: `https://your-site.netlify.app/audits/2025-11-21_product_pages/...`
 
 ---
 
@@ -187,20 +186,17 @@ https://your-site.netlify.app/
 # 1. Generate new report
 python main.py --urls ...
 
-# 2. Update index
-python3 scripts/generate_index.py
-
-# 3. Deploy (choose one):
+# 2. Deploy (choose one):
 
 # Option A: Drag & drop (manual)
 # - Go to https://app.netlify.com/drop
-# - Drag output/audits folder
+# - Drag output folder
 
 # Option B: CLI (automated)
 python3 scripts/deploy_netlify.py
 
 # Option C: Git (auto-deploy)
-cd output/audits
+cd output
 git add .
 git commit -m "New analysis"
 git push  # Auto-deploys!
@@ -243,7 +239,7 @@ If you choose **drag & drop** or **CLI with manual deploy**, there are:
 ### "Site not linked" error
 
 ```bash
-cd output/audits
+cd output
 netlify init
 ```
 
@@ -258,12 +254,12 @@ If you get file size warnings:
 
 ### Images not loading
 
-Check that `output/audits` contains:
+Check that `output` contains:
 - All report HTML files
-- All `*/screenshots/*.png` files
+- All `audits/*/screenshots/*.png` files
 - The generated `index.html`
 
-Run `tree output/audits -L 3` to verify structure.
+Run `tree output -L 4` to verify structure.
 
 ---
 
@@ -292,7 +288,7 @@ Run `tree output/audits -L 3` to verify structure.
 
 1. **Test locally** (optional):
    ```bash
-   cd output/audits
+   cd output
    python3 -m http.server 8000
    # Visit: http://localhost:8000
    ```
@@ -302,7 +298,7 @@ Run `tree output/audits -L 3` to verify structure.
    - Share the URL!
 
 3. **Automate** (optional):
-   - Add `python3 scripts/generate_index.py` to your workflow
+   - Generate reports with `main.py` (index is auto-updated)
    - Or connect GitHub for auto-deployment
 
 ---

@@ -1,10 +1,6 @@
-"""
-Version information for the E-commerce UX Maturity Analysis Agent.
-"""
+"""Version information for the E-commerce UX Maturity Analysis Agent."""
 
-from pathlib import Path
-
-__version__ = "1.3.3"
+__version__ = "1.6.0"
 __version_info__ = tuple(int(x) for x in __version__.split("."))
 
 # Project metadata

@@ -2,23 +2,23 @@
 
 ## Fastest Way (30 seconds)
 
-1. **Generate index page:**
+1. **Generate reports** (this also updates `output/index.html` automatically):
    ```bash
-   python3 scripts/generate_index.py
+   python3 main.py --config competitors.json --analysis-type product_pages
    ```
 
 2. **Open Netlify Drop:**
    - Go to **https://app.netlify.com/drop**
 
 3. **Drag & Drop:**
-   - Drag your `output/audits` folder onto the page
+   - Drag your `output` folder onto the page
 
 4. **Done!** You'll get a URL like:
    ```
    https://competitor-reports-abc123.netlify.app
    ```
 
-Share this URL with anyone - they can view all your reports!
+Share this URL with anyone - they can browse all reports from the index homepage.
 
 ---
 
@@ -38,19 +38,16 @@ Share this URL with anyone - they can view all your reports!
 # 1. Run your analysis
 python main.py --urls https://example.com/basket
 
-# 2. Update index page
-python3 scripts/generate_index.py
-
-# 3. Re-deploy
+# 2. Re-deploy
 # Go to https://app.netlify.com/drop
-# Drag output/audits folder again
+# Drag output folder again
 ```
 
 ---
 
 ## For More Options
 
-See **NETLIFY_DEPLOY.md** for:
+See **NETLIFY.md** for:
 - CLI deployment (automated)
 - GitHub auto-deploy (push to deploy)
 - Password protection
@@ -58,4 +55,4 @@ See **NETLIFY_DEPLOY.md** for:
 
 ---
 
-**That's it!** You now have professional, shareable competitive intelligence reports. 🎉
+**That's it!** You now have professional, shareable UX maturity reports. 🎉

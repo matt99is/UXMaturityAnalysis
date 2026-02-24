@@ -5,6 +5,52 @@ All notable changes to the E-commerce UX Maturity Analysis Agent will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-02-24
+
+### Added
+- **🧭 Two-pass analysis pipeline** for auditable evidence-first scoring
+  - Pass 1 observes screenshots and stores `observation.json` per competitor
+  - Pass 2 scores criteria from observation text (no image payload), with evidence citation per criterion
+  - `notable_states` from observation are surfaced in console output and enforced in scoring prompts
+
+- **📑 Observation metadata in reports**
+  - HTML competitor profiles now show flagged anomalies and per-criterion evidence callouts
+  - Markdown competitor sections now include a "Flagged anomalies (observation pass)" block
+
+- **🗂️ Project-level reports index**
+  - New auto-generated `output/index.html` lists all audit runs and links to report files
+  - Index also includes legacy flat report files when present
+
+### Changed
+- **📁 Output location is now project-local by default and enforced**
+  - Audit runs are written to `output/audits/` under this repository
+  - Report discovery/index generation now reflects in-repo output layout
+
+- **🤖 Model selection defaults now respect environment config**
+  - `--model` remains highest priority
+  - If omitted, `CLAUDE_MODEL` (or `claude_model`) from `.env` is used
+  - Falls back to `claude-sonnet-4-5-20250929` only when not configured
+
+- **⏱️ Two-pass rate-limit timing**
+  - Delay between sequential analyses increased from 60s to 90s to accommodate two-pass token budget
+
+### Improved
+- **♻️ Reanalysis controls**
+  - `scripts/reanalyze_screenshots.py` supports `--force-observe` (rerun pass 1) and `--force` (rerun both passes)
+  - Existing `observation.json` can be reused or regenerated per run intent
+
+### Fixed
+- **🧾 Index/report discoverability**
+  - Legacy flat-output report files are now represented in generated index output
+  - Legacy index generation points to the same directory legacy reports are written to
+
+### Documentation
+- Updated README, deployment docs, and environment examples to reflect:
+  - two-pass analysis flow
+  - local output/index behavior
+  - model configuration precedence
+  - current delay and reanalysis flags
+
 ## [1.5.0] - 2026-01-12
 
 ### Changed
