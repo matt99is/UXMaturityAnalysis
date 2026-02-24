@@ -562,6 +562,24 @@ class ReportGenerator:
 
         md += f"**Position:** {position} - {position_desc}\n\n"
 
+        notable = []
+        observation_file = analysis.get("observation_file")
+        if observation_file:
+            obs_path = Path(observation_file)
+            if obs_path.exists():
+                try:
+                    with open(obs_path, "r", encoding="utf-8") as f:
+                        observation = json.load(f)
+                    notable = observation.get("notable_states", [])
+                except (OSError, json.JSONDecodeError):
+                    notable = []
+
+        if notable:
+            md += "**Flagged anomalies (observation pass):**\n"
+            for state in notable:
+                md += f"- {state}\n"
+            md += "\n"
+
         # Criteria Scores
         md += "#### Feature Performance\n\n"
         md += "| Criterion | Score | Competitive Status |\n"
