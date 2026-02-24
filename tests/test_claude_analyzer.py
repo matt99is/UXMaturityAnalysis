@@ -49,6 +49,62 @@ def test_build_observation_prompt_excludes_scoring_language(analyzer: ClaudeUXAn
     assert "criterion" not in prompt.lower()
 
 
+def test_build_analysis_prompt_with_observation_cites_evidence(
+    analyzer: ClaudeUXAnalyzer,
+) -> None:
+    """Prompt with observation must require evidence citation and notable state handling."""
+    observation = {
+        "notable_states": ["Annual subscription pre-selected by default"],
+        "desktop": {"dark_patterns": "Annual plan radio button is pre-selected"},
+        "mobile": {"dark_patterns": "Annual plan radio button is pre-selected"},
+    }
+    criteria = [
+        {
+            "id": "subscription_purchase_options",
+            "name": "Subscription/Auto-Delivery Options",
+            "weight": 1.2,
+            "description": "Test",
+            "evaluation_points": ["Check default selection"],
+            "benchmarks": ["Baymard: pre-selected options increase abandonment"],
+        }
+    ]
+    prompt = analyzer._build_analysis_prompt(
+        criteria=criteria,
+        analysis_name="Product Page",
+        site_name="example.com",
+        url="https://example.com",
+        observation=observation,
+    )
+    assert "notable_states" in prompt
+    assert "Annual subscription pre-selected by default" in prompt
+    assert "evidence" in prompt.lower()
+    assert "cite" in prompt.lower() or "quote" in prompt.lower()
+
+
+def test_build_analysis_prompt_without_observation_unchanged(
+    analyzer: ClaudeUXAnalyzer,
+) -> None:
+    """Without observation, prompt remains backward-compatible."""
+    criteria = [
+        {
+            "id": "test",
+            "name": "Test",
+            "weight": 1.0,
+            "description": "Test",
+            "evaluation_points": [],
+            "benchmarks": [],
+        }
+    ]
+    prompt = analyzer._build_analysis_prompt(
+        criteria=criteria,
+        analysis_name="Product Page",
+        site_name="example.com",
+        url="https://example.com",
+    )
+    assert "example.com" in prompt
+    assert "Product Page" in prompt
+
+
 @pytest.mark.asyncio
 async def test_observe_screenshots_returns_observation_on_success(
     analyzer: ClaudeUXAnalyzer,

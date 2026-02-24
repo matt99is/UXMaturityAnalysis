@@ -34,7 +34,8 @@ class ClaudeUXAnalyzer:
         analysis_name: str,
         site_name: str,
         url: str,
-        analysis_context: Optional[str] = None
+        analysis_context: Optional[str] = None,
+        observation: Optional[Dict[str, Any]] = None
     ) -> str:
         """
         Build structured analysis prompt from criteria.
@@ -62,10 +63,39 @@ class ClaudeUXAnalyzer:
         if analysis_context:
             context_section = f"\n{analysis_context}\n\n"
 
-        prompt = f"""You are a competitive intelligence analyst specializing in e-commerce UX strategy.
-{context_section}**IMPORTANT: Frame your analysis from a COMPETITIVE INTELLIGENCE perspective, not as recommendations to the competitor.**
+        # Build observation section for pass 2
+        observation_section = ""
+        if observation:
+            notable = observation.get("notable_states", [])
+            notable_text = "\n".join(f"  - {s}" for s in notable) if notable else "  (none flagged)"
+            observation_section = f"""
+**VISUAL EVIDENCE (from observation pass)**
 
-Analyze the provided screenshot(s) of {site_name}'s page (URL: {url}) for {analysis_name} against the following criteria:
+The following structured observation was made from the screenshots before scoring.
+Use ONLY this evidence to support your scores. Do not infer what is not documented here.
+If an observation is marked unclear or not visible, reflect that uncertainty in your score.
+
+Notable states flagged during observation:
+{notable_text}
+
+Full observation data:
+{json.dumps(observation, indent=2)}
+
+**CRITICAL: Before scoring, review the notable_states list above.**
+Every item in notable_states MUST be addressed:
+- In the relevant criterion score (quote the observation as evidence), OR
+- In key_findings if no criterion directly covers it.
+Nothing in notable_states should be silently ignored.
+
+"""
+
+        # Determine source description for prompt
+        source_desc = "the visual evidence documented below" if observation else f"the provided screenshot(s) of {site_name}'s page (URL: {url})"
+
+        prompt = f"""You are a competitive intelligence analyst specializing in e-commerce UX strategy.
+{context_section}{observation_section}**IMPORTANT: Frame your analysis from a COMPETITIVE INTELLIGENCE perspective, not as recommendations to the competitor.**
+
+Analyze {source_desc} for {analysis_name} against the following criteria:
 
 {criteria_text}
 
@@ -105,7 +135,8 @@ Return your analysis as a JSON object with this exact structure:
       "criterion_id": "<id>",
       "criterion_name": "<name>",
       "score": <number 0-10>,
-      "observations": "<detailed observations>",
+      "evidence": "<direct quote from the observation that supports this score, or 'Not documented in observation' if unclear>",
+      "observations": "<detailed competitive analysis based on the evidence>",
       "comparison_to_benchmarks": "<how it compares>",
       "competitive_status": "advantage|parity|vulnerability"
     }}
