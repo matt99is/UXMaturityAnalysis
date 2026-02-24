@@ -265,10 +265,86 @@ English sentence describing exactly what was seen.
 IMPORTANT JSON FORMATTING RULES:
 - All string values MUST properly escape special characters
 - Use \\n+ for newlines within strings
-- Use \\" for quotes within strings
-- Do NOT include any text outside the JSON object
+        - Use \\" for quotes within strings
+        - Do NOT include any text outside the JSON object
 """
         return prompt
+
+    async def _observe_screenshots(
+        self,
+        screenshot_paths: List[str],
+        analysis_name: str,
+        observation_focus: List[str],
+        site_name: str,
+        url: str
+    ) -> Dict[str, Any]:
+        """
+        Pass 1: Send screenshots and return structured visual observations.
+
+        Returns:
+            {"success": True, "observation": {...}} or
+            {"success": False, "error": "..."}
+        """
+        prompt = self._build_observation_prompt(
+            analysis_name,
+            observation_focus,
+            site_name,
+            url,
+        )
+
+        image_content = []
+        for path in screenshot_paths:
+            if not Path(path).exists():
+                continue
+
+            image_data = self._load_image_as_base64(path)
+            image_content.append(
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/jpeg",
+                        "data": image_data,
+                    },
+                }
+            )
+
+        content = image_content + [{"type": "text", "text": prompt}]
+
+        try:
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=3000,
+                messages=[{"role": "user", "content": content}],
+            )
+
+            response_text = response.content[0].text
+
+            if "```json" in response_text:
+                json_start = response_text.find("```json") + 7
+                json_end = response_text.find("```", json_start)
+                json_text = response_text[json_start:json_end].strip()
+            elif "```" in response_text:
+                json_start = response_text.find("```") + 3
+                json_end = response_text.find("```", json_start)
+                json_text = response_text[json_start:json_end].strip()
+            else:
+                json_text = response_text
+
+            observation = json.loads(json_text)
+            observation["screenshots_analyzed"] = screenshot_paths
+            observation["model_used"] = self.model
+
+            return {"success": True, "observation": observation}
+
+        except json.JSONDecodeError as e:
+            return {
+                "success": False,
+                "error": f"Failed to parse observation response as JSON: {e}",
+                "raw_response": response_text if "response_text" in locals() else None,
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
     def _load_image_as_base64(self, image_path: str) -> str:
         """
