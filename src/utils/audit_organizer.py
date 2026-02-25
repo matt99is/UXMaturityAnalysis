@@ -41,13 +41,13 @@ def get_resources_config() -> Optional[Dict]:
 
 def get_audits_dir(default_base: str = "output") -> Path:
     """
-    Get the output base directory inside this project.
+    Get the audits subdirectory inside this project's output folder.
 
     Args:
-        default_base: Default output directory if Resources not configured
+        default_base: Name of the output folder (default: "output")
 
     Returns:
-        Path object for the base output directory
+        Path to <project_root>/<default_base>/audits/
     """
     project_root = Path(__file__).resolve().parents[2]
     return project_root / default_base / "audits"
