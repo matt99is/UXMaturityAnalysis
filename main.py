@@ -401,9 +401,10 @@ class UXAnalysisOrchestrator:
             # --- Pass 1: Observe ---
             observation = None
 
-            # _skip_observe=True means reuse existing observation.json (set by reanalyze --force-observe=False)
-            # _skip_observe=False means re-run pass 1 even if observation.json exists (--force-observe)
-            # Default (not set): reuse if observation.json exists
+            # _skip_observe=True  → reuse observation.json if it exists (default for normal runs and
+            #                        reanalyze without --force-observe)
+            # _skip_observe=False → always run pass 1 (set by reanalyze --force-observe)
+            # Not set (main.py run): default True, so existing observation.json is reused
             use_existing = (
                 observation_path is not None
                 and observation_path.exists()

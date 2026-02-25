@@ -180,8 +180,7 @@ async def reanalyze_audit(
                     "(observation.json exists)"
                 )
             elif force_observe and observation_path.exists():
-                observation_path.unlink()
-                print(f"  [→] {comp_data['site_name']}: Removed existing observation (--force-observe)")
+                print(f"  [→] {comp_data['site_name']}: Will re-observe (--force-observe)")
             needs_analysis.append(comp_data)
 
     print(f"\nFound {len(existing_results)} existing analyses, need to analyze {len(needs_analysis)} competitors\n")
