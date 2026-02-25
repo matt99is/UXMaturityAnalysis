@@ -327,3 +327,12 @@ async def test_analyze_competitor_stores_relative_observation_file(tmp_path) -> 
     )
     assert "competitor_root" in result
     assert Path(result["competitor_root"]) == tmp_path / "amazon"
+
+    # Verify the on-disk file stores only the portable relative reference
+    # (competitor_root must NOT be persisted — it is injected at read time)
+    import json as _json_check
+    written = _json_check.loads((tmp_path / "amazon" / "analysis.json").read_text())
+    assert "competitor_root" not in written, (
+        "competitor_root must not be persisted to analysis.json"
+    )
+    assert written["observation_file"] == "observation.json"

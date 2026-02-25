@@ -509,6 +509,11 @@ class UXAnalysisOrchestrator:
             if competitor_paths:
                 analysis_file_path = Path(competitor_paths['root']) / "analysis.json"
                 with open(analysis_file_path, 'w') as f:
+                    # competitor_root is intentionally NOT written to analysis.json — it is a
+                    # runtime context value (the absolute directory of this competitor's data).
+                    # Any code that reads analysis.json from disk must inject competitor_root
+                    # before passing the dict to a report generator.
+                    # See: scripts/reanalyze_screenshots.py for the injection pattern.
                     json.dump(result_data, f, indent=2)
 
             return {
