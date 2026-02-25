@@ -28,7 +28,7 @@ def test_build_observation_prompt_includes_universal_sections(analyzer: ClaudeUX
 
 
 def test_build_observation_prompt_includes_page_specific_focus(analyzer: ClaudeUXAnalyzer) -> None:
-    focus = ["Subscription vs one-time purchase toggle - which is pre-selected"]
+    focus = ["Subscription vs one-time purchase toggle — state explicitly which option is pre-selected (look for filled radio buttons, highlighted cards, checked checkboxes)"]
     prompt = analyzer._build_observation_prompt(
         analysis_name="Product Page",
         observation_focus=focus,
@@ -36,6 +36,7 @@ def test_build_observation_prompt_includes_page_specific_focus(analyzer: ClaudeU
         url="https://example.com/product",
     )
     assert "Subscription vs one-time purchase toggle" in prompt
+    assert "\u2014" in prompt  # em dash from YAML must appear verbatim
 
 
 def test_build_observation_prompt_excludes_scoring_language(analyzer: ClaudeUXAnalyzer) -> None:
