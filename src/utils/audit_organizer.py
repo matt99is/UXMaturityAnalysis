@@ -39,7 +39,7 @@ def get_resources_config() -> Optional[Dict]:
     return None
 
 
-def get_output_base_dir(default_base: str = "output") -> Path:
+def get_audits_dir(default_base: str = "output") -> Path:
     """
     Get the output base directory inside this project.
 
@@ -369,7 +369,7 @@ def create_audit_directory_structure(
 
     # Create audit root directory: use Resources path if configured
     audit_folder_name = f"{audit_date}_{analysis_type}"
-    base_output_dir = get_output_base_dir(base_dir)
+    base_output_dir = get_audits_dir(base_dir)
     audit_root = base_output_dir / audit_folder_name
     audit_root.mkdir(parents=True, exist_ok=True)
 

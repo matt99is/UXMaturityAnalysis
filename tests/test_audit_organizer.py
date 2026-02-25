@@ -64,3 +64,10 @@ def test_generate_reports_index_from_output_root_includes_legacy_files(tmp_path:
     assert "competitive_intelligence_20260224_120000.html" in content
     assert "ux_analysis_report_20260224_120000.md" in content
     assert "ux_analysis_20260224_120000.json" in content
+
+
+def test_get_audits_dir_returns_audits_subdir():
+    from src.utils.audit_organizer import get_audits_dir
+    result = get_audits_dir("output")
+    assert result.name == "audits"
+    assert result.parent.name == "output"

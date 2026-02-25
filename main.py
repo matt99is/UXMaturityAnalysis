@@ -42,7 +42,7 @@ from src.utils.html_report_generator import HTMLReportGenerator
 from src.utils.audit_organizer import (
     extract_competitor_name,
     create_audit_directory_structure,
-    get_output_base_dir,
+    get_audits_dir,
     generate_reports_index,
     get_screenshot_path,
     get_analysis_path,
@@ -82,7 +82,7 @@ class UXAnalysisOrchestrator:
         self.analysis_type_config = self.analysis_config.get_analysis_type(analysis_type)
         self.screenshot_capturer = ScreenshotCapture()
         self.claude_analyzer = ClaudeUXAnalyzer(api_key=api_key, model=resolved_model)
-        project_output_dir = get_output_base_dir("output").parent
+        project_output_dir = get_audits_dir("output").parent
         self.report_generator = ReportGenerator(output_dir=str(project_output_dir))
         self.html_report_generator = HTMLReportGenerator(output_dir=str(project_output_dir))
         self.manual_mode = manual_mode
@@ -738,7 +738,7 @@ class UXAnalysisOrchestrator:
                 self.console.print(f"[green]Audit summary:[/green] {summary_path}")
 
             # Update project-level index listing all audit reports
-            index_path = generate_reports_index(get_output_base_dir("output").parent)
+            index_path = generate_reports_index(get_audits_dir("output").parent)
             self.console.print(f"[green]Reports index:[/green] {index_path}")
 
             return {
@@ -767,7 +767,7 @@ class UXAnalysisOrchestrator:
                 self.console.print(f"[yellow]Warning: Could not generate HTML report: {e}[/yellow]")
                 html_path = None
 
-            index_path = generate_reports_index(get_output_base_dir("output").parent)
+            index_path = generate_reports_index(get_audits_dir("output").parent)
             self.console.print(f"[green]Reports index:[/green] {index_path}")
 
             return {
