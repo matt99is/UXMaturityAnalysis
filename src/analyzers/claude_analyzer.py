@@ -304,6 +304,25 @@ IMPORTANT JSON FORMATTING RULES:
 """
         return prompt
 
+    def _parse_json_response(self, response_text: str) -> dict:
+        """
+        Extract and parse JSON from a Claude response.
+
+        Handles plain JSON and markdown-fenced blocks (```json or ```).
+        Raises json.JSONDecodeError if the extracted text is not valid JSON.
+        """
+        if "```json" in response_text:
+            json_start = response_text.find("```json") + 7
+            json_end = response_text.find("```", json_start)
+            json_text = response_text[json_start:json_end].strip()
+        elif "```" in response_text:
+            json_start = response_text.find("```") + 3
+            json_end = response_text.find("```", json_start)
+            json_text = response_text[json_start:json_end].strip()
+        else:
+            json_text = response_text
+        return json.loads(json_text)
+
     async def _observe_screenshots(
         self,
         screenshot_paths: List[str],
@@ -354,18 +373,7 @@ IMPORTANT JSON FORMATTING RULES:
 
             response_text = response.content[0].text
 
-            if "```json" in response_text:
-                json_start = response_text.find("```json") + 7
-                json_end = response_text.find("```", json_start)
-                json_text = response_text[json_start:json_end].strip()
-            elif "```" in response_text:
-                json_start = response_text.find("```") + 3
-                json_end = response_text.find("```", json_start)
-                json_text = response_text[json_start:json_end].strip()
-            else:
-                json_text = response_text
-
-            observation = json.loads(json_text)
+            observation = self._parse_json_response(response_text)
             observation["screenshots_analyzed"] = screenshot_paths
             observation["model_used"] = self.model
 
@@ -515,22 +523,9 @@ IMPORTANT JSON FORMATTING RULES:
             # Extract response text
             response_text = response.content[0].text
 
-            # Parse JSON from response
-            # Claude might wrap JSON in markdown code blocks, so handle that
-            if "```json" in response_text:
-                json_start = response_text.find("```json") + 7
-                json_end = response_text.find("```", json_start)
-                json_text = response_text[json_start:json_end].strip()
-            elif "```" in response_text:
-                json_start = response_text.find("```") + 3
-                json_end = response_text.find("```", json_start)
-                json_text = response_text[json_start:json_end].strip()
-            else:
-                json_text = response_text
-
             # Try to parse JSON - if it fails, save the raw response for debugging
             try:
-                analysis_result = json.loads(json_text)
+                analysis_result = self._parse_json_response(response_text)
             except json.JSONDecodeError as json_error:
                 # Save malformed response to file for debugging
                 debug_path = Path("output/debug_malformed_json")
@@ -541,9 +536,7 @@ IMPORTANT JSON FORMATTING RULES:
                     f.write(f"=== MALFORMED JSON DEBUG ===\n")
                     f.write(f"Site: {site_name}\n")
                     f.write(f"Error: {json_error}\n\n")
-                    f.write(f"=== EXTRACTED JSON TEXT ===\n")
-                    f.write(json_text)
-                    f.write(f"\n\n=== FULL RESPONSE ===\n")
+                    f.write(f"=== RAW RESPONSE ===\n")
                     f.write(response_text)
                 raise  # Re-raise the original error
 
@@ -557,21 +550,11 @@ IMPORTANT JSON FORMATTING RULES:
             }
 
         except json.JSONDecodeError as e:
-            # Provide detailed error with context
             error_msg = f"Failed to parse Claude response as JSON: {e}"
-
-            # Try to show context around the error
-            if 'json_text' in locals():
-                error_pos = getattr(e, 'pos', 0)
-                start = max(0, error_pos - 100)
-                end = min(len(json_text), error_pos + 100)
-                context = json_text[start:end]
-                error_msg += f"\n\nContext around error:\n...{context}..."
-
             return {
                 "success": False,
                 "error": error_msg,
-                "raw_response": json_text if 'json_text' in locals() else (response_text if 'response_text' in locals() else None)
+                "raw_response": response_text if 'response_text' in locals() else None
             }
 
         except Exception as e:

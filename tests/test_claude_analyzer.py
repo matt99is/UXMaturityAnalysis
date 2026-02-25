@@ -223,3 +223,28 @@ async def test_analyze_screenshots_with_observation_sends_no_images(
     assert all(item["type"] == "text" for item in call_content)
     assert len(call_content) == 1
     assert "notable_states" in call_content[0]["text"]
+
+
+def test_parse_json_response_plain_json(analyzer: ClaudeUXAnalyzer) -> None:
+    data = {"key": "value"}
+    result = analyzer._parse_json_response(json.dumps(data))
+    assert result == data
+
+
+def test_parse_json_response_fenced_json_block(analyzer: ClaudeUXAnalyzer) -> None:
+    data = {"key": "value"}
+    response = f"```json\n{json.dumps(data)}\n```"
+    result = analyzer._parse_json_response(response)
+    assert result == data
+
+
+def test_parse_json_response_generic_fence(analyzer: ClaudeUXAnalyzer) -> None:
+    data = {"key": "value"}
+    response = f"```\n{json.dumps(data)}\n```"
+    result = analyzer._parse_json_response(response)
+    assert result == data
+
+
+def test_parse_json_response_raises_on_invalid(analyzer: ClaudeUXAnalyzer) -> None:
+    with pytest.raises(json.JSONDecodeError):
+        analyzer._parse_json_response("not json at all")
