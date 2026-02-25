@@ -304,7 +304,7 @@ IMPORTANT JSON FORMATTING RULES:
 """
         return prompt
 
-    def _parse_json_response(self, response_text: str) -> dict:
+    def _parse_json_response(self, response_text: str) -> Dict[str, Any]:
         """
         Extract and parse JSON from a Claude response.
 
@@ -550,7 +550,12 @@ IMPORTANT JSON FORMATTING RULES:
             }
 
         except json.JSONDecodeError as e:
-            error_msg = f"Failed to parse Claude response as JSON: {e}"
+            error_pos = getattr(e, 'pos', None)
+            pos_hint = f" at position {error_pos}" if error_pos is not None else ""
+            error_msg = (
+                f"Failed to parse Claude response as JSON: {e}{pos_hint}. "
+                f"Raw response saved to output/debug_malformed_json/ for inspection."
+            )
             return {
                 "success": False,
                 "error": error_msg,
