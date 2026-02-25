@@ -218,12 +218,6 @@ async def reanalyze_audit(
             # Process result
             if analysis_result.get("success"):
                 print(f"  [✓] Success!")
-
-                # Save analysis to individual folder
-                comp_root = audit_structure['competitors'][comp_data['site_name']]['root']
-                analysis_path = comp_root / "analysis.json"
-                with open(analysis_path, 'w') as f:
-                    json.dump(analysis_result, f, indent=2)
             else:
                 print(f"  [⚠] {analysis_result.get('error', 'Unknown error')}")
 
