@@ -159,6 +159,9 @@ async def reanalyze_audit(
             with open(analysis_path, 'r') as f:
                 existing_analysis = json.load(f)
 
+            # Inject competitor_root so report generators can resolve relative observation_file
+            existing_analysis["competitor_root"] = str(comp_dir)
+
             if not existing_analysis.get('screenshot_metadata') and existing_analysis.get('screenshots_analyzed'):
                 screenshot_metadata = []
                 for screenshot_path in existing_analysis['screenshots_analyzed']:

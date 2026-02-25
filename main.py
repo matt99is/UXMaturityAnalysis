@@ -499,7 +499,7 @@ class UXAnalysisOrchestrator:
 
             # Add observation reference to analysis result
             result_data = analysis_result["analysis"]
-            result_data["observation_file"] = str(observation_path) if observation_path else None
+            result_data["observation_file"] = "observation.json" if observation_path else None
             result_data["screenshots_analyzed"] = screenshot_paths
             result_data["model_used"] = self.claude_analyzer.model
 
@@ -517,6 +517,7 @@ class UXAnalysisOrchestrator:
                 "url": url,
                 "screenshot_paths": screenshot_paths,
                 "screenshot_metadata": capture_data.get("screenshot_metadata", []),
+                "competitor_root": str(Path(competitor_paths['root'])) if competitor_paths else None,
                 **result_data
             }
 

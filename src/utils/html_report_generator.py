@@ -458,7 +458,13 @@ class HTMLReportGenerator:
             if not observation_file:
                 continue
 
-            obs_path = Path(observation_file)
+            # Resolve relative filename against competitor_root if available,
+            # otherwise fall back to treating it as an absolute path (legacy).
+            competitor_root = result.get("competitor_root")
+            if competitor_root:
+                obs_path = Path(competitor_root) / observation_file
+            else:
+                obs_path = Path(observation_file)
             if not obs_path.exists():
                 continue
 

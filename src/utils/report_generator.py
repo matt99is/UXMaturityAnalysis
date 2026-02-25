@@ -546,7 +546,11 @@ class ReportGenerator:
         notable = []
         observation_file = analysis.get("observation_file")
         if observation_file:
-            obs_path = Path(observation_file)
+            competitor_root = analysis.get("competitor_root")
+            if competitor_root:
+                obs_path = Path(competitor_root) / observation_file
+            else:
+                obs_path = Path(observation_file)  # legacy absolute path fallback
             if obs_path.exists():
                 try:
                     with open(obs_path, "r", encoding="utf-8") as f:

@@ -248,3 +248,82 @@ def test_parse_json_response_generic_fence(analyzer: ClaudeUXAnalyzer) -> None:
 def test_parse_json_response_raises_on_invalid(analyzer: ClaudeUXAnalyzer) -> None:
     with pytest.raises(json.JSONDecodeError):
         analyzer._parse_json_response("not json at all")
+
+
+@pytest.mark.asyncio
+async def test_analyze_competitor_stores_relative_observation_file(tmp_path) -> None:
+    """observation_file in result must be a plain filename, not an absolute path."""
+    import json as _json
+    import sys
+    from pathlib import Path
+    from unittest.mock import AsyncMock, MagicMock, patch
+    from PIL import Image
+
+    # Stub out playwright so main.py can be imported without the package installed
+    playwright_stub = MagicMock()
+    playwright_stealth_stub = MagicMock()
+    modules_to_stub = {
+        "playwright": playwright_stub,
+        "playwright.async_api": playwright_stub,
+        "playwright_stealth": playwright_stealth_stub,
+        "src.analyzers.screenshot_capture": MagicMock(),
+    }
+    # Remove 'main' from sys.modules so the stubbed import is fresh
+    sys.modules.pop("main", None)
+
+    with patch.dict(sys.modules, modules_to_stub):
+        from main import UXAnalysisOrchestrator
+
+        # Create fake screenshots
+        screenshots_dir = tmp_path / "amazon" / "screenshots"
+        screenshots_dir.mkdir(parents=True)
+        img = Image.new("RGB", (10, 10))
+        desktop = screenshots_dir / "desktop.png"
+        mobile = screenshots_dir / "mobile.png"
+        img.save(desktop)
+        img.save(mobile)
+
+        # Fake observation response (pass 1)
+        mock_obs = {
+            "site_name": "amazon", "url": "https://amazon.com",
+            "analysis_name": "Basket Page", "desktop": {}, "mobile": {},
+            "notable_states": []
+        }
+        # Fake analysis response (pass 2)
+        mock_analysis = {
+            "site_name": "amazon", "url": "https://amazon.com",
+            "analysis_type": "Basket Page", "overall_score": 7,
+            "competitive_position": {"tier": "strong_contender", "positioning": "ok", "key_differentiator": "ok"},
+            "criteria_scores": [], "strengths": [], "competitive_advantages": [],
+            "weaknesses": [], "exploitable_vulnerabilities": [], "unmet_user_needs": [], "key_findings": []
+        }
+
+        call_count = 0
+        async def mock_create(**kwargs):
+            nonlocal call_count
+            call_count += 1
+            resp = MagicMock()
+            resp.content = [MagicMock(text=_json.dumps(mock_obs if call_count == 1 else mock_analysis))]
+            return resp
+
+        orchestrator = UXAnalysisOrchestrator(api_key="test", analysis_type="basket_pages")
+        competitor_paths = {
+            'root': tmp_path / "amazon",
+            'screenshots': screenshots_dir,
+        }
+        capture_data = {
+            "site_name": "amazon",
+            "url": "https://amazon.com",
+            "screenshot_paths": [str(desktop), str(mobile)],
+            "competitor_paths": competitor_paths,
+        }
+
+        with patch.object(orchestrator.claude_analyzer.client.messages, "create", new=mock_create):
+            result = await orchestrator.analyze_competitor_from_screenshots(capture_data)
+
+    assert result["success"] is True
+    assert result["observation_file"] == "observation.json", (
+        f"Expected 'observation.json', got {result['observation_file']!r}"
+    )
+    assert "competitor_root" in result
+    assert Path(result["competitor_root"]) == tmp_path / "amazon"
