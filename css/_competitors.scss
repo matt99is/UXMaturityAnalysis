@@ -1,0 +1,263 @@
+// ============================================
+// COMPETITOR STYLES
+// Screenshot previews, lightbox, annotations
+// ============================================
+
+@use 'variables' as *;
+
+// ===== Screenshot Previews =====
+.screenshots-section {
+  margin-top: $spacing-lg;
+}
+
+.screenshots-label {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing-wide;
+  color: var(--text-dim);
+  margin-bottom: $spacing-lg;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.screenshots-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-md;
+}
+
+.screenshot-preview {
+  display: block;
+  cursor: pointer;
+  border-radius: $border-radius;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  height: 240px;
+  transition: all $transition-normal;
+
+  &:hover {
+    border-color: var(--teal);
+    box-shadow: 0 4px 12px var(--teal-dim);
+  }
+}
+
+.screenshot-image {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: var(--surface-hover);
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+    display: block;
+  }
+}
+
+.annotation-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 12px;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.annotation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  color: #ffffff;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  max-width: 100%;
+  pointer-events: auto;
+
+  &.strength {
+    background: rgba(34, 197, 94, 0.88);
+  }
+
+  &.weakness {
+    background: rgba(239, 68, 68, 0.88);
+  }
+}
+
+// ===== Lightbox =====
+.lightbox {
+  display: none;
+  position: fixed;
+  z-index: $z-lightbox;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  padding: $spacing-lg;
+
+  &.active {
+    display: block;
+  }
+}
+
+.lightbox-content {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.lightbox-stage {
+  width: calc(100% - 140px);
+  height: calc(100% - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.lightbox-image-wrapper {
+  transform-origin: center center;
+  transition: transform 0.1s ease-out;
+  cursor: grab;
+
+  &.dragging {
+    cursor: grabbing;
+    transition: none;
+  }
+
+  img {
+    max-width: 92vw;
+    max-height: 86vh;
+    border-radius: $border-radius;
+    display: block;
+    pointer-events: none;
+  }
+}
+
+.lightbox-close {
+  position: absolute;
+  top: $spacing-lg;
+  right: 30px;
+  color: white;
+  font-size: 32px;
+  cursor: pointer;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  width: 44px;
+  height: 44px;
+  border-radius: $border-radius;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+
+  &:hover {
+    background: var(--surface-hover);
+  }
+}
+
+// ===== Zoom Controls =====
+.lightbox-zoom-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: $spacing-sm;
+  z-index: 10;
+}
+
+.lightbox-zoom-controls button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  min-width: 44px;
+  height: 44px;
+  border-radius: $border-radius;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  padding: 0 $spacing-lg;
+  gap: 6px;
+
+  &:hover {
+    background: var(--surface-hover);
+  }
+
+  &.icon-only {
+    min-width: 44px;
+    padding: 0;
+  }
+}
+
+.lightbox-zoom-level {
+  position: absolute;
+  bottom: 75px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  z-index: 10;
+}
+
+// ===== Navigation Arrows =====
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: $spacing-lg;
+  z-index: 10;
+
+  left: 20px;
+  right: 20px;
+  justify-content: space-between;
+
+  button {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 48px;
+    height: 48px;
+    border-radius: $border-radius;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      background: var(--surface-hover);
+    }
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  }
+}

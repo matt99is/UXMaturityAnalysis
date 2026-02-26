@@ -43,6 +43,7 @@ from src.utils.audit_organizer import (
     extract_competitor_name,
     create_audit_directory_structure,
     get_audits_dir,
+    build_frontend_report_cards,
     generate_reports_index,
     get_screenshot_path,
     get_analysis_path,
@@ -743,8 +744,15 @@ class UXAnalysisOrchestrator:
                 )
                 self.console.print(f"[green]Audit summary:[/green] {summary_path}")
 
-            # Update project-level index listing all audit reports
-            index_path = generate_reports_index(get_audits_dir("output").parent)
+            # Update project-level frontend index listing all reports
+            output_root = get_audits_dir("output").parent
+            try:
+                report_cards = build_frontend_report_cards(output_root)
+                index_path = self.html_report_generator.generate_index_page(report_cards)
+            except Exception as e:
+                self.console.print(f"[yellow]Warning: Could not generate frontend index: {e}[/yellow]")
+                index_path = generate_reports_index(output_root)
+
             self.console.print(f"[green]Reports index:[/green] {index_path}")
 
             return {
@@ -773,7 +781,14 @@ class UXAnalysisOrchestrator:
                 self.console.print(f"[yellow]Warning: Could not generate HTML report: {e}[/yellow]")
                 html_path = None
 
-            index_path = generate_reports_index(get_audits_dir("output").parent)
+            output_root = get_audits_dir("output").parent
+            try:
+                report_cards = build_frontend_report_cards(output_root)
+                index_path = self.html_report_generator.generate_index_page(report_cards)
+            except Exception as e:
+                self.console.print(f"[yellow]Warning: Could not generate frontend index: {e}[/yellow]")
+                index_path = generate_reports_index(output_root)
+
             self.console.print(f"[green]Reports index:[/green] {index_path}")
 
             return {

@@ -93,6 +93,101 @@ def _extract_legacy_timestamp(path: Path) -> str:
     return datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y%m%d_%H%M%S")
 
 
+def _coerce_float(value: Any) -> Optional[float]:
+    """Safely coerce score-like values to float."""
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _compute_score_stats(audit_dir: Path) -> tuple[Optional[float], Optional[float]]:
+    """Compute average and leader scores from competitor analysis files."""
+    scores: List[float] = []
+
+    for analysis_file in audit_dir.glob("*/analysis.json"):
+        try:
+            with open(analysis_file, "r", encoding="utf-8") as f:
+                payload = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            continue
+
+        score = _coerce_float(payload.get("overall_score"))
+        if score is not None:
+            scores.append(score)
+
+    if not scores:
+        return None, None
+
+    avg_score = round(sum(scores) / len(scores), 1)
+    leader_score = round(max(scores), 1)
+    return avg_score, leader_score
+
+
+def _extract_scores_from_report_html(report_path: Path) -> tuple[Optional[float], Optional[float], int]:
+    """Estimate score stats from generated report HTML content."""
+    if not report_path.exists():
+        return None, None, 0
+
+    try:
+        content = report_path.read_text(encoding="utf-8")
+    except OSError:
+        return None, None, 0
+
+    score_matches = re.findall(
+        r'class="competitor-score[^\"]*"[^>]*>\s*([0-9]+(?:\.[0-9]+)?)\s*<',
+        content,
+    )
+
+    # Fallback for older templates without competitor cards.
+    if not score_matches:
+        score_matches = re.findall(
+            r'class="score[^\"]*"[^>]*>\s*([0-9]+(?:\.[0-9]+)?)\s*<',
+            content,
+        )
+
+    if not score_matches:
+        return None, None, 0
+
+    scores = [float(match) for match in score_matches]
+    avg_score = round(sum(scores) / len(scores), 1)
+    leader_score = round(max(scores), 1)
+    return avg_score, leader_score, len(scores)
+
+
+def _extract_scores_from_legacy_json(report_json: Path) -> tuple[Optional[float], Optional[float], Optional[int]]:
+    """Extract score stats from legacy ux_analysis_*.json reports."""
+    if not report_json.exists():
+        return None, None, None
+
+    try:
+        with open(report_json, "r", encoding="utf-8") as f:
+            payload = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None, None, None
+
+    analyses = payload.get("analyses") if isinstance(payload, dict) else None
+    if not isinstance(analyses, list):
+        return None, None, None
+
+    scores = []
+    for item in analyses:
+        if not isinstance(item, dict):
+            continue
+        score = _coerce_float(item.get("overall_score"))
+        if score is not None:
+            scores.append(score)
+
+    if not scores:
+        return None, None, len(analyses)
+
+    avg_score = round(sum(scores) / len(scores), 1)
+    leader_score = round(max(scores), 1)
+    return avg_score, leader_score, len(analyses)
+
+
 def collect_legacy_runs(output_root: Path) -> List[Dict[str, Any]]:
     """Collect flat-output legacy report sets saved directly under output/."""
     if not output_root.exists():
@@ -111,6 +206,7 @@ def collect_legacy_runs(output_root: Path) -> List[Dict[str, Any]]:
                 "folder": f"legacy_{ts}",
                 "date": date_text,
                 "analysis_type": "Legacy (flat output)",
+                "analysis_type_key": "legacy",
                 "total": None,
                 "successful": None,
                 "failed": None,
@@ -119,12 +215,44 @@ def collect_legacy_runs(output_root: Path) -> List[Dict[str, Any]]:
                 "markdown_report": None,
                 "summary_file": None,
                 "json_report": None,
+                "avg_score": None,
+                "leader_score": None,
             }
         return run_map[ts]
 
+    def infer_analysis_type_from_html(filename: str) -> tuple[str, str]:
+        """Infer a readable analysis type and key from legacy HTML filename."""
+        stem = Path(filename).stem
+        cleaned = re.sub(r"(_report|-report)$", "", stem)
+        cleaned = re.sub(r"^competitive_intelligence_", "", cleaned)
+        cleaned = re.sub(r"_\d{8}_\d{6}$", "", cleaned)
+        cleaned = cleaned.strip("_-")
+
+        if not cleaned:
+            return "Legacy (flat output)", "legacy"
+
+        key = cleaned.replace("-", "_")
+        label = cleaned.replace("_", " ").replace("-", " ").title()
+        return label, key
+
     for html_file in output_root.glob("competitive_intelligence_*.html"):
         ts = _extract_legacy_timestamp(html_file)
-        upsert(ts)["html_report"] = html_file.name
+        run = upsert(ts)
+        run["html_report"] = html_file.name
+
+    # Also include newer flat report naming styles used during redesign POCs.
+    seen_html = {run.get("html_report") for run in run_map.values()}
+    for pattern in ("*_report.html", "*-report.html"):
+        for html_file in output_root.glob(pattern):
+            if html_file.name == "index.html" or html_file.name in seen_html:
+                continue
+            ts = _extract_legacy_timestamp(html_file)
+            run = upsert(ts)
+            run["html_report"] = html_file.name
+            label, key = infer_analysis_type_from_html(html_file.name)
+            run["analysis_type"] = label
+            run["analysis_type_key"] = key
+            seen_html.add(html_file.name)
 
     for md_file in output_root.glob("ux_analysis_report_*.md"):
         ts = _extract_legacy_timestamp(md_file)
@@ -135,6 +263,31 @@ def collect_legacy_runs(output_root: Path) -> List[Dict[str, Any]]:
             continue
         ts = _extract_legacy_timestamp(json_file)
         upsert(ts)["json_report"] = json_file.name
+
+    # Enrich legacy runs with score/competitor stats when possible.
+    for run in run_map.values():
+        if run.get("json_report"):
+            avg_score, leader_score, total = _extract_scores_from_legacy_json(output_root / run["json_report"])
+            if run.get("avg_score") is None:
+                run["avg_score"] = avg_score
+            if run.get("leader_score") is None:
+                run["leader_score"] = leader_score
+            if run.get("total") is None and total is not None:
+                run["total"] = total
+
+        if run.get("html_report") and (run.get("avg_score") is None or run.get("leader_score") is None):
+            avg_score, leader_score, count = _extract_scores_from_report_html(output_root / run["html_report"])
+            if run.get("avg_score") is None:
+                run["avg_score"] = avg_score
+            if run.get("leader_score") is None:
+                run["leader_score"] = leader_score
+            if run.get("total") is None and count:
+                run["total"] = count
+
+        if run.get("successful") is None and run.get("total") is not None:
+            run["successful"] = run["total"]
+        if run.get("failed") is None and run.get("total") is not None and run.get("successful") is not None:
+            run["failed"] = max(0, int(run["total"]) - int(run["successful"]))
 
     return [run_map[key] for key in sorted(run_map.keys(), reverse=True)]
 
@@ -161,6 +314,15 @@ def collect_audit_runs(audits_root: Path) -> List[Dict[str, Any]]:
         date_from_name = parts[0] if parts else "unknown"
         type_from_name = parts[1] if len(parts) > 1 else "unknown"
 
+        avg_score = _coerce_float(summary.get("avg_score"))
+        leader_score = _coerce_float(summary.get("leader_score"))
+        if avg_score is None or leader_score is None:
+            computed_avg, computed_leader = _compute_score_stats(audit_dir)
+            if avg_score is None:
+                avg_score = computed_avg
+            if leader_score is None:
+                leader_score = computed_leader
+
         html_report = _first_existing_file(
             audit_dir,
             ["_comparison_report.html", f"{audit_dir.name}_report.html"],
@@ -174,6 +336,7 @@ def collect_audit_runs(audits_root: Path) -> List[Dict[str, Any]]:
                 "folder": audit_dir.name,
                 "date": summary.get("audit_date", date_from_name),
                 "analysis_type": summary.get("analysis_type_name") or summary.get("analysis_type") or type_from_name,
+                "analysis_type_key": summary.get("analysis_type") or type_from_name,
                 "total": summary.get("total_competitors"),
                 "successful": summary.get("successful_analyses"),
                 "failed": summary.get("failed_analyses"),
@@ -181,10 +344,111 @@ def collect_audit_runs(audits_root: Path) -> List[Dict[str, Any]]:
                 "html_report": f"audits/{audit_dir.name}/{html_report}" if html_report else None,
                 "markdown_report": f"audits/{audit_dir.name}/{md_report}" if md_report else None,
                 "summary_file": f"audits/{audit_dir.name}/{summary_file}" if summary_file else None,
+                "avg_score": avg_score,
+                "leader_score": leader_score,
             }
         )
 
     return runs
+
+
+def _format_frontend_date(value: Any) -> str:
+    """Format audit date for card UI."""
+    if value is None:
+        return "Unknown"
+
+    text = str(value).strip()
+    for fmt in ("%Y-%m-%d", "%Y%m%d"):
+        try:
+            return datetime.strptime(text, fmt).strftime("%b %d, %Y")
+        except ValueError:
+            continue
+    return text
+
+
+def _sortable_frontend_date(value: Any) -> str:
+    """Return a YYYYMMDD-like key for stable descending date sort."""
+    if value is None:
+        return "00000000"
+
+    text = str(value).strip()
+    for fmt in ("%Y-%m-%d", "%Y%m%d"):
+        try:
+            return datetime.strptime(text, fmt).strftime("%Y%m%d")
+        except ValueError:
+            continue
+    return text
+
+
+def _categorize_analysis(analysis_type_key: str, analysis_type_name: str) -> str:
+    """Map analysis types to index filter categories."""
+    label = f"{analysis_type_key} {analysis_type_name}".lower()
+    if "basket" in label or "cart" in label:
+        return "basket"
+    if "product" in label:
+        return "product"
+    if "checkout" in label:
+        return "checkout"
+    return "other"
+
+
+def build_frontend_report_cards(base_path: Path) -> List[Dict[str, Any]]:
+    """
+    Build card metadata for the modern index frontend.
+
+    Args:
+        base_path: Path to output/ or output/audits
+
+    Returns:
+        List of report card dictionaries for templates/index.html.jinja2
+    """
+    output_root, audits_root = _resolve_output_and_audits_roots(base_path)
+    runs = collect_audit_runs(audits_root) + collect_legacy_runs(output_root)
+
+    cards: List[Dict[str, Any]] = []
+    for run in runs:
+        filename = run.get("html_report")
+        if not filename:
+            continue
+
+        total_competitors = run.get("successful")
+        if total_competitors is None:
+            total_competitors = run.get("total")
+        if total_competitors is None:
+            total_competitors = 0
+
+        avg_score = _coerce_float(run.get("avg_score"))
+        if avg_score is None:
+            avg_score = 0.0
+
+        leader_score = _coerce_float(run.get("leader_score"))
+        if leader_score is None:
+            leader_score = 0.0
+
+        analysis_type_name = str(run.get("analysis_type") or "UX Analysis")
+        analysis_type_key = str(run.get("analysis_type_key") or analysis_type_name)
+
+        cards.append(
+            {
+                "filename": filename,
+                "title": analysis_type_name,
+                "full_title": analysis_type_name,
+                "date": _format_frontend_date(run.get("date")),
+                "competitors": int(total_competitors),
+                "category": _categorize_analysis(analysis_type_key, analysis_type_name),
+                "category_description": f"{analysis_type_name} across {int(total_competitors)} competitors",
+                "avg_score": avg_score,
+                "leader_score": leader_score,
+                "icon": "bar-chart-3",
+                "published": True,
+                "_sort_key": _sortable_frontend_date(run.get("date")),
+            }
+        )
+
+    cards.sort(key=lambda item: (item.get("_sort_key", ""), item.get("filename", "")), reverse=True)
+    for card in cards:
+        card.pop("_sort_key", None)
+    return cards
 
 
 def generate_reports_index(base_path: Path) -> Path:

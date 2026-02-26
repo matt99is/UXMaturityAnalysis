@@ -9,6 +9,18 @@ import subprocess
 from pathlib import Path
 
 
+def generate_frontend_index(project_root: Path) -> str:
+    """Generate the modern reports frontend index at output/index.html."""
+    # Late imports keep this script runnable even if project deps are partially missing.
+    from src.utils.audit_organizer import build_frontend_report_cards
+    from src.utils.html_report_generator import HTMLReportGenerator
+
+    output_root = project_root / 'output'
+    report_cards = build_frontend_report_cards(output_root)
+    generator = HTMLReportGenerator(output_dir=str(output_root))
+    return generator.generate_index_page(report_cards)
+
+
 def check_netlify_cli():
     """Check if Netlify CLI is installed."""
     try:
@@ -27,13 +39,15 @@ def deploy_to_netlify(draft=False):
 
     print("🚀 Netlify Deployment Preparation\n")
 
+    project_root = Path(__file__).resolve().parent.parent
+
     # Step 1: Generate index.html
     print("[1/3] Generating index.html...")
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    from scripts.generate_index import generate_index_html
+    sys.path.insert(0, str(project_root))
 
     try:
-        generate_index_html()
+        index_path = generate_frontend_index(project_root)
+        print(f"✓ Index generated: {index_path}")
     except Exception as e:
         print(f"✗ Error generating index: {e}")
         return False
@@ -47,7 +61,7 @@ def deploy_to_netlify(draft=False):
         print("  npm install -g netlify-cli")
         print("\nOr deploy manually:")
         print("  1. Go to https://app.netlify.com/drop")
-        print("  2. Drag the 'output/audits' folder")
+        print("  2. Drag the 'output' folder")
         print("  3. Done! Get your shareable link")
         return False
 
@@ -69,7 +83,7 @@ def deploy_to_netlify(draft=False):
         link_check = subprocess.run(
             ['netlify', 'status'],
             capture_output=True,
-            cwd='output/audits'
+            cwd=str(project_root / 'output')
         )
 
         if link_check.returncode != 0:
@@ -79,7 +93,7 @@ def deploy_to_netlify(draft=False):
         # Deploy
         result = subprocess.run(
             deploy_cmd,
-            cwd='output/audits',
+            cwd=str(project_root / 'output'),
             text=True
         )
 

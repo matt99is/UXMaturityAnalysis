@@ -83,7 +83,6 @@ def generate_index_html(audits_dir: Path = Path("output/audits")):
 
         # Format date nicely (e.g., "24 November 2025")
         try:
-            from datetime import datetime
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
             formatted_date = date_obj.strftime("%d %B %Y")
         except:

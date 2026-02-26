@@ -1,0 +1,114 @@
+// ============================================
+// BASE STYLES
+// Reset, variables, typography, base element styles
+// ============================================
+
+@use 'variables' as *;
+
+// ===== CSS Custom Properties (for theme switching) =====
+:root {
+  // Dark theme (default)
+  --bg: #{$bg-dark};
+  --surface: #{$surface-dark};
+  --surface-hover: #{$surface-hover-dark};
+  --border: #{$border-dark};
+  --text: #{$text-dark};
+  --text-muted: #{$text-muted-dark};
+  --text-dim: #{$text-dim-dark};
+
+  --teal: #{$teal};
+  --teal-dim: #{$teal-dim};
+  --green: #{$green};
+  --green-dim: #{$green-dim};
+  --amber: #{$amber};
+  --amber-dim: #{$amber-dim};
+  --red: #{$red};
+  --red-dim: #{$red-dim};
+}
+
+// Light theme override
+[data-theme='light'] {
+  --bg: #{$bg-light};
+  --surface: #{$surface-light};
+  --surface-hover: #{$surface-hover-light};
+  --border: #{$border-light};
+  --text: #{$text-light};
+  --text-muted: #{$text-muted-light};
+  --text-dim: #{$text-dim-light};
+
+  --teal: #{$teal-light};
+  --teal-dim: #{$teal-dim-light};
+  --green: #{$green-light};
+  --green-dim: #{$green-dim-light};
+  --amber: #{$amber-light};
+  --amber-dim: #{$amber-dim-light};
+  --red: #{$red-light};
+  --red-dim: #{$red-dim-light};
+}
+
+// ===== Reset =====
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+
+body {
+  font-family: $font-family;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  font-size: $font-size-base;
+  -webkit-font-smoothing: antialiased;
+  transition: background $transition-slow, color $transition-slow;
+}
+
+// ===== Typography =====
+h1, h2, h3, h4, h5, h6 {
+  font-weight: $font-weight-bold;
+  line-height: 1.2;
+}
+
+// Theme toggle icon visibility
+[data-theme='dark'] .theme-icon-sun { display: none; }
+[data-theme='dark'] .theme-icon-moon { display: block; }
+[data-theme='light'] .theme-icon-sun { display: block; }
+[data-theme='light'] .theme-icon-moon { display: none; }
+
+// ===== Links =====
+a {
+  color: var(--teal);
+  text-decoration: none;
+  transition: color $transition-fast;
+}
+
+a:hover {
+  color: var(--text);
+}
+
+// ===== Images =====
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+// ===== Buttons =====
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+// ===== Focus states for accessibility =====
+:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}

@@ -1,0 +1,98 @@
+// ============================================
+// DESIGN SYSTEM - UX Analysis Reports
+// ============================================
+
+// ===== Color Palette =====
+// Dark theme (default)
+$bg-dark: #111111;
+$surface-dark: #1a1a1a;
+$surface-hover-dark: #222222;
+$border-dark: #2a2a2a;
+$text-dark: #e8e8e8;
+$text-muted-dark: #9ca3af;
+$text-dim-dark: #6b7280;
+
+// Light theme
+$bg-light: #ffffff;
+$surface-light: #f8f9fa;
+$surface-hover-light: #f1f3f4;
+$border-light: #e5e7eb;
+$text-light: #1a1a1a;
+$text-muted-light: #4b5563;
+$text-dim-light: #6b7280;
+
+// Semantic colors
+$teal: #14b8a6;
+$teal-dim: rgba(20, 184, 166, 0.1);
+$teal-light: #0d9488;
+$teal-dim-light: rgba(13, 148, 136, 0.1);
+
+$green: #22c55e;
+$green-dim: rgba(34, 197, 94, 0.1);
+$green-light: #15803d;
+$green-dim-light: rgba(21, 128, 61, 0.1);
+
+$amber: #f59e0b;
+$amber-dim: rgba(245, 158, 11, 0.1);
+$amber-light: #c2410c;
+$amber-dim-light: rgba(194, 65, 12, 0.1);
+
+$red: #ef4444;
+$red-dim: rgba(239, 68, 68, 0.1);
+$red-light: #b91c1c;
+$red-dim-light: rgba(185, 28, 28, 0.1);
+
+// ===== Spacing Scale =====
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 12px;
+$spacing-lg: 16px;
+$spacing-xl: 20px;
+$spacing-2xl: 24px;
+$spacing-3xl: 32px;
+$spacing-4xl: 48px;
+$spacing-5xl: 56px;
+
+// ===== Typography =====
+$font-family: 'Inter', -apple-system, sans-serif;
+
+$font-size-xs: 12px;
+$font-size-sm: 13px;
+$font-size-base: 16px;
+$font-size-md: 18px;
+$font-size-lg: 20px;
+$font-size-xl: 24px;
+$font-size-2xl: 28px;
+$font-size-3xl: 42px;
+
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+$letter-spacing-tight: -0.03em;
+$letter-spacing-normal: 0.1em;
+$letter-spacing-wide: 0.15em;
+
+// ===== Layout =====
+$sidebar-width: 240px;
+$header-height: 60px;
+$border-radius: 8px;
+$border-radius-sm: 4px;
+$border-radius-lg: 12px;
+
+// ===== Breakpoints =====
+$breakpoint-tablet: 1024px;
+$breakpoint-mobile: 768px;
+$breakpoint-mobile-sm: 480px;
+
+// ===== Transitions =====
+$transition-fast: 0.15s;
+$transition-normal: 0.2s;
+$transition-slow: 0.3s;
+
+// ===== Z-index =====
+$z-mobile-nav: 200;
+$z-mobile-nav-overlay: 200;
+$z-mobile-nav-panel: 201;
+$z-lightbox: 1000;

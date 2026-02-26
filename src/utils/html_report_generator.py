@@ -3,8 +3,10 @@ HTML Report Generator with Interactive Visualizations
 
 Generates beautiful, interactive HTML reports with:
 - Heatmaps for feature matrices
-- Screenshot galleries
+- Screenshot galleries with preview system
 - Executive summaries
+- Evidence tab with notable states
+- Multi-page site structure
 """
 
 import json
@@ -14,22 +16,108 @@ from typing import Dict, List, Any, Optional
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
-from jinja2 import Template
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 import base64
-from .screenshot_annotator import ScreenshotAnnotator
+import os
+
+
+def _truncate_label(text: str, max_length: int = 18) -> str:
+    """Truncate label to max_length with ellipsis if needed."""
+    if len(text) <= max_length:
+        return text
+    return text[:max_length - 2] + '…'
 
 
 class HTMLReportGenerator:
     """
     Generates interactive HTML reports with charts and visualizations.
+
+    Updated to use Jinja2 templates for the new multi-page design.
     """
+
+    # Template directory relative to this file
+    _TEMPLATES_DIR = Path(__file__).parent.parent.parent / "templates"
+    # CSS directory
+    _CSS_DIR = Path(__file__).parent.parent.parent / "css"
 
     def __init__(self, output_dir: str = "output"):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
-        self.annotator = ScreenshotAnnotator()
 
-    def _create_heatmap(self, results: List[Dict[str, Any]]) -> str:
+        # Set up Jinja2 environment
+        self.template_dir = self._TEMPLATES_DIR
+        if self.template_dir.exists():
+            self.env = Environment(
+                loader=FileSystemLoader(str(self.template_dir)),
+                autoescape=select_autoescape(['html', 'xml'])
+            )
+        else:
+            # Fallback to inline templates if directory doesn't exist
+            self.env = None
+
+    def _build_css(self) -> bool:
+        """
+        Build CSS from Sass source files.
+
+        Returns:
+            True if CSS was built successfully, False otherwise
+        """
+        import subprocess
+
+        css_output_dir = self.output_dir / 'css'
+        css_output_dir.mkdir(parents=True, exist_ok=True)
+
+        source_file = self._CSS_DIR / 'main.scss'
+        output_file = css_output_dir / 'main.css'
+
+        if not source_file.exists():
+            return False
+
+        try:
+            result = subprocess.run(
+                [
+                    'sass',
+                    str(source_file),
+                    str(output_file),
+                    '--style=compressed',
+                    '--no-source-map',
+                ],
+                capture_output=True,
+                timeout=30,
+            )
+            return result.returncode == 0
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return False
+
+    def _copy_css(self) -> bool:
+        """
+        Copy pre-built CSS files to output directory.
+
+        Returns:
+            True if CSS files were copied successfully
+        """
+        import shutil
+
+        css_output_dir = self.output_dir / 'css'
+        css_output_dir.mkdir(parents=True, exist_ok=True)
+
+        source_css = self._CSS_DIR / '../output/css/main.css'
+        if not source_css.exists():
+            # Try building CSS first
+            if not self._build_css():
+                return False
+            source_css = self._CSS_DIR.parent / 'output' / 'css' / 'main.css'
+
+        if not source_css.exists():
+            return False
+
+        try:
+            shutil.copy(source_css, css_output_dir / 'main.css')
+            return True
+        except (FileNotFoundError, shutil.Error):
+            return False
+
+    def _create_heatmap(self, results: List[Dict[str, Any]]) -> go.Figure:
         """
         Create heatmap showing feature adoption matrix.
 
@@ -37,16 +125,17 @@ class HTMLReportGenerator:
             results: List of competitor analysis results
 
         Returns:
-            HTML string with embedded chart
+            Plotly figure object
         """
         successful_results = [r for r in results if r.get('success') and r.get('criteria_scores')]
 
         if not successful_results:
-            return "<p class='text-muted'>No data available for heatmap</p>"
+            return None
 
         # Prepare data
         competitors = [r.get('site_name', 'Unknown') for r in successful_results]
         criteria_names = [c['criterion_name'] for c in successful_results[0]['criteria_scores']]
+        criteria_display_names = [_truncate_label(name, max_length=24 if len(criteria_names) > 6 else 18) for name in criteria_names]
 
         # Build score matrix
         scores_matrix = []
@@ -54,46 +143,117 @@ class HTMLReportGenerator:
             scores = [c['score'] for c in result['criteria_scores']]
             scores_matrix.append(scores)
 
-        # Create heatmap
+        # Create heatmap with green-to-red scale
+        # Don't display text in cells - it interferes with hover tooltip
+        # Single hover template with competitor name, full criterion, and score
+        hover_template = '<b>%{y}</b><br>%{x}<br>Score: %{z:.1f}/10<extra></extra>'
         fig = go.Figure(data=go.Heatmap(
             z=scores_matrix,
-            x=criteria_names,
+            x=criteria_display_names,  # Use truncated labels
             y=competitors,
             colorscale=[
-                [0, '#d32f2f'],      # Red (0-2)
-                [0.2, '#f57c00'],    # Orange (2-4)
-                [0.4, '#fbc02d'],    # Yellow (4-6)
-                [0.6, '#7cb342'],    # Light green (6-8)
-                [0.8, '#388e3c'],    # Green (8-9)
-                [1, '#1b5e20']       # Dark green (9-10)
+                [0, '#ef4444'],      # Red (0-2)
+                [0.3, '#f97316'],    # Orange (2-4)
+                [0.5, '#f59e0b'],    # Amber (4-6)
+                [0.7, '#84cc16'],    # Light green (6-8)
+                [1, '#22c55e']       # Green (8-10)
             ],
-            zmin=0,  # Fix: Set explicit min to prevent auto-scaling
-            zmax=10, # Fix: Set explicit max to prevent auto-scaling
-            text=scores_matrix,
-            texttemplate='%{text:.1f}',
-            textfont={"size": 12, "color": "white"},
-            hovertemplate='<b>%{y}</b><br>%{x}<br>Score: %{z:.1f}/10<extra></extra>',
-            colorbar=dict(
-                title="Score",
-                tickvals=[0, 2, 4, 6, 8, 10],
-                ticktext=['0', '2', '4', '6', '8', '10']
-            )
+            zmin=0,
+            zmax=10,
+            hovertemplate=hover_template,  # %y = competitor, %x = criterion, %z = score
+            showscale=False
         ))
 
         fig.update_layout(
-            title=dict(
-                text="<b>Feature Adoption Heatmap</b><br><sub>Color-coded performance matrix</sub>",
-                x=0.5,
-                xanchor='center'
-            ),
-            xaxis_title="Criteria",
-            yaxis_title="Competitors",
-            height=max(400, len(competitors) * 60),
-            xaxis={'tickangle': -45, 'side': 'bottom'}
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font={'family': 'Inter, sans-serif', 'size': 11, 'color': '#6b6b6b'},
+            margin={'b': 140, 'l': 140, 'r': 40, 't': 50},  # Increased bottom margin
+            xaxis={
+                'tickfont': {'color': '#6b6b6b', 'size': 10},
+                'tickangle': -45,
+                'automargin': True
+            },
+            yaxis={
+                'tickfont': {'color': '#6b6b6b', 'size': 11},
+                'automargin': True
+            }
         )
 
-        return fig.to_html(include_plotlyjs='cdn', div_id='heatmap', config={'displayModeBar': False})
+        return fig
 
+    def _create_radar_chart(self, results: List[Dict[str, Any]], top_n: int = 3) -> go.Figure:
+        """
+        Create radar chart comparing top competitors across criteria.
+
+        Args:
+            results: List of competitor analysis results
+            top_n: Number of top competitors to show
+
+        Returns:
+            Plotly figure object
+        """
+        successful_results = [r for r in results if r.get('success') and r.get('criteria_scores')]
+
+        if not successful_results:
+            return None
+
+        # Get top competitors
+        sorted_results = sorted(successful_results, key=lambda x: x.get('overall_score', 0), reverse=True)[:top_n]
+
+        if not sorted_results:
+            return None
+
+        # Get criteria names - use truncated for display, full for hover
+        criteria_names = [c['criterion_name'] for c in sorted_results[0]['criteria_scores']]
+        criteria_display_names = [_truncate_label(name, max_length=18) for name in criteria_names]
+
+        # Create traces for each competitor
+        traces = []
+        colors = ['#14b8a6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6']
+
+        for i, result in enumerate(sorted_results):
+            scores = [c['score'] for c in result['criteria_scores']]
+            # Build custom hover templates with full criteria names
+            hover_templates = [
+                f'<b>{result.get("site_name", "Unknown")}</b><br>{full_name}<br>Score: %{{r:.1f}}/10<extra></extra>'
+                for full_name in criteria_names
+            ]
+            traces.append(go.Scatterpolar(
+                r=scores,
+                theta=criteria_display_names,  # Use truncated labels
+                fill='toself',
+                name=result.get('site_name', 'Unknown'),
+                line={'color': colors[i % len(colors)], 'width': 2},
+                hovertemplate=hover_templates  # Custom hover with full names
+            ))
+
+        fig = go.Figure(data=traces)
+
+        fig.update_layout(
+            polar={
+                'radialaxis': {
+                    'visible': True,
+                    'range': [0, 10],
+                    'gridcolor': '#2a2a2a'
+                },
+                'angularaxis': {
+                    'rotation': 90,
+                    'direction': 'clockwise',
+                    'tickfont': {'size': 10, 'color': '#6b6b6b'},
+                    'showline': False,
+                    'showticklabels': True
+                }
+            },
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font={'family': 'Inter, sans-serif', 'size': 11, 'color': '#6b6b6b'},
+            margin={'t': 60, 'r': 60, 'b': 120, 'l': 60},
+            showlegend=True,
+            legend={'bgcolor': 'rgba(0,0,0,0)', 'orientation': 'h', 'y': -0.05, 'x': 0.5, 'xanchor': 'center'}
+        )
+
+        return fig
 
     def _get_executive_summary(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -112,57 +272,24 @@ class HTMLReportGenerator:
                 'total': len(results),
                 'successful': 0,
                 'failed': len(results),
-                'average_score': 0,
+                'avg_score': 0,
                 'leader': {'name': 'N/A', 'score': 0},
-                'weakest': {'name': 'N/A', 'score': 0},
-                'most_consistent': None,
-                'weakest_criterion': None,
-                'weakest_criterion_avg': 0,
-                'strongest_criterion': None,
-                'strongest_criterion_avg': 0
+                'weakest': {'name': 'N/A', 'score': 0}
             }
 
-        # Find leader
-        leader = max(successful_results, key=lambda x: x.get('overall_score', 0))
-
-        # Find weakest
-        weakest = min(successful_results, key=lambda x: x.get('overall_score', 0))
+        # Find leader and weakest
+        sorted_by_score = sorted(successful_results, key=lambda x: x.get('overall_score', 0), reverse=True)
+        leader = sorted_by_score[0]
+        weakest = sorted_by_score[-1]
 
         # Calculate average score
         avg_score = sum(r.get('overall_score', 0) for r in successful_results) / len(successful_results)
-
-        # Find most consistent (lowest variance)
-        consistency = {}
-        for result in successful_results:
-            scores = [c['score'] for c in result.get('criteria_scores', [])]
-            if scores:
-                variance = sum((s - sum(scores)/len(scores))**2 for s in scores) / len(scores)
-                consistency[result.get('site_name')] = variance
-
-        most_consistent = min(consistency, key=consistency.get) if consistency else None
-
-        # Find biggest vulnerabilities across all competitors
-        criteria_scores = {}
-        for result in successful_results:
-            for criterion in result.get('criteria_scores', []):
-                crit_name = criterion['criterion_name']
-                if crit_name not in criteria_scores:
-                    criteria_scores[crit_name] = []
-                criteria_scores[crit_name].append(criterion['score'])
-
-        # Average by criterion
-        avg_by_criterion = {
-            name: sum(scores) / len(scores)
-            for name, scores in criteria_scores.items()
-        }
-
-        weakest_criterion = min(avg_by_criterion, key=avg_by_criterion.get) if avg_by_criterion else None
-        strongest_criterion = max(avg_by_criterion, key=avg_by_criterion.get) if avg_by_criterion else None
 
         return {
             'total': len(results),
             'successful': len(successful_results),
             'failed': len(results) - len(successful_results),
+            'avg_score': avg_score,
             'leader': {
                 'name': leader.get('site_name'),
                 'score': leader.get('overall_score')
@@ -170,54 +297,42 @@ class HTMLReportGenerator:
             'weakest': {
                 'name': weakest.get('site_name'),
                 'score': weakest.get('overall_score')
-            },
-            'average_score': avg_score,
-            'most_consistent': most_consistent,
-            'weakest_criterion': weakest_criterion,
-            'weakest_criterion_avg': avg_by_criterion.get(weakest_criterion, 0) if weakest_criterion else 0,
-            'strongest_criterion': strongest_criterion,
-            'strongest_criterion_avg': avg_by_criterion.get(strongest_criterion, 0) if strongest_criterion else 0
+            }
         }
 
-    def _get_strategic_insights(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _get_strategic_insights(self, results: List[Dict[str, Any]]) -> Dict[str, str]:
         """
-        Generate strategic insights: market leaders, opportunities, threats, and quick wins.
+        Generate strategic insights: market leaders, opportunities, threats.
 
         Args:
             results: List of competitor analysis results
 
         Returns:
-            Dictionary with strategic insights data
+            Dictionary with strategic insights
         """
         successful_results = [r for r in results if r.get('success') and r.get('overall_score')]
 
         if not successful_results:
             return {
-                'market_leaders': [],
-                'opportunities': [],
-                'threats': [],
-                'quick_wins': []
+                'market_leader': 'No data available',
+                'threat': 'No data available',
+                'opportunity': 'No data available'
             }
 
-        # 1. Market Leaders - Top 3 by overall score
-        sorted_by_score = sorted(successful_results, key=lambda x: x.get('overall_score', 0), reverse=True)
-        market_leaders = []
-        for comp in sorted_by_score[:3]:
-            # Find their key differentiator (highest scoring criterion)
-            best_criterion = None
-            best_score = 0
-            for criterion in comp.get('criteria_scores', []):
-                if criterion['score'] > best_score:
-                    best_score = criterion['score']
-                    best_criterion = criterion['criterion_name']
+        # Market leader
+        leader = max(successful_results, key=lambda x: x.get('overall_score', 0))
+        leader_name = leader.get('site_name', 'Unknown')
+        leader_score = leader.get('overall_score', 0)
 
-            market_leaders.append({
-                'name': comp.get('site_name'),
-                'score': comp.get('overall_score'),
-                'differentiator': best_criterion if best_criterion else 'N/A'
-            })
+        # Find leader's key differentiator
+        best_criterion = ''
+        best_score = 0
+        for c in leader.get('criteria_scores', []):
+            if c['score'] > best_score:
+                best_score = c['score']
+                best_criterion = c['criterion_name']
 
-        # 2. Calculate average scores by criterion
+        # Calculate criteria averages to find opportunities
         criteria_scores = {}
         for result in successful_results:
             for criterion in result.get('criteria_scores', []):
@@ -231,78 +346,17 @@ class HTMLReportGenerator:
             for name, scores in criteria_scores.items()
         }
 
-        # 3. Top 3 Opportunities - Criteria with lowest avg scores (where 60%+ score below threshold)
-        opportunities = []
-        for crit_name, scores in criteria_scores.items():
-            avg_score = avg_by_criterion[crit_name]
-            below_threshold = sum(1 for s in scores if s < 6)
-            pct_below = (below_threshold / len(scores)) * 100
+        # Find weakest criterion (opportunity)
+        weakest_criterion = min(avg_by_criterion, key=avg_by_criterion.get) if avg_by_criterion else 'N/A'
+        weakest_avg = avg_by_criterion.get(weakest_criterion, 0)
 
-            if pct_below >= 60:  # At least 60% scoring below 6
-                # Calculate potential gain vs average competitor
-                potential_gain = 8.0 - avg_score  # Assume reaching 8/10 is achievable
-                opportunities.append({
-                    'criterion': crit_name,
-                    'avg_score': avg_score,
-                    'pct_below_6': pct_below,
-                    'potential_gain': potential_gain
-                })
-
-        # Sort by potential gain (biggest opportunities first)
-        opportunities.sort(key=lambda x: x['potential_gain'], reverse=True)
-        opportunities = opportunities[:3]  # Top 3
-
-        # 4. Competitive Threats - Standout strengths from market leaders (8+ overall score)
-        threats = []
-        market_leader_comps = [c for c in successful_results if c.get('overall_score', 0) >= 8.0]
-
-        for comp in market_leader_comps:
-            # Find their strongest criteria (9+ score)
-            strong_criteria = [
-                c for c in comp.get('criteria_scores', [])
-                if c['score'] >= 9.0
-            ]
-
-            if strong_criteria:
-                # Take their top strength
-                top_strength = max(strong_criteria, key=lambda x: x['score'])
-                threats.append({
-                    'competitor': comp.get('site_name'),
-                    'criterion': top_strength['criterion_name'],
-                    'score': top_strength['score'],
-                    'action': f"Must match {top_strength['criterion_name'].lower()}"
-                })
-
-        # Limit to top 3 threats
-        threats.sort(key=lambda x: x['score'], reverse=True)
-        threats = threats[:3]
-
-        # 5. Quick Wins - Common gaps (60%+ below 6) that are typically fast to implement
-        quick_wins = []
-        for crit_name, scores in criteria_scores.items():
-            below_6_count = sum(1 for s in scores if s < 6)
-            pct_below_6 = (below_6_count / len(scores)) * 100
-
-            if pct_below_6 >= 60:  # Widespread weakness
-                avg = avg_by_criterion[crit_name]
-                missing_count = sum(1 for s in scores if s < 4)  # Completely missing
-
-                quick_wins.append({
-                    'criterion': crit_name,
-                    'missing_count': missing_count,
-                    'total_count': len(scores),
-                    'avg_score': avg
-                })
-
-        # Sort by how many competitors are missing it entirely
-        quick_wins.sort(key=lambda x: x['missing_count'], reverse=True)
-        quick_wins = quick_wins[:4]  # Top 4 quick wins
+        # Find strongest criterion (threat)
+        strongest_criterion = max(avg_by_criterion, key=avg_by_criterion.get) if avg_by_criterion else 'N/A'
 
         return {
-            'market_leaders': market_leaders,
-            'opportunities': opportunities,
-            'threats': threats,
-            'quick_wins': quick_wins
+            'market_leader': f"{leader_name} leads with {leader_score:.1f}/10. Their {best_criterion} sets the benchmark.",
+            'threat': f"Market standard for {strongest_criterion} is {avg_by_criterion[strongest_criterion]:.1f}/10. Must match to compete.",
+            'opportunity': f"{weakest_criterion} averages only {weakest_avg:.1f}/10 across competitors. Clear differentiation opportunity."
         }
 
     def _get_rankings_data(self, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -327,125 +381,277 @@ class HTMLReportGenerator:
         for rank, comp in enumerate(sorted_comps, 1):
             score = comp.get('overall_score', 0)
 
-            # Determine competitive position based on score
+            # Determine competitive position
             if score >= 8.0:
-                position = 'Market Leader'
-                position_class = 'advantage'
+                tier = 'Market Leader'
             elif score >= 6.5:
-                position = 'Strong Contender'
-                position_class = 'advantage'
+                tier = 'Strong Contender'
             elif score >= 5.0:
-                position = 'Competitive'
-                position_class = 'parity'
+                tier = 'Competitive'
             else:
-                position = 'Vulnerable'
-                position_class = 'vulnerability'
-
-            # Find key differentiator (highest scoring criterion)
-            best_criterion = None
-            best_score = 0
-            for criterion in comp.get('criteria_scores', []):
-                if criterion['score'] > best_score:
-                    best_score = criterion['score']
-                    best_criterion = criterion['criterion_name']
+                tier = 'Needs Improvement'
 
             rankings.append({
                 'rank': rank,
                 'name': comp.get('site_name'),
                 'score': score,
-                'position': position,
-                'position_class': position_class,
-                'differentiator': best_criterion if best_criterion else 'N/A'
+                'tier': tier
             })
 
         return rankings
 
-    def _prepare_annotated_screenshots(
-        self,
-        competitor_results: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    def _get_evidence_data(self, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Create annotated versions of screenshots for each competitor.
+        Generate evidence tab data from notable states and observations.
 
         Args:
-            competitor_results: List of competitor analysis results
+            results: List of competitor analysis results
 
         Returns:
-            Updated results with annotated screenshot paths
+            List of evidence items per competitor
         """
-        for result in competitor_results:
-            if not result.get('success') or not result.get('screenshot_metadata'):
-                continue
+        successful_results = [r for r in results if r.get('success') and r.get('overall_score')]
 
-            # Generate annotations from criteria scores
-            if result.get('criteria_scores'):
-                annotations = self.annotator.create_annotations_from_analysis(
-                    result['criteria_scores'],
-                    top_n=2  # Top 2 strengths and weaknesses
-                )
+        if not successful_results:
+            return []
 
-                # Annotate each screenshot
-                for screenshot in result['screenshot_metadata']:
-                    try:
-                        screenshot_path = screenshot.get('filepath')
-                        if screenshot_path and Path(screenshot_path).exists():
-                            annotated_path = self.annotator.annotate_screenshot(
-                                screenshot_path,
-                                annotations
-                            )
-                            screenshot['annotated_filepath'] = annotated_path
-                    except Exception as e:
-                        # If annotation fails, just skip it
-                        pass
+        # Sort by score and take top 3
+        sorted_comps = sorted(successful_results, key=lambda x: x.get('overall_score', 0), reverse=True)[:3]
 
-        return competitor_results
+        evidence = []
+        colors = ['#22c55e', '#22c55e', '#f59e0b']  # green, green, amber
+        color_dims = ['rgba(34, 197, 94, 0.1)', 'rgba(34, 197, 94, 0.1)', 'rgba(245, 158, 11, 0.1)']
 
-    def _make_paths_relative(
+        for i, comp in enumerate(sorted_comps):
+            name = comp.get('site_name', 'Unknown')
+            initial = name[0].upper() if name else '?'
+            score = comp.get('overall_score', 0)
+
+            # Build evidence list from criteria scores
+            evidence_list = []
+
+            # Get top strength
+            strengths = [
+                c for c in comp.get('criteria_scores', [])
+                if c['score'] >= 8
+            ]
+            if strengths:
+                best = max(strengths, key=lambda x: x['score'])
+                evidence_list.append({
+                    'icon': 'check-circle-2',
+                    'icon_class': 'success',
+                    'text': f"{best['criterion_name']}: {best['score']:.1f}/10 - Best in class"
+                })
+
+            # Get notable states if available
+            notable_states = comp.get('notable_states', [])
+            for state in notable_states[:2]:
+                # Determine icon based on content
+                if any(word in state.lower() for word in ['good', 'excellent', 'clear', 'prominent']):
+                    evidence_list.append({
+                        'icon': 'check-circle-2',
+                        'icon_class': 'success',
+                        'text': state[:100]
+                    })
+                elif any(word in state.lower() for word in ['missing', 'lack', 'unclear', 'hidden']):
+                    evidence_list.append({
+                        'icon': 'alert-circle',
+                        'icon_class': 'warning',
+                        'text': state[:100]
+                    })
+                else:
+                    evidence_list.append({
+                        'icon': 'info',
+                        'icon_class': 'info',
+                        'text': state[:100]
+                    })
+
+            # Get a weakness if available
+            weaknesses = [
+                c for c in comp.get('criteria_scores', [])
+                if c['score'] < 6
+            ]
+            if weaknesses and len(evidence_list) < 4:
+                worst = min(weaknesses, key=lambda x: x['score'])
+                evidence_list.append({
+                    'icon': 'alert-circle',
+                    'icon_class': 'warning',
+                    'text': f"{worst['criterion_name']}: {worst['score']:.1f}/10 - Room for improvement"
+                })
+
+            evidence.append({
+                'name': name,
+                'initial': initial,
+                'color': colors[i % len(colors)],
+                'color_dim': color_dims[i % len(color_dims)],
+                'evidence_list': evidence_list
+            })
+
+        return evidence
+
+    def _prepare_competitor_data(
         self,
-        competitor_results: List[Dict[str, Any]],
-        html_file_path: Path
+        results: List[Dict[str, Any]],
+        output_path: Path
     ) -> List[Dict[str, Any]]:
         """
-        Convert absolute screenshot paths to relative paths from HTML file location.
+        Prepare competitor data for template rendering.
 
         Args:
-            competitor_results: List of competitor analysis results
-            html_file_path: Path where HTML file will be saved
+            results: List of competitor analysis results
+            output_path: Path where HTML will be saved (for relative paths)
 
         Returns:
-            Updated results with relative screenshot paths
+            List of prepared competitor data
         """
-        from pathlib import Path
-        import os
+        successful_results = [r for r in results if r.get('success') and r.get('overall_score')]
 
-        html_dir = html_file_path.parent
+        # Attach notable states
+        successful_results = self._attach_notable_states(successful_results)
 
-        for result in competitor_results:
-            if not result.get('screenshot_metadata'):
+        # Prepare screenshot data
+        prepared_competitors = []
+        screenshot_sets = {}
+
+        for result in successful_results:
+            comp_id = result.get('site_name', '').lower().replace(' ', '_').replace("'", '')
+
+            # Prepare screenshots with relative paths
+            screenshots = []
+            screenshot_paths = []
+
+            if result.get('screenshot_metadata'):
+                for ss in result['screenshot_metadata']:
+                    # Get relative path
+                    ss_path = ss.get('filepath')
+                    if ss_path:
+                        try:
+                            rel_path = os.path.relpath(ss_path, output_path.parent)
+                            screenshots.append({
+                                'path': rel_path,
+                                'viewport_name': ss.get('viewport_name', 'Desktop'),
+                                'annotations': self._get_annotations_for_screenshot(ss, result)
+                            })
+                            screenshot_paths.append(rel_path)
+                        except ValueError:
+                            # Different drives on Windows, skip
+                            pass
+
+            screenshot_sets[comp_id] = screenshot_paths
+
+            prepared_competitors.append({
+                'id': comp_id,
+                'name': result.get('site_name'),
+                'overall_score': result.get('overall_score', 0),
+                'criteria_scores': result.get('criteria_scores', []),
+                'screenshots': screenshots,
+                'notable_states': result.get('notable_states', []),
+                'evidence_items': self._build_competitor_evidence_items(result),
+            })
+
+        return prepared_competitors, screenshot_sets
+
+    def _build_competitor_evidence_items(self, result: Dict[str, Any]) -> List[Dict[str, str]]:
+        """Build compact evidence snippets for each competitor card."""
+        items: List[Dict[str, str]] = []
+
+        notable_states = result.get('notable_states', []) or []
+        for state in notable_states[:2]:
+            state_text = str(state).strip()
+            if not state_text:
                 continue
 
-            for screenshot in result['screenshot_metadata']:
-                # Convert filepath to relative
-                if screenshot.get('filepath'):
-                    abs_path = Path(screenshot['filepath'])
-                    try:
-                        rel_path = os.path.relpath(abs_path, html_dir)
-                        screenshot['filepath'] = rel_path
-                    except ValueError:
-                        # If paths are on different drives (Windows), keep absolute
-                        pass
+            lowered = state_text.lower()
+            if any(token in lowered for token in ['missing', 'lack', 'unclear', 'hidden', 'error']):
+                icon, icon_class = 'alert-circle', 'warning'
+            elif any(token in lowered for token in ['good', 'excellent', 'clear', 'prominent', 'strong']):
+                icon, icon_class = 'check-circle-2', 'success'
+            else:
+                icon, icon_class = 'info', 'info'
 
-                # Convert annotated_filepath to relative
-                if screenshot.get('annotated_filepath'):
-                    abs_path = Path(screenshot['annotated_filepath'])
-                    try:
-                        rel_path = os.path.relpath(abs_path, html_dir)
-                        screenshot['annotated_filepath'] = rel_path
-                    except ValueError:
-                        # If paths are on different drives (Windows), keep absolute
-                        pass
+            items.append(
+                {
+                    'icon': icon,
+                    'icon_class': icon_class,
+                    'text': state_text[:160],
+                }
+            )
 
-        return competitor_results
+        criteria_scores = result.get('criteria_scores', []) or []
+        strengths = [c for c in criteria_scores if c.get('score', 0) >= 8]
+        weaknesses = [c for c in criteria_scores if c.get('score', 0) < 6]
+
+        if strengths:
+            best = max(strengths, key=lambda c: c.get('score', 0))
+            evidence_text = best.get('evidence') or best.get('observations') or ''
+            text = evidence_text.strip()[:140] if evidence_text else f"{best.get('criterion_name', 'Strength')}: {best.get('score', 0):.1f}/10"
+            items.append({'icon': 'check-circle-2', 'icon_class': 'success', 'text': text})
+
+        if weaknesses:
+            worst = min(weaknesses, key=lambda c: c.get('score', 0))
+            evidence_text = worst.get('evidence') or worst.get('observations') or ''
+            text = evidence_text.strip()[:140] if evidence_text else f"{worst.get('criterion_name', 'Weakness')}: {worst.get('score', 0):.1f}/10"
+            items.append({'icon': 'alert-circle', 'icon_class': 'warning', 'text': text})
+
+        # Keep card concise and de-duplicate near-identical entries.
+        deduped: List[Dict[str, str]] = []
+        seen_text = set()
+        for item in items:
+            key = item['text'].strip().lower()
+            if not key or key in seen_text:
+                continue
+            seen_text.add(key)
+            deduped.append(item)
+            if len(deduped) == 3:
+                break
+
+        return deduped
+
+    def _get_annotations_for_screenshot(
+        self,
+        screenshot: Dict[str, Any],
+        result: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """
+        Generate annotation data for a screenshot.
+
+        Args:
+            screenshot: Screenshot metadata
+            result: Competitor analysis result
+
+        Returns:
+            List of annotation objects
+        """
+        annotations = []
+
+        # Get strengths and weaknesses from criteria
+        criteria_scores = result.get('criteria_scores', [])
+
+        # Get top strength
+        strengths = [c for c in criteria_scores if c['score'] >= 8]
+        if strengths:
+            best = max(strengths, key=lambda x: x['score'])
+            annotations.append({
+                'type': 'strength',
+                'icon': 'check-circle-2',
+                'text': f"{best['criterion_name']}: {best['score']:.1f}",
+                'top': 20,
+                'left': 30
+            })
+
+        # Get a weakness if available
+        weaknesses = [c for c in criteria_scores if c['score'] < 6]
+        if weaknesses:
+            worst = min(weaknesses, key=lambda x: x['score'])
+            annotations.append({
+                'type': 'weakness',
+                'icon': 'x-circle',
+                'text': f"{worst['criterion_name']}: {worst['score']:.1f}",
+                'top': 40,
+                'left': 60
+            })
+
+        return annotations
 
     def _attach_notable_states(
         self,
@@ -458,8 +664,7 @@ class HTMLReportGenerator:
             if not observation_file:
                 continue
 
-            # Resolve relative filename against competitor_root if available,
-            # otherwise fall back to treating it as an absolute path (legacy).
+            # Resolve relative filename against competitor_root if available
             competitor_root = result.get("competitor_root")
             if competitor_root:
                 obs_path = Path(competitor_root) / observation_file
@@ -480,1148 +685,52 @@ class HTMLReportGenerator:
                         if str(state).strip()
                     ]
             except (OSError, json.JSONDecodeError):
-                # Keep report generation resilient if observation files are missing or malformed.
                 continue
 
         return competitor_results
 
-    def _get_html_template(self) -> str:
+    def generate_index_page(
+        self,
+        reports: List[Dict[str, Any]]
+    ) -> str:
         """
-        Return HTML template string with lightbox and filtering.
+        Generate the index page listing all reports.
+
+        Args:
+            reports: List of report metadata dicts with keys:
+                - filename: HTML filename
+                - title: Short title for nav
+                - full_title: Full title for card
+                - date: Report date
+                - competitors: Number of competitors
+                - category: Category description
+                - avg_score: Average score
+                - leader_score: Leader score
+                - icon: Lucide icon name
+                - published: Boolean
 
         Returns:
-            HTML template with Bootstrap, custom styling, and interactive features
+            Path to generated index file
         """
-        return """<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ analysis_type }} - UX Maturity Report</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        /* Lightbox Modal */
-        .lightbox-modal {
-            display: none;
-            position: fixed;
-            z-index: 9999;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.95);
-            align-items: center;
-            justify-content: center;
-        }
-        .lightbox-modal.active {
-            display: flex;
-        }
-        .lightbox-content {
-            position: relative;
-            max-width: 95%;
-            max-height: 95%;
-            animation: zoomIn 0.3s;
-        }
-        .lightbox-content img {
-            max-width: 100%;
-            max-height: 95vh;
-            object-fit: contain;
-            border-radius: 8px;
-            box-shadow: 0 0 50px rgba(255,255,255,0.2);
-        }
-        .lightbox-close {
-            position: absolute;
-            top: 20px;
-            right: 40px;
-            color: white;
-            font-size: 40px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 10000;
-            background: rgba(0,0,0,0.5);
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-        }
-        .lightbox-close:hover {
-            background: rgba(255,255,255,0.2);
-            transform: scale(1.1);
-        }
-        .lightbox-nav {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            color: white;
-            font-size: 40px;
-            cursor: pointer;
-            background: rgba(0,0,0,0.5);
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-        }
-        .lightbox-nav:hover {
-            background: rgba(255,255,255,0.2);
-            transform: translateY(-50%) scale(1.1);
-        }
-        .lightbox-prev {
-            left: 20px;
-        }
-        .lightbox-next {
-            right: 20px;
-        }
-        .lightbox-caption {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: white;
-            background: rgba(0,0,0,0.7);
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-size: 1.1rem;
-            max-width: 80%;
-            text-align: center;
-        }
-        @keyframes zoomIn {
-            from {
-                transform: scale(0.8);
-                opacity: 0;
-            }
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
+        if self.env is None:
+            raise RuntimeError("Template directory not found. Cannot generate index page.")
 
-        /* Filter Controls */
-        .filter-panel {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 20px;
-            z-index: 100;
-        }
-        .filter-panel .form-label {
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 8px;
-        }
-        .filter-panel .form-select,
-        .filter-panel .form-control {
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 10px 15px;
-        }
-        .filter-panel .form-select:focus,
-        .filter-panel .form-control:focus {
-            border-color: #8b5cf6;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-        }
-        .filter-badge {
-            display: inline-block;
-            padding: 6px 12px;
-            background: #8b5cf6;
-            color: white;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            margin-right: 8px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .filter-badge:hover {
-            background: #7c3aed;
-            transform: translateY(-2px);
-        }
-        .filter-badge.active {
-            background: #48bb78;
-        }
-        .reset-filters-btn {
-            background: linear-gradient(135deg, #f56565 0%, #ed8936 100%);
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        .reset-filters-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(245, 101, 101, 0.4);
-        }
-        .filter-results-count {
-            font-size: 0.9rem;
-            color: #718096;
-            margin-top: 10px;
-        }
+        # Build/copy CSS before rendering
+        if not self._build_css():
+            self._copy_css()
 
-        /* Make competitor cards filterable */
-        .filtered-out {
-            display: none !important;
-        }
+        template = self.env.get_template('index.html.jinja2')
+        output_path = self.output_dir / 'index.html'
 
-        /* Enhanced Screenshot Gallery */
-        .screenshot-gallery {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        .screenshot-thumb {
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-        }
-        .screenshot-thumb:hover {
-            border-color: #8b5cf6;
-            transform: scale(1.05);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-        }
-        .screenshot-thumb img {
-            width: 250px;
-            height: auto;
-            display: block;
-        }
-        .screenshot-thumb .overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(16, 185, 129, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s;
-            color: white;
-            font-size: 2rem;
-        }
-        .screenshot-thumb:hover .overlay {
-            opacity: 1;
-        }
-        .screenshot-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            padding: 20px 0;
-        }
-        .container-main {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 40px;
-            margin-bottom: 40px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 30px;
-            border-bottom: 3px solid #8b5cf6;
-        }
-        .header h1 {
-            color: #2d3748;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-        .header .subtitle {
-            color: #718096;
-            font-size: 1.1rem;
-        }
-        .stat-card {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-            transition: transform 0.3s ease;
-        }
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        .stat-card .stat-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-        .stat-card .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .chart-container {
-            background: #f7fafc;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        .competitor-card {
-            border: 2px solid #e2e8f0;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 25px;
-            transition: all 0.3s ease;
-            background: white;
-        }
-        .competitor-card:hover {
-            border-color: #8b5cf6;
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
-            transform: translateY(-2px);
-        }
-        .competitor-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-        .competitor-name {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #2d3748;
-        }
-        .overall-score {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #8b5cf6;
-        }
-        .score-badge {
-            display: inline-block;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-right: 8px;
-            margin-bottom: 8px;
-        }
-        .score-excellent { background: #48bb78; color: white; }
-        .score-good { background: #38b2ac; color: white; }
-        .score-average { background: #ed8936; color: white; }
-        .score-poor { background: #f56565; color: white; }
-        .criterion-row {
-            padding: 12px;
-            margin-bottom: 8px;
-            border-radius: 8px;
-            background: #f7fafc;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .criterion-name {
-            font-weight: 600;
-            color: #2d3748;
-            flex: 1;
-        }
-        .criterion-score {
-            font-weight: 700;
-            font-size: 1.1rem;
-            margin-left: 15px;
-        }
-        .progress-bar-custom {
-            height: 8px;
-            border-radius: 10px;
-            background: #e2e8f0;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #8b5cf6 0%, #7c3aed 100%);
-            border-radius: 10px;
-            transition: width 0.3s ease;
-        }
-        .screenshot-gallery {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        .screenshot-thumb {
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        .screenshot-thumb:hover {
-            border-color: #667eea;
-            transform: scale(1.05);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        .screenshot-thumb img {
-            width: 250px;
-            height: auto;
-            display: block;
-        }
-        .competitive-status {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            display: inline-block;
-        }
-        .status-advantage { background: #48bb78; color: white; }
-        .status-parity { background: #4299e1; color: white; }
-        .status-vulnerability { background: #f56565; color: white; }
-        .notable-states-callout {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 12px 16px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-        .notable-states-callout h4 {
-            margin: 0 0 8px 0;
-            font-size: 14px;
-            color: #856404;
-        }
-        .notable-states-callout ul {
-            margin: 0;
-            padding-left: 20px;
-            color: #533f03;
-            font-size: 13px;
-        }
-        .evidence-citation {
-            background: #f8f9fa;
-            border-left: 3px solid #6c757d;
-            padding: 6px 10px;
-            margin-top: 6px;
-            font-size: 12px;
-            color: #495057;
-            font-style: italic;
-        }
-        .evidence-missing {
-            border-left-color: #adb5bd;
-            color: #6c757d;
-            background: #f1f3f5;
-        }
-        .footer {
-            text-align: center;
-            padding: 30px;
-            color: #718096;
-            font-size: 0.9rem;
-        }
-        .section-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #2d3748;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 3px solid #8b5cf6;
-        }
-        .alert-custom {
-            background: linear-gradient(135deg, #8b5cf615 0%, #7c3aed15 100%);
-            border-left: 4px solid #8b5cf6;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 25px;
-        }
-        .card-body-collapsible {
-            overflow: hidden;
-            transition: max-height 0.3s ease, opacity 0.3s ease;
-            max-height: 5000px;
-            opacity: 1;
-        }
-        .card-body-collapsible.collapsed {
-            max-height: 0;
-            opacity: 0;
-            margin: 0;
-            padding: 0;
-        }
-        .toggle-card-btn {
-            background: none;
-            border: none;
-            color: #8b5cf6;
-            cursor: pointer;
-            font-size: 1.5rem;
-            padding: 0;
-            margin-left: 10px;
-            transition: transform 0.3s ease;
-        }
-        .toggle-card-btn:hover {
-            color: #7c3aed;
-        }
-        .toggle-card-btn.collapsed {
-            transform: rotate(180deg);
-        }
-        /* Strategic Insights Section */
-        .exec-summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        @media (max-width: 768px) {
-            .exec-summary-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        .exec-card {
-            background: white;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px;
-            transition: all 0.3s ease;
-        }
-        .exec-card:hover {
-            border-color: #8b5cf6;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
-            transform: translateY(-3px);
-        }
-        .exec-card h4 {
-            color: #8b5cf6;
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-        .exec-card ul, .exec-card ol {
-            margin: 0;
-            padding-left: 20px;
-        }
-        .exec-card li {
-            margin-bottom: 10px;
-            color: #2d3748;
-        }
-        .exec-card .stat {
-            display: block;
-            color: #718096;
-            font-size: 0.85rem;
-            font-style: italic;
-            margin-top: 5px;
-        }
-        .exec-card .impact {
-            background: linear-gradient(135deg, #8b5cf615 0%, #7c3aed15 100%);
-            border-left: 3px solid #8b5cf6;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 15px;
-            font-size: 0.9rem;
-        }
-        /* Rankings Table */
-        .ranking-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        .ranking-table thead {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            color: white;
-        }
-        .ranking-table th {
-            padding: 15px;
-            text-align: left;
-            font-weight: 600;
-        }
-        .ranking-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .ranking-table tbody tr:hover {
-            background: #f7fafc;
-        }
-        .rank-badge {
-            display: inline-block;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 32px;
-            font-weight: 700;
-            color: white;
-        }
-        .rank-1 { background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); }
-        .rank-2 { background: linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 100%); }
-        .rank-3 { background: linear-gradient(135deg, #CD7F32 0%, #B8860B 100%); }
-        .rank-other { background: linear-gradient(135deg, #718096 0%, #4a5568 100%); }
-        .score-cell {
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-        .score-high { color: #48bb78; }
-        .score-medium { color: #ed8936; }
-        .score-low { color: #f56565; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="container-main">
-            <!-- Header -->
-            <div class="header">
-                <h1><i class="fas fa-chart-line"></i> UX Maturity Report</h1>
-                <div class="subtitle">{{ analysis_type }} | Generated {{ timestamp }}</div>
-            </div>
+        html_content = template.render(
+            reports=reports,
+            timestamp=datetime.now().strftime("%B %d, %Y")
+        )
 
-            <!-- Executive Summary -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h2 class="section-title"><i class="fas fa-star"></i> Executive Summary</h2>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card">
-                        <div class="stat-value">{{ summary.successful }}</div>
-                        <div class="stat-label">Competitors Analyzed</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card">
-                        <div class="stat-value">{{ "%.1f"|format(summary.average_score) }}</div>
-                        <div class="stat-label">Average Score</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card">
-                        <div class="stat-value">{{ "%.1f"|format(summary.leader.score) }}</div>
-                        <div class="stat-label">Top Score ({{ summary.leader.name }})</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card">
-                        <div class="stat-value">{{ "%.1f"|format(summary.weakest.score) }}</div>
-                        <div class="stat-label">Lowest ({{ summary.weakest.name }})</div>
-                    </div>
-                </div>
-            </div>
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
 
-            <!-- Key Insights -->
-            <div class="alert-custom">
-                <h5><i class="fas fa-lightbulb"></i> <strong>Key Insights</strong></h5>
-                <ul class="mb-0">
-                    <li><strong><i class="fas fa-trophy"></i> Market Leader:</strong> {{ summary.leader.name }} leads with {{ "%.1f"|format(summary.leader.score) }}/10</li>
-                    {% if summary.most_consistent %}
-                    <li><strong><i class="fas fa-chart-bar"></i> Most Consistent:</strong> {{ summary.most_consistent }} shows the most balanced performance</li>
-                    {% endif %}
-                    {% if summary.strongest_criterion %}
-                    <li><strong><i class="fas fa-fire"></i> Industry Strength:</strong> {{ summary.strongest_criterion }} (avg: {{ "%.1f"|format(summary.strongest_criterion_avg) }}/10)</li>
-                    {% endif %}
-                    {% if summary.weakest_criterion %}
-                    <li><strong><i class="fas fa-exclamation-triangle"></i> Market Vulnerability:</strong> {{ summary.weakest_criterion }} (avg: {{ "%.1f"|format(summary.weakest_criterion_avg) }}/10) - opportunity to differentiate</li>
-                    {% endif %}
-                </ul>
-            </div>
-
-            <!-- Strategic Insights -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h2 class="section-title"><i class="fas fa-lightbulb"></i> Strategic Insights</h2>
-                </div>
-                <div class="col-12">
-                    <div class="exec-summary-grid">
-                        <!-- Market Leaders -->
-                        <div class="exec-card">
-                            <h4><i class="fas fa-crown"></i> Market Leaders</h4>
-                            <ul>
-                                {% for leader in strategic_insights.market_leaders %}
-                                <li><strong>{{ leader.name }}</strong> ({{ "%.1f"|format(leader.score) }}/10){% if leader.differentiator != 'N/A' %} - {{ leader.differentiator }}{% endif %}</li>
-                                {% endfor %}
-                                {% if not strategic_insights.market_leaders %}
-                                <li class="text-muted">No data available</li>
-                                {% endif %}
-                            </ul>
-                        </div>
-
-                        <!-- Top 3 Opportunities -->
-                        <div class="exec-card">
-                            <h4><i class="fas fa-bullseye"></i> Top Opportunities</h4>
-                            <ol>
-                                {% for opp in strategic_insights.opportunities %}
-                                <li><strong>{{ opp.criterion }}</strong> - {{ "%.0f"|format(opp.pct_below_6) }}% score below 6
-                                    <span class="stat">Potential: +{{ "%.1f"|format(opp.potential_gain) }}pts vs avg competitor</span>
-                                </li>
-                                {% endfor %}
-                                {% if not strategic_insights.opportunities %}
-                                <li class="text-muted">No widespread weaknesses identified (strong market overall)</li>
-                                {% endif %}
-                            </ol>
-                        </div>
-
-                        <!-- Competitive Threats -->
-                        <div class="exec-card">
-                            <h4><i class="fas fa-exclamation-circle"></i> Competitive Threats</h4>
-                            <ul>
-                                {% for threat in strategic_insights.threats %}
-                                <li><strong>{{ threat.competitor }}:</strong> {{ threat.criterion }} ({{ "%.1f"|format(threat.score) }}/10)
-                                    <br><em>Action: {{ threat.action }}</em>
-                                </li>
-                                {% endfor %}
-                                {% if not strategic_insights.threats %}
-                                <li class="text-muted">No standout threats identified (no competitor scoring 9+ on any criterion)</li>
-                                {% endif %}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Overall Rankings -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h2 class="section-title"><i class="fas fa-trophy"></i> Overall Rankings</h2>
-                </div>
-                <div class="col-12">
-                    <table class="ranking-table">
-                        <thead>
-                            <tr>
-                                <th>Rank</th>
-                                <th>Competitor</th>
-                                <th>Overall Score</th>
-                                <th>Competitive Position</th>
-                                <th>Key Differentiator</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for comp in rankings %}
-                            <tr>
-                                <td><span class="rank-badge rank-{% if comp.rank <= 3 %}{{ comp.rank }}{% else %}other{% endif %}">{{ comp.rank }}</span></td>
-                                <td><strong>{{ comp.name }}</strong></td>
-                                <td><span class="score-cell {% if comp.score >= 8 %}score-high{% elif comp.score >= 6 %}score-medium{% else %}score-low{% endif %}">{{ "%.1f"|format(comp.score) }}/10</span></td>
-                                <td><span class="competitive-status status-{{ comp.position_class }}">{{ comp.position }}</span></td>
-                                <td>{{ comp.differentiator }}</td>
-                            </tr>
-                            {% endfor %}
-                            {% if not rankings %}
-                            <tr>
-                                <td colspan="5" class="text-center text-muted">No data available</td>
-                            </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Filter Panel -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="filter-panel">
-                        <h5><i class="fas fa-filter"></i> <strong>Filter & Search</strong></h5>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <label class="form-label">Search Competitor</label>
-                                <input type="text" class="form-control" id="searchCompetitor" placeholder="Type competitor name...">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Minimum Score</label>
-                                <input type="range" class="form-range" id="minScoreFilter" min="0" max="10" step="0.5" value="0">
-                                <div class="text-center"><span id="minScoreValue">0.0</span>/10</div>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Competitive Position</label>
-                                <select class="form-select" id="statusFilter">
-                                    <option value="all">All Status</option>
-                                    <option value="market_leader">Market Leader</option>
-                                    <option value="strong_contender">Strong Contender</option>
-                                    <option value="competitive">Competitive</option>
-                                    <option value="vulnerable">Vulnerable</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="mt-3">
-                            <button class="reset-filters-btn" onclick="resetFilters()">
-                                <i class="fas fa-redo"></i> Reset Filters
-                            </button>
-                            <span class="filter-results-count" id="filterCount">Showing {{ competitors|length }} competitors</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Charts Section -->
-            <div class="row">
-                <div class="col-12">
-                    <h2 class="section-title"><i class="fas fa-chart-area"></i> Visual Analysis</h2>
-                </div>
-
-                <!-- Heatmap -->
-                <div class="col-12">
-                    <div class="chart-container" id="heatmapContainer">
-                        {{ heatmap|safe }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Competitor Details -->
-            <div class="row" id="competitorContainer">
-                <div class="col-12">
-                    <h2 class="section-title"><i class="fas fa-users"></i> Competitor Profiles</h2>
-                </div>
-
-                {% for competitor in competitors %}
-                {% if competitor.success %}
-                <div class="col-12">
-                    <div class="competitor-card"
-                         data-competitor="{{ competitor.site_name|lower }}"
-                         data-score="{{ competitor.overall_score }}"
-                         data-tier="{{ competitor.competitive_position.tier if competitor.competitive_position else '' }}">
-                        <div class="competitor-header">
-                            <div>
-                                <div class="competitor-name">{{ competitor.site_name }}</div>
-                                <small class="text-muted">{{ competitor.url }}</small>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 15px;">
-                                <div class="overall-score">
-                                    {{ "%.1f"|format(competitor.overall_score) }}/10
-                                </div>
-                                <button class="toggle-card-btn{% if loop.index > 3 %} collapsed{% endif %}"
-                                        onclick="toggleCard('{{ competitor.site_name|lower|replace(' ', '-')|replace('.', '-') }}')">
-                                    <i class="fas fa-chevron-up"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Competitive Position -->
-                        {% if competitor.competitive_position %}
-                        <div class="mb-3">
-                            <span class="score-badge
-                                {% if competitor.competitive_position.tier == 'market_leader' %}score-excellent
-                                {% elif competitor.competitive_position.tier == 'strong_contender' %}score-good
-                                {% else %}score-average{% endif %}">
-                                {{ competitor.competitive_position.tier|replace('_', ' ')|title }}
-                            </span>
-                            <p class="mt-2 text-muted">{{ competitor.competitive_position.positioning }}</p>
-                        </div>
-                        {% endif %}
-
-                        <!-- Collapsible Card Body -->
-                        <div class="card-body-collapsible{% if loop.index > 3 %} collapsed{% endif %}"
-                             id="{{ competitor.site_name|lower|replace(' ', '-')|replace('.', '-') }}">
-
-                        {% if competitor.notable_states %}
-                        <div class="notable-states-callout">
-                            <h4>Flagged anomalies (observation pass)</h4>
-                            <ul>
-                                {% for state in competitor.notable_states %}
-                                <li>{{ state|e }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% endif %}
-
-                        <!-- Criteria Scores -->
-                        <div class="mt-3">
-                            <h5><strong>Performance by Criteria</strong></h5>
-                            {% for criterion in competitor.criteria_scores %}
-                            <div class="criterion-row">
-                                <div class="criterion-name">
-                                    {{ criterion.criterion_name }}
-                                    <span class="competitive-status status-{{ criterion.competitive_status }}">
-                                        {{ criterion.competitive_status }}
-                                    </span>
-                                </div>
-                                <div class="criterion-score" style="color:
-                                    {% if criterion.score >= 8 %}#48bb78
-                                    {% elif criterion.score >= 6 %}#38b2ac
-                                    {% elif criterion.score >= 4 %}#ed8936
-                                    {% else %}#f56565{% endif %}">
-                                    {{ "%.1f"|format(criterion.score) }}
-                                </div>
-                            </div>
-                            <div class="progress-bar-custom">
-                                <div class="progress-fill" style="width: {{ criterion.score * 10 }}%"></div>
-                            </div>
-                            {% set evidence = criterion.evidence if criterion.evidence is defined else '' %}
-                            {% if evidence %}
-                            {% if evidence == 'Not documented in observation' %}
-                            <div class="evidence-citation evidence-missing"><strong>Evidence:</strong> {{ evidence|e }}</div>
-                            {% else %}
-                            <div class="evidence-citation"><strong>Evidence:</strong> {{ evidence|e }}</div>
-                            {% endif %}
-                            {% endif %}
-                            {% endfor %}
-                        </div>
-
-                        <!-- Strengths & Vulnerabilities -->
-                        <div class="row mt-4">
-                            {% if competitor.strengths %}
-                            <div class="col-md-6">
-                                <h6><i class="fas fa-trophy text-success"></i> <strong>Competitive Advantages</strong></h6>
-                                <ul>
-                                    {% for strength in competitor.strengths[:3] %}
-                                    <li>{{ strength }}</li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                            {% endif %}
-                            {% if competitor.exploitable_vulnerabilities %}
-                            <div class="col-md-6">
-                                <h6><i class="fas fa-exclamation-triangle text-warning"></i> <strong>Vulnerabilities</strong></h6>
-                                <ul>
-                                    {% for vuln in competitor.exploitable_vulnerabilities[:3] %}
-                                    <li>{{ vuln.vulnerability }}</li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Screenshots (if available) -->
-                        {% if competitor.screenshot_metadata %}
-                        <div class="screenshot-gallery">
-                            {% for screenshot in competitor.screenshot_metadata %}
-                            <div class="screenshot-thumb"
-                                 onclick="openLightbox('{{ screenshot.annotated_filepath if screenshot.annotated_filepath else screenshot.filepath }}', '{{ competitor.site_name }} - {{ screenshot.viewport_name|title }}')">
-                                <img src="{{ screenshot.annotated_filepath if screenshot.annotated_filepath else screenshot.filepath }}"
-                                     alt="{{ screenshot.viewport_name }}"
-                                     title="{{ screenshot.viewport_name|title }} ({{ screenshot.viewport.width }}x{{ screenshot.viewport.height }})">
-                                <div class="overlay">
-                                    <i class="fas fa-search-plus"></i>
-                                </div>
-                                <div class="screenshot-badge">{{ screenshot.viewport_name|title }}</div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-
-                        </div><!-- End card-body-collapsible -->
-                    </div>
-                </div>
-                {% endif %}
-                {% endfor %}
-            </div>
-
-            <!-- Footer -->
-            <div class="footer">
-                <p>Generated by <strong>E-commerce UX Maturity Analysis Agent</strong></p>
-                <p>Report Date: {{ timestamp }}</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Lightbox Modal -->
-    <div id="lightboxModal" class="lightbox-modal" onclick="closeLightbox(event)">
-        <span class="lightbox-close" onclick="closeLightbox(event)">&times;</span>
-        <div class="lightbox-content" onclick="event.stopPropagation()">
-            <img id="lightboxImage" src="" alt="">
-            <div class="lightbox-caption" id="lightboxCaption"></div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Lightbox functionality
-        function openLightbox(imageSrc, caption) {
-            const modal = document.getElementById('lightboxModal');
-            const img = document.getElementById('lightboxImage');
-            const cap = document.getElementById('lightboxCaption');
-
-            img.src = imageSrc;
-            cap.textContent = caption;
-            modal.classList.add('active');
-
-            // Prevent body scroll when lightbox is open
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeLightbox(event) {
-            const modal = document.getElementById('lightboxModal');
-            modal.classList.remove('active');
-            document.body.style.overflow = 'auto';
-            event.stopPropagation();
-        }
-
-        // Close lightbox on ESC key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeLightbox(event);
-            }
-        });
-
-        // Filter functionality
-        const searchInput = document.getElementById('searchCompetitor');
-        const minScoreSlider = document.getElementById('minScoreFilter');
-        const minScoreValue = document.getElementById('minScoreValue');
-        const statusFilter = document.getElementById('statusFilter');
-        const filterCount = document.getElementById('filterCount');
-
-        // Update min score display
-        minScoreSlider.addEventListener('input', function() {
-            minScoreValue.textContent = this.value;
-            applyFilters();
-        });
-
-        // Apply filters on input
-        searchInput.addEventListener('input', applyFilters);
-        statusFilter.addEventListener('change', applyFilters);
-
-        function applyFilters() {
-            const searchTerm = searchInput.value.toLowerCase();
-            const minScore = parseFloat(minScoreSlider.value);
-            const positionFilter = statusFilter.value;
-
-            const cards = document.querySelectorAll('.competitor-card');
-            const rankingRows = document.querySelectorAll('.ranking-table tbody tr');
-            let visibleCount = 0;
-            let visibleCompetitors = [];
-
-            cards.forEach(card => {
-                const competitorName = card.getAttribute('data-competitor');
-                const score = parseFloat(card.getAttribute('data-score'));
-                const tier = card.getAttribute('data-tier');
-
-                // Search filter
-                const matchesSearch = competitorName.includes(searchTerm);
-
-                // Score filter
-                const matchesScore = score >= minScore;
-
-                // Position filter - filter by competitive position tier
-                let matchesPosition = positionFilter === 'all';
-                if (!matchesPosition) {
-                    matchesPosition = tier === positionFilter;
-                }
-
-                // Show/hide card
-                if (matchesSearch && matchesScore && matchesPosition) {
-                    card.parentElement.classList.remove('filtered-out');
-                    visibleCount++;
-                    visibleCompetitors.push(competitorName);
-                } else {
-                    card.parentElement.classList.add('filtered-out');
-                }
-            });
-
-            // Update count
-            filterCount.textContent = `Showing ${visibleCount} of ${cards.length} competitors`;
-
-            // Update charts with filtered data
-            updateCharts(visibleCompetitors);
-        }
-
-        function updateCharts(visibleCompetitors) {
-            // Re-render Plotly charts with only visible competitors
-
-            // If no competitors visible, show all
-            const showAll = !visibleCompetitors || visibleCompetitors.length === 0;
-
-            // Update Heatmap (requires data filtering and redraw)
-            const heatmapDiv = document.getElementById('heatmap');
-            if (heatmapDiv && heatmapDiv.data) {
-                // Store original data on first call
-                if (!window.originalHeatmapData) {
-                    window.originalHeatmapData = JSON.parse(JSON.stringify(heatmapDiv.data));
-                }
-
-                if (showAll) {
-                    // Restore original data
-                    Plotly.react('heatmap', window.originalHeatmapData, heatmapDiv.layout);
-                } else {
-                    // Filter heatmap by y-axis labels (competitors)
-                    const originalData = window.originalHeatmapData[0];
-                    const filteredIndices = [];
-                    const filteredY = [];
-                    const filteredZ = [];
-
-                    originalData.y.forEach((comp, idx) => {
-                        if (visibleCompetitors.includes(comp.toLowerCase())) {
-                            filteredIndices.push(idx);
-                            filteredY.push(comp);
-                            filteredZ.push(originalData.z[idx]);
-                        }
-                    });
-
-                    const filteredData = [{
-                        ...originalData,
-                        y: filteredY,
-                        z: filteredZ
-                    }];
-
-                    Plotly.react('heatmap', filteredData, heatmapDiv.layout);
-                }
-            }
-        }
-
-        function resetFilters() {
-            searchInput.value = '';
-            minScoreSlider.value = 0;
-            minScoreValue.textContent = '0.0';
-            statusFilter.value = 'all';
-            applyFilters();
-        }
-
-        // Initialize filters and build dynamic dropdown
-        document.addEventListener('DOMContentLoaded', function() {
-            const cards = document.querySelectorAll('.competitor-card');
-            const totalCards = cards.length;
-            filterCount.textContent = `Showing ${totalCards} competitors`;
-
-            // Build dynamic filter dropdown based on available tiers
-            const availableTiers = new Map();
-            cards.forEach(card => {
-                const tier = card.getAttribute('data-tier');
-                if (tier) {
-                    availableTiers.set(tier, (availableTiers.get(tier) || 0) + 1);
-                }
-            });
-
-            // Tier labels and display order
-            const tierConfig = [
-                { value: 'market_leader', label: 'Market Leader' },
-                { value: 'strong_contender', label: 'Strong Contender' },
-                { value: 'competitive', label: 'Competitive' },
-                { value: 'vulnerable', label: 'Vulnerable' }
-            ];
-
-            // Rebuild status filter dropdown
-            const statusFilter = document.getElementById('statusFilter');
-            statusFilter.innerHTML = '<option value="all">All Status</option>';
-
-            tierConfig.forEach(tier => {
-                if (availableTiers.has(tier.value)) {
-                    const count = availableTiers.get(tier.value);
-                    const option = document.createElement('option');
-                    option.value = tier.value;
-                    option.textContent = `${tier.label} (${count})`;
-                    statusFilter.appendChild(option);
-                }
-            });
-        });
-
-        // Toggle card collapse/expand
-        function toggleCard(cardId) {
-            const cardBody = document.getElementById(cardId);
-            const button = document.querySelector(`button[onclick="toggleCard('${cardId}')"]`);
-
-            if (cardBody && button) {
-                cardBody.classList.toggle('collapsed');
-                button.classList.toggle('collapsed');
-            }
-        }
-    </script>
-</body>
-</html>"""
+        return str(output_path)
 
     def generate_html_report(
         self,
@@ -1630,7 +739,10 @@ class HTMLReportGenerator:
         output_filename: str = None
     ) -> str:
         """
-        Generate complete HTML report with all visualizations.
+        Generate complete HTML report (legacy method for backward compatibility).
+
+        This method maintains the old behavior for existing code.
+        For new reports, use generate_report_page() instead.
 
         Args:
             results: List of competitor analysis results
@@ -1644,42 +756,129 @@ class HTMLReportGenerator:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_filename = f"competitive_intelligence_{timestamp}.html"
 
-        # Filter successful competitors for display
-        # Must have both success=True AND overall_score to be included
+        # Filter successful competitors
         successful_competitors = [r for r in results if r.get('success') and r.get('overall_score') is not None]
 
-        # Load notable observation states for report callouts
+        if not successful_competitors:
+            raise ValueError("No successful analysis results to generate report.")
+
+        # Attach notable states and prepare screenshots
         successful_competitors = self._attach_notable_states(successful_competitors)
 
-        # Annotate screenshots with findings
-        successful_competitors = self._prepare_annotated_screenshots(successful_competitors)
-
-        # Generate heatmap
-        heatmap = self._create_heatmap(successful_competitors)
-
-        # Get executive summary, strategic insights, and rankings
-        summary = self._get_executive_summary(successful_competitors)
-        strategic_insights = self._get_strategic_insights(successful_competitors)
-        rankings = self._get_rankings_data(successful_competitors)
-
-        # Convert screenshot paths to be relative to HTML file location
-        output_path = self.output_dir / output_filename
-        successful_competitors = self._make_paths_relative(successful_competitors, output_path)
-
-        # Render template
-        template = Template(self._get_html_template())
-        html_content = template.render(
-            analysis_type=analysis_type,
-            timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            heatmap=heatmap,
-            summary=summary,
-            strategic_insights=strategic_insights,
-            rankings=rankings,
-            competitors=successful_competitors
+        # Generate using new template system
+        return self.generate_report_page(
+            results=successful_competitors,
+            report_title=analysis_type,
+            report_short_title=analysis_type.replace(' ', ' '),
+            category="Competitive Analysis",
+            output_filename=output_filename
         )
 
-        # Save to file
+    def generate_report_page(
+        self,
+        results: List[Dict[str, Any]],
+        report_title: str,
+        report_short_title: str,
+        category: str,
+        output_filename: str
+    ) -> str:
+        """
+        Generate a complete report page with all tabs and visualizations.
+
+        Args:
+            results: List of competitor analysis results
+            report_title: Full title for the page
+            report_short_title: Short title for breadcrumb
+            category: Category description
+            output_filename: Output HTML filename
+
+        Returns:
+            Path to generated HTML file
+        """
+        if self.env is None:
+            raise RuntimeError("Template directory not found. Cannot generate report page.")
+
+        # Build/copy CSS before rendering
+        if not self._build_css():
+            self._copy_css()
+
+        template = self.env.get_template('report.html.jinja2')
+        output_path = self.output_dir / output_filename
+
+        # Prepare data
+        successful_results = [r for r in results if r.get('success') and r.get('overall_score')]
+
+        if not successful_results:
+            raise ValueError("No successful analysis results to generate report.")
+
+        # Attach notable states
+        successful_results = self._attach_notable_states(successful_results)
+
+        # Get summary and insights
+        summary = self._get_executive_summary(successful_results)
+        insights = self._get_strategic_insights(successful_results)
+        rankings = self._get_rankings_data(successful_results)
+        evidence = self._get_evidence_data(successful_results)
+
+        # Prepare competitor data
+        competitors, screenshot_sets = self._prepare_competitor_data(successful_results, output_path)
+
+        # Create charts
+        heatmap_fig = self._create_heatmap(successful_results)
+        radar_fig = self._create_radar_chart(successful_results, top_n=3)
+
+        # Convert charts to JSON for template
+        import json
+        radar_json = ''
+        heatmap_json = ''
+
+        # Link report pages back to the project-level output index.
+        project_output_index = Path(__file__).resolve().parents[2] / 'output' / 'index.html'
+        try:
+            index_href = os.path.relpath(project_output_index, output_path.parent)
+        except ValueError:
+            index_href = 'index.html'
+
+        if radar_fig:
+            radar_json = f'''
+            const radarData = {json.dumps(radar_fig.data, cls=PlotlyEncoder)};
+            const radarLayout = {json.dumps(radar_fig.layout, cls=PlotlyEncoder)};
+            Plotly.newPlot('radar', radarData, radarLayout, {{displayModeBar: false}});
+            '''
+
+        if heatmap_fig:
+            heatmap_json = f'''
+            const heatmapData = {json.dumps(heatmap_fig.data, cls=PlotlyEncoder)};
+            const heatmapLayout = {json.dumps(heatmap_fig.layout, cls=PlotlyEncoder)};
+            Plotly.newPlot('heatmap', heatmapData, heatmapLayout, {{displayModeBar: false}});
+            '''
+
+        # Render template
+        html_content = template.render(
+            report_title=report_title,
+            report_short_title=report_short_title,
+            category=category,
+            timestamp=datetime.now().strftime("%B %d, %Y"),
+            competitors=competitors,
+            summary=summary,
+            insights=insights,
+            rankings=rankings,
+            evidence=evidence,
+            index_href=index_href,
+            screenshot_sets_json=json.dumps(screenshot_sets),
+            radar_chart_json=radar_json,
+            heatmap_chart_json=heatmap_json
+        )
+
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
 
         return str(output_path)
+
+
+class PlotlyEncoder(json.JSONEncoder):
+    """Custom JSON encoder for Plotly objects."""
+    def default(self, obj):
+        if hasattr(obj, 'to_plotly_json'):
+            return obj.to_plotly_json()
+        return super().default(obj)

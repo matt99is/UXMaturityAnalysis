@@ -1,0 +1,209 @@
+// ============================================
+// LAYOUT STYLES
+// Grid structure, sidebar, main content, mobile header
+// ============================================
+
+@use 'variables' as *;
+
+// ===== App Grid =====
+.app {
+  display: grid;
+  grid-template-columns: $sidebar-width 1fr;
+  min-height: 100vh;
+  transition: grid-template-columns $transition-normal;
+}
+
+// ===== Sidebar =====
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: $spacing-2xl 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  transition: opacity $transition-normal, transform $transition-normal;
+}
+
+.brand {
+  padding: 0 $spacing-2xl $spacing-3xl;
+  font-size: $font-size-base;
+  font-weight: $font-weight-bold;
+  letter-spacing: $letter-spacing-normal;
+  text-transform: uppercase;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.brand-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--teal-dim);
+  border-radius: $border-radius;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--teal);
+}
+
+.nav {
+  padding: $spacing-lg 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: $spacing-lg;
+}
+
+.nav-label {
+  padding: 0 $spacing-2xl $spacing-lg;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  letter-spacing: $letter-spacing-wide;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: 10px $spacing-2xl;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  transition: all $transition-fast;
+
+  &:hover {
+    color: var(--text);
+  }
+
+  &.active {
+    background: var(--teal-dim);
+    color: var(--teal);
+  }
+
+  i {
+    width: 18px;
+    height: 18px;
+    stroke-width: 1.5;
+  }
+}
+
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 0 $spacing-2xl $spacing-xl;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: $font-size-sm;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: $spacing-lg;
+
+  &:hover {
+    color: var(--text);
+  }
+}
+
+// ===== Main Content =====
+.main {
+  padding: $spacing-4xl $spacing-5xl;
+  max-width: 1200px;
+}
+
+// ===== Breadcrumb =====
+.breadcrumb {
+  font-size: $font-size-sm;
+  color: var(--text-muted);
+  margin-bottom: $spacing-lg;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+// ===== Header Section =====
+.header {
+  margin-bottom: $spacing-4xl;
+}
+
+.title-section {
+  margin-bottom: $spacing-4xl;
+}
+
+.title {
+  font-size: $font-size-3xl;
+  font-weight: $font-weight-bold;
+  letter-spacing: $letter-spacing-tight;
+  line-height: 1.1;
+  margin-bottom: $spacing-sm;
+
+  em {
+    color: var(--teal);
+    font-style: italic;
+  }
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: $font-size-md;
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+}
+
+.last-updated {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: $font-size-sm;
+  color: var(--text-dim);
+}
+
+// ===== Sections =====
+.section {
+  margin-bottom: $spacing-4xl;
+  scroll-margin-top: 80px;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-xl;
+  padding-bottom: $spacing-lg;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-title {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+}
+
+// ===== Theme Toggle =====
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: 10px $spacing-2xl;
+  color: var(--text-muted);
+  font-family: $font-family;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all $transition-fast;
+
+  &:hover {
+    color: var(--text);
+  }
+
+  i {
+    width: 18px;
+    height: 18px;
+    stroke-width: 1.5;
+  }
+}

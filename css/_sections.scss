@@ -1,0 +1,447 @@
+// ============================================
+// SECTIONS
+// Page sections and specialized layouts
+// ============================================
+
+@use 'variables' as *;
+
+// ===== Charts - Responsive Visualizations =====
+.charts {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-xl;
+  background: var(--border);
+  margin-bottom: $spacing-3xl;
+  width: 100%;
+  overflow: hidden;
+}
+
+.chart {
+  background: var(--surface);
+  padding: $spacing-xl;
+  aspect-ratio: 1 / 1;
+  min-height: 400px;
+  max-height: 600px;
+  width: 100%;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+
+  // Smooth transition for all chart properties
+  transition: all $transition-slow ease-in-out;
+
+  // Heatmap specific - wider aspect ratio
+  &#heatmap {
+    aspect-ratio: 4 / 3;
+  }
+}
+
+// Plotly chart container needs to resize properly
+.plotly-graph-div {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// ===== Metrics Grid =====
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  margin-bottom: $spacing-3xl;
+  border-radius: $border-radius;
+  overflow: hidden;
+}
+
+.metric {
+  background: var(--surface);
+  padding: $spacing-xl;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  transition: background $transition-fast;
+}
+
+.metric:hover {
+  background: var(--surface-hover);
+}
+
+.metric-label {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing-wide;
+}
+
+.metric-value {
+  font-size: $font-size-3xl;
+  font-weight: $font-weight-bold;
+  color: var(--text);
+  line-height: 1;
+}
+
+.metric-change {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+
+  &.positive {
+    color: var(--green);
+  }
+
+  &.negative {
+    color: var(--red);
+  }
+
+  &.neutral {
+    color: var(--text-dim);
+  }
+}
+
+// ===== Insights Section =====
+.insights {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-xl;
+  margin-bottom: $spacing-3xl;
+}
+
+.insight {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: $border-radius;
+  padding: $spacing-xl;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--teal) 0%, var(--teal-dim) 100%);
+  }
+}
+
+.insight-title {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: var(--text);
+  margin-bottom: $spacing-md;
+}
+
+.insight-description {
+  font-size: $font-size-base;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+// ===== Historical Section =====
+.historical-section {
+  margin-bottom: $spacing-3xl;
+}
+
+.historical-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-xl;
+}
+
+.historical-title {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+  color: var(--text);
+}
+
+.historical-periods {
+  display: flex;
+  gap: $spacing-lg;
+}
+
+.historical-period {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: $border-radius;
+  padding: $spacing-xl;
+  flex: 1;
+  min-width: 250px;
+}
+
+.period-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-lg;
+}
+
+.period-date {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: var(--text);
+}
+
+.period-badge {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing-wide;
+
+  &.current {
+    background: var(--teal-dim);
+    color: var(--teal);
+  }
+
+  &.archived {
+    background: var(--border);
+    color: var(--text-dim);
+  }
+}
+
+.period-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-md;
+}
+
+.period-stat {
+  text-align: center;
+  padding: $spacing-md;
+  background: var(--bg);
+  border-radius: 8px;
+}
+
+.period-stat-value {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: var(--text);
+  margin-bottom: $spacing-xs;
+}
+
+.period-stat-label {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing-wide;
+}
+
+// ===== Evidence Section =====
+.evidence-section {
+  margin-bottom: $spacing-3xl;
+}
+
+.evidence-section-title {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+  color: var(--text);
+  margin-bottom: $spacing-lg;
+}
+
+.evidence-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.evidence-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: $border-radius;
+  padding: $spacing-lg;
+  display: flex;
+  gap: $spacing-md;
+}
+
+.evidence-type {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing-wide;
+  white-space: nowrap;
+
+  &.ux-audit {
+    background: var(--teal-dim);
+    color: var(--teal);
+  }
+
+  &.user-research {
+    background: var(--purple-dim);
+    color: var(--purple);
+  }
+
+  &.analytics {
+    background: var(--orange-dim);
+    color: var(--orange);
+  }
+}
+
+.evidence-content {
+  flex: 1;
+}
+
+.evidence-title {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: var(--text);
+  margin-bottom: $spacing-xs;
+}
+
+.evidence-description {
+  font-size: $font-size-sm;
+  color: var(--text-muted);
+}
+
+// ===== Rankings =====
+.rankings {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  margin-bottom: $spacing-3xl;
+}
+
+.ranking {
+  display: grid;
+  grid-template-columns: 50px 1fr 80px 100px;
+  gap: $spacing-xl;
+  align-items: center;
+  padding: $spacing-lg $spacing-xl;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: $border-radius;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+
+  &:hover {
+    border-color: var(--teal);
+  }
+}
+
+.rank {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  color: var(--text-dim);
+  text-align: center;
+
+  &.rank-1 {
+    color: var(--amber);
+  }
+
+  &.rank-2 {
+    color: var(--text-muted);
+  }
+
+  &.rank-3 {
+    color: var(--green-dim);
+  }
+}
+
+.name {
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  color: var(--text);
+}
+
+.score {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: var(--text);
+  text-align: right;
+
+  &.high {
+    color: var(--green);
+  }
+
+  &.med {
+    color: var(--amber);
+  }
+}
+
+// ===== Reports List =====
+.reports-section {
+  margin-bottom: $spacing-3xl;
+}
+
+.reports-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.report-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: $border-radius;
+  padding: $spacing-xl;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: $spacing-lg;
+  align-items: center;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+
+  &:hover {
+    border-color: var(--teal);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.report-info {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.report-title {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: var(--text);
+}
+
+.report-meta {
+  display: flex;
+  gap: $spacing-lg;
+  font-size: $font-size-sm;
+  color: var(--text-dim);
+}
+
+.report-meta-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.report-stats {
+  display: flex;
+  gap: $spacing-xl;
+}
+
+.report-stat {
+  text-align: center;
+
+  .stat-label {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wide;
+    margin-bottom: $spacing-xs;
+  }
+
+  .stat-value {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: var(--text);
+  }
+}

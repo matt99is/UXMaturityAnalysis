@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UX Analysis Reports | Index</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <!-- Mobile Header -->
+  <header class="mobile-header">
+    <div class="mobile-brand">
+      <div class="mobile-brand-icon">
+        <i data-lucide="bar-chart-3" style="width: 18px; height: 18px;"></i>
+      </div>
+      UX Analytics
+    </div>
+    <button class="mobile-menu-btn" onclick="toggleMobileNav()">
+      <i data-lucide="menu" style="width: 20px; height: 20px;"></i>
+    </button>
+  </header>
+
+  <!-- Mobile Nav Overlay -->
+  <div class="mobile-nav-overlay" id="mobileNavOverlay" onclick="closeMobileNav()"></div>
+  <nav class="mobile-nav" id="mobileNav">
+    <div class="mobile-nav-header">
+      <span class="mobile-nav-title">Menu</span>
+      <button class="mobile-nav-close" onclick="closeMobileNav()">
+        <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+      </button>
+    </div>
+
+    <div class="mobile-nav-section">
+      <div class="mobile-nav-label">Filter Reports</div>
+      <a href="#" class="mobile-nav-link active" data-filter="all" onclick="closeMobileNav()">
+        <i data-lucide="layers" style="width: 18px; height: 18px;"></i>
+        All Reports
+      </a>
+      <a href="#" class="mobile-nav-link" data-filter="basket" onclick="closeMobileNav()">
+        <i data-lucide="shopping-cart" style="width: 18px; height: 18px;"></i>
+        Basket Pages
+      </a>
+      <a href="#" class="mobile-nav-link" data-filter="product" onclick="closeMobileNav()">
+        <i data-lucide="package" style="width: 18px; height: 18px;"></i>
+        Product Pages
+      </a>
+      <a href="#" class="mobile-nav-link" data-filter="checkout" onclick="closeMobileNav()">
+        <i data-lucide="credit-card" style="width: 18px; height: 18px;"></i>
+        Checkout
+      </a>
+    </div>
+
+    <div class="mobile-nav-section">
+      <button class="mobile-theme-toggle" onclick="toggleTheme(); closeMobileNav();">
+        <i data-lucide="sun" style="width: 18px; height: 18px;" class="theme-icon-sun"></i>
+        <i data-lucide="moon" style="width: 18px; height: 18px;" class="theme-icon-moon"></i>
+        Toggle Theme
+      </button>
+    </div>
+  </nav>
+
+  <div class="app">
+    <aside class="sidebar">
+      {% include 'partials/_brand.jinja2' %}
+
+      <div class="nav">
+        <div class="nav-label">Filter</div>
+        <a href="#" class="nav-link active" data-filter="all">
+          <i data-lucide="layers"></i>
+          All Reports
+        </a>
+        <a href="#" class="nav-link" data-filter="basket">
+          <i data-lucide="shopping-cart"></i>
+          Basket Pages
+        </a>
+        <a href="#" class="nav-link" data-filter="product">
+          <i data-lucide="package"></i>
+          Product Pages
+        </a>
+        <a href="#" class="nav-link" data-filter="checkout">
+          <i data-lucide="credit-card"></i>
+          Checkout
+        </a>
+      </div>
+
+      <div class="nav">
+        <div class="nav-label">Tools</div>
+        <a href="#" class="nav-link">
+          <i data-lucide="plus"></i>
+          New Analysis
+        </a>
+        <a href="#" class="nav-link">
+          <i data-lucide="refresh-cw"></i>
+          Reanalyze
+        </a>
+        <a href="#" class="nav-link">
+          <i data-lucide="download"></i>
+          Export All
+        </a>
+      </div>
+
+      <div class="nav">
+        {% include 'partials/_theme_toggle.jinja2' %}
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="header">
+        <h1 class="title">UX Analysis Reports</h1>
+        <p class="subtitle">Competitive intelligence dashboards for e-commerce UX evaluation</p>
+      </header>
+
+      <div class="reports-list">
+        {% if reports %}
+          {% for report in reports %}
+          <a href="{{ report.filename }}" class="index-report-card" data-type="{{ report.category|lower }}">
+            <div class="report-header">
+              <div>
+                <div class="report-date">{{ report.date }}</div>
+                <h2 class="report-title">{{ report.full_title }}</h2>
+              </div>
+              <div class="report-stats">
+                <div class="stat">
+                  <div class="stat-value">{{ report.avg_score|round(1) }}</div>
+                  <div class="stat-label">Avg</div>
+                </div>
+                <div class="stat">
+                  <div class="stat-value">{{ report.leader_score|round(1) }}</div>
+                  <div class="stat-label">Leader</div>
+                </div>
+                <div class="stat">
+                  <div class="stat-value">{{ report.competitors }}</div>
+                  <div class="stat-label">Sites</div>
+                </div>
+              </div>
+            </div>
+            <p class="report-meta">{{ report.category_description }}</p>
+            <span class="report-link">
+              View Report <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+            </span>
+          </a>
+          {% endfor %}
+        {% else %}
+          <div class="card">
+            <h2 class="report-title">No Reports Yet</h2>
+            <p class="report-meta">Run a new analysis to generate your first report set.</p>
+          </div>
+        {% endif %}
+      </div>
+    </main>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // Theme toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      lucide.createIcons();
+    }
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    lucide.createIcons();
+
+    // Mobile navigation
+    function toggleMobileNav() {
+      const overlay = document.getElementById('mobileNavOverlay');
+      const nav = document.getElementById('mobileNav');
+      overlay.classList.toggle('active');
+      nav.classList.toggle('active');
+      document.body.style.overflow = nav.classList.contains('active') ? 'hidden' : '';
+    }
+
+    function closeMobileNav() {
+      const overlay = document.getElementById('mobileNavOverlay');
+      const nav = document.getElementById('mobileNav');
+      overlay.classList.remove('active');
+      nav.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    // Filter functionality
+    const filterLinks = document.querySelectorAll('[data-filter]');
+    const reportCards = document.querySelectorAll('.index-report-card');
+
+    filterLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const filter = link.getAttribute('data-filter');
+
+        // Update active state
+        filterLinks.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+
+        // Filter cards
+        reportCards.forEach(card => {
+          const type = card.getAttribute('data-type');
+          if (filter === 'all' || type === filter) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

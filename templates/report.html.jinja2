@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ report_title }} | UX Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <a href="{{ index_href }}" class="back-link">
+        <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i>
+        Back to Index
+      </a>
+
+      {% include 'partials/_brand.jinja2' %}
+
+      <div class="nav">
+        <div class="nav-label">This Report</div>
+        <a href="#overview" class="nav-link active">
+          <i data-lucide="layout-dashboard"></i>
+          Overview
+        </a>
+        <a href="#evidence" class="nav-link">
+          <i data-lucide="eye"></i>
+          Evidence
+        </a>
+        <a href="#rankings" class="nav-link">
+          <i data-lucide="trophy"></i>
+          Rankings
+        </a>
+        <a href="#visualizations" class="nav-link">
+          <i data-lucide="pie-chart"></i>
+          Charts
+        </a>
+        <a href="#competitors" class="nav-link">
+          <i data-lucide="users"></i>
+          Competitors
+        </a>
+      </div>
+
+      <div class="nav">
+        <div class="nav-label">Appearance</div>
+        {% include 'partials/_theme_toggle.jinja2' %}
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="breadcrumb">
+        <i data-lucide="chevron-left" style="width: 14px; height: 14px;"></i>
+        <a href="{{ index_href }}" style="color: var(--text-muted); text-decoration: none;">Reports</a>
+        <i data-lucide="chevron-right" style="width: 12px; height: 12px;"></i>
+        {{ report_short_title }}
+      </div>
+
+      <div class="title-section">
+        <h1 class="title">{{ report_title }}</h1>
+        <p class="subtitle">{{ competitors|length }} competitors • {{ category }} • {{ timestamp }}</p>
+      </div>
+
+      <section id="overview" class="section">
+        <div class="section-header">
+          <h2 class="section-title">Executive Summary</h2>
+        </div>
+
+          <div class="metrics">
+            <div class="metric">
+              <div class="metric-label">Competitors</div>
+              <div class="metric-value">{{ competitors|length }}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Average Score</div>
+              <div class="metric-value teal">{{ summary.avg_score|round(1) }}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Market Leader</div>
+              <div class="metric-value green">{{ summary.leader.score|round(1) }}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Score Gap</div>
+              <div class="metric-value amber">{{ (summary.leader.score - summary.weakest.score)|round(1) }}</div>
+            </div>
+          </div>
+
+        <div class="insights">
+          <div class="insight leader">
+            <div class="insight-header">
+              <i data-lucide="crown" class="insight-icon"></i>
+              <span class="insight-type">Market Leader</span>
+            </div>
+            <p class="insight-text">{{ insights.market_leader }}</p>
+          </div>
+          <div class="insight threat">
+            <div class="insight-header">
+              <i data-lucide="alert-triangle" class="insight-icon"></i>
+              <span class="insight-type">Competitive Threat</span>
+            </div>
+            <p class="insight-text">{{ insights.threat }}</p>
+          </div>
+          <div class="insight opp">
+            <div class="insight-header">
+              <i data-lucide="trending-up" class="insight-icon"></i>
+              <span class="insight-type">Market Opportunity</span>
+            </div>
+            <p class="insight-text">{{ insights.opportunity }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="rankings" class="section">
+        <div class="section-header">
+          <h2 class="section-title">Overall Rankings</h2>
+        </div>
+        <div class="rankings">
+          {% for rank_item in rankings %}
+          <div class="ranking">
+            <span class="rank {% if rank_item.rank == 1 %}rank-1{% elif rank_item.rank == 2 %}rank-2{% elif rank_item.rank == 3 %}rank-3{% endif %}">{{ rank_item.rank }}</span>
+            <span class="name">{{ rank_item.name }}</span>
+            <span class="score {% if rank_item.score >= 7.5 %}high{% elif rank_item.score >= 6 %}med{% endif %}">{{ rank_item.score|round(1) }}</span>
+            <span class="tier {% if rank_item.score >= 7.5 %}leader{% elif rank_item.score >= 6.5 %}strong{% else %}competitive{% endif %}">{{ rank_item.tier }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section id="visualizations" class="section">
+        <div class="section-header">
+          <h2 class="section-title">Visual Analysis</h2>
+        </div>
+        <div class="charts">
+          <div class="chart" id="radar"></div>
+          <div class="chart" id="heatmap"></div>
+        </div>
+      </section>
+
+      <section id="competitors" class="section">
+        <div class="section-header">
+          <h2 class="section-title">Competitor Profiles</h2>
+        </div>
+
+        <div class="competitors-list">
+          {% for comp in competitors %}
+          <div class="competitor-card" id="competitor-{{ comp.id }}">
+              <div class="competitor-header" onclick="toggleCompetitor('{{ comp.id }}', event)">
+                <span class="competitor-name">
+                  {{ comp.name }}
+                  <i data-lucide="chevron-down" class="competitor-chevron"></i>
+                </span>
+                <span class="competitor-score {% if comp.overall_score >= 7.5 %}high{% elif comp.overall_score >= 6 %}med{% endif %}">{{ comp.overall_score|round(1) }}</span>
+              </div>
+              <div class="competitor-body" id="competitor-body-{{ comp.id }}">
+                {% if comp.evidence_items %}
+                <div class="evidence-card-inline">
+                  <div class="evidence-card-inline-title">Evidence Highlights</div>
+                  <ul class="evidence-card-inline-list">
+                    {% for evidence_item in comp.evidence_items %}
+                    <li class="evidence-card-inline-item">
+                      <i data-lucide="{{ evidence_item.icon }}" class="evidence-icon {{ evidence_item.icon_class }}"></i>
+                      <span class="evidence-text">{{ evidence_item.text }}</span>
+                    </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+                {% endif %}
+
+                <div class="criteria">
+                  {% for criterion in comp.criteria_scores %}
+                  <div class="criterion">
+                    <span class="criterion-name">{{ criterion.criterion_name }}</span>
+                    <span class="criterion-score {% if criterion.score >= 7 %}high{% elif criterion.score >= 5 %}med{% endif %}">{{ criterion.score|round(1) }}</span>
+                  </div>
+                  {% endfor %}
+                </div>
+
+                {% if comp.screenshots %}
+                <div class="screenshots-section">
+                  <div class="screenshots-label">
+                    <i data-lucide="image" style="width: 14px; height: 14px;"></i>
+                    Screenshots
+                  </div>
+                  <div class="screenshots-grid">
+                    {% for screenshot in comp.screenshots %}
+                    <div class="screenshot-preview" onclick="openLightbox('{{ screenshot.path }}', '{{ comp.id }}')">
+                      <div class="screenshot-image">
+                        <img src="{{ screenshot.path }}" alt="{{ comp.name }} {{ screenshot.viewport_name }}">
+                        {% if screenshot.annotations %}
+                        <div class="annotation-overlay">
+                          {% for annotation in screenshot.annotations %}
+                          <div class="annotation-badge {{ annotation.type }}">
+                            <i data-lucide="{{ annotation.icon }}" style="width: 12px; height: 12px;"></i>
+                            {{ annotation.text }}
+                          </div>
+                          {% endfor %}
+                        </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+                {% endif %}
+              </div>
+          </div>
+          {% endfor %}
+          </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+    <button class="lightbox-close" onclick="closeLightbox(event)">&times;</button>
+    <div class="lightbox-content" onclick="event.stopPropagation()">
+      <div class="lightbox-stage" id="lightbox-stage">
+        <div class="lightbox-image-wrapper" id="lightbox-image-wrapper">
+          <img id="lightbox-img" src="" alt="Full screenshot">
+        </div>
+      </div>
+    </div>
+    <div class="lightbox-zoom-level" id="lightbox-zoom-level">160%</div>
+    <div class="lightbox-zoom-controls">
+      <button class="icon-only" onclick="adjustZoom(-0.2)">
+        <i data-lucide="zoom-out"></i>
+      </button>
+      <button onclick="resetZoomAndPan()">Reset</button>
+      <button class="icon-only" onclick="adjustZoom(0.2)">
+        <i data-lucide="zoom-in"></i>
+      </button>
+    </div>
+    <div class="lightbox-nav">
+      <button onclick="lightboxNav(-1)">
+        <i data-lucide="chevron-left"></i>
+      </button>
+      <button onclick="lightboxNav(1)">
+        <i data-lucide="chevron-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // Theme toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      lucide.createIcons();
+    }
+
+    // Load saved theme on page load
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    lucide.createIcons();
+
+    // Sidebar anchor active state while scrolling
+    const sectionLinks = Array.from(document.querySelectorAll('.nav-link[href^="#"]'));
+    const sectionMap = sectionLinks
+      .map(link => ({ link, section: document.querySelector(link.getAttribute('href')) }))
+      .filter(item => item.section);
+
+    function setActiveSection(sectionId) {
+      sectionLinks.forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === `#${sectionId}`);
+      });
+    }
+
+    sectionLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        const targetId = link.getAttribute('href').replace('#', '');
+        setActiveSection(targetId);
+      });
+    });
+
+    if (sectionMap.length) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter(entry => entry.isIntersecting)
+            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+          if (visible) {
+            setActiveSection(visible.target.id);
+          }
+        },
+        { rootMargin: '-20% 0px -65% 0px', threshold: [0.05, 0.2, 0.4] }
+      );
+
+      sectionMap.forEach(item => observer.observe(item.section));
+      setActiveSection(sectionMap[0].section.id);
+    }
+
+    // Toggle competitor expansion
+    function toggleCompetitor(id, event) {
+      if (event) {
+        event.stopPropagation();
+      }
+      const competitor = document.getElementById('competitor-' + id);
+      competitor.classList.toggle('expanded');
+    }
+
+    // Screenshot data for lightbox navigation
+    const screenshotSets = {{ screenshot_sets_json }};
+
+    let currentSet = [];
+    let currentIndex = 0;
+    let zoomLevel = 1.6;
+    let panX = 0;
+    let panY = 0;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    const MIN_ZOOM = 1;
+    const MAX_ZOOM = 4;
+
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxWrapper = document.getElementById('lightbox-image-wrapper');
+    const lightboxZoomLevel = document.getElementById('lightbox-zoom-level');
+    const lightboxStage = document.getElementById('lightbox-stage');
+
+    function applyLightboxTransform() {
+      lightboxWrapper.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+      lightboxZoomLevel.textContent = `${Math.round(zoomLevel * 100)}%`;
+    }
+
+    function clampZoom(value) {
+      return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
+    }
+
+    function adjustZoom(delta) {
+      zoomLevel = clampZoom(zoomLevel + delta);
+      applyLightboxTransform();
+    }
+
+    function resetZoomAndPan() {
+      zoomLevel = 1.6;
+      panX = 0;
+      panY = 0;
+      applyLightboxTransform();
+    }
+
+    function openLightbox(src, competitorId) {
+      if (competitorId && screenshotSets[competitorId]) {
+        currentSet = screenshotSets[competitorId];
+        currentIndex = currentSet.indexOf(src);
+      }
+
+      lightboxImg.src = src;
+      lightbox.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      resetZoomAndPan();
+    }
+
+    function closeLightbox(e) {
+      if (e) {
+        e.stopPropagation();
+      }
+      lightbox.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    function lightboxNav(direction) {
+      currentIndex += direction;
+      if (currentIndex < 0) currentIndex = currentSet.length - 1;
+      if (currentIndex >= currentSet.length) currentIndex = 0;
+
+      lightboxImg.src = currentSet[currentIndex];
+      resetZoomAndPan();
+    }
+
+    lightboxWrapper.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      isDragging = true;
+      dragStartX = e.clientX - panX;
+      dragStartY = e.clientY - panY;
+      lightboxWrapper.classList.add('dragging');
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      panX = e.clientX - dragStartX;
+      panY = e.clientY - dragStartY;
+      applyLightboxTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+      lightboxWrapper.classList.remove('dragging');
+    });
+
+    lightboxStage.addEventListener('wheel', (e) => {
+      if (!lightbox.classList.contains('active')) return;
+      e.preventDefault();
+      adjustZoom(e.deltaY > 0 ? -0.12 : 0.12);
+    }, { passive: false });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+      if (document.getElementById('lightbox').classList.contains('active')) {
+        if (e.key === 'Escape') closeLightbox(e);
+        if (e.key === 'ArrowLeft') lightboxNav(-1);
+        if (e.key === 'ArrowRight') lightboxNav(1);
+      }
+    });
+
+    // Plotly Charts
+    {{ radar_chart_json|safe }}
+    {{ heatmap_chart_json|safe }}
+
+    // Live chart resize - trigger on window resize
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+      // Debounce for performance
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(function() {
+        const charts = document.querySelectorAll('.plotly-graph-div');
+        charts.forEach(function(chartDiv) {
+          if (chartDiv && typeof Plotly !== 'undefined') {
+            Plotly.Plots.resize(chartDiv);
+          }
+        });
+      }, 100);
+    });
+  </script>
+</body>
+</html>

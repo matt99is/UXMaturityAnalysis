@@ -1,0 +1,518 @@
+// ============================================
+// MOBILE RESPONSIVE STYLES
+// All breakpoints and mobile-specific styles
+// ============================================
+
+@use 'variables' as *;
+
+// ===== Mobile Header =====
+.mobile-header {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: $spacing-lg;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobile-brand {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: $font-size-md;
+  font-weight: $font-weight-bold;
+  letter-spacing: $letter-spacing-normal;
+  text-transform: uppercase;
+}
+
+.mobile-brand-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--teal-dim);
+  border-radius: $border-radius;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--teal);
+}
+
+.mobile-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  border-radius: $border-radius;
+
+  &:hover {
+    background: var(--surface-hover);
+  }
+}
+
+// ===== Mobile Nav Overlay =====
+.mobile-nav-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: $z-mobile-nav-overlay;
+
+  &.active {
+    display: block;
+  }
+}
+
+.mobile-nav {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 280px;
+  height: 100%;
+  background: var(--surface);
+  z-index: $z-mobile-nav-panel;
+  transition: right $transition-slow ease;
+  overflow-y: auto;
+  padding: 20px 0;
+
+  &.active {
+    right: 0;
+  }
+}
+
+.mobile-nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: $spacing-lg;
+}
+
+.mobile-nav-title {
+  font-size: $font-size-base;
+  font-weight: $font-weight-bold;
+  letter-spacing: $letter-spacing-normal;
+  text-transform: uppercase;
+}
+
+.mobile-nav-close {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: $border-radius;
+
+  &:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+  }
+}
+
+.mobile-nav-section {
+  padding: $spacing-lg 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mobile-nav-label {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  letter-spacing: $letter-spacing-wide;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: $spacing-lg;
+}
+
+.mobile-nav-link {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-lg 0;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+
+  &:hover {
+    color: var(--text);
+  }
+
+  &.active {
+    color: var(--teal);
+  }
+}
+
+.mobile-theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-lg 0;
+  color: var(--text-muted);
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+
+  &:hover {
+    color: var(--text);
+  }
+}
+
+// ===== Tablet Breakpoint =====
+@media (max-width: $breakpoint-tablet) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    display: none;
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+
+  .main {
+    padding: $spacing-2xl $spacing-xl;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .charts {
+    grid-template-columns: 1fr;
+  }
+
+  .insights {
+    grid-template-columns: 1fr;
+  }
+
+  .historical-periods {
+    flex-direction: column;
+  }
+}
+
+// ===== Mobile Breakpoint =====
+@media (max-width: $breakpoint-mobile) {
+  .mobile-header {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .main {
+    padding: 20px 16px;
+    padding-top: 16px;
+  }
+
+  .title {
+    font-size: $font-size-2xl;
+  }
+
+  .subtitle {
+    font-size: $font-size-sm;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-sm;
+  }
+
+  // Metrics - single column
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .metric {
+    padding: $spacing-lg;
+  }
+
+  .metric-value {
+    font-size: 24px;
+  }
+
+  // Insights - stacked
+  .insights {
+    grid-template-columns: 1fr;
+  }
+
+  .insight {
+    padding: $spacing-lg;
+  }
+
+  // Charts - smaller with better spacing
+  .charts {
+    overflow-x: auto; // Allow horizontal scroll
+    display: block; // Stack charts on mobile
+  }
+
+  .chart {
+    height: 400px;
+    padding: $spacing-md;
+    min-width: 320px; // Ensure charts don't get too squished
+    width: 100%; // Full width within container
+
+    // Heatmap - extra bottom padding
+    &#heatmap {
+      padding-bottom: $spacing-xl;
+      min-width: 340px; // Heatmap needs more width
+      height: 450px; // More height for labels
+    }
+  }
+
+  // ===== Mobile-First Chart Styles =====
+
+  // Base styles - Mobile first (progressive enhancement)
+  .charts {
+    grid-template-columns: 1fr;
+    gap: 1px;
+
+    // Enable smooth horizontal scroll for small screens
+    @media (max-width: $breakpoint-mobile) {
+      display: flex;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      gap: 0;
+      padding: 0 $spacing-lg;
+
+      // Hide scrollbar but keep functionality
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+
+    .chart {
+      // Mobile base styles
+      padding: $spacing-lg;
+      aspect-ratio: 1 / 1;
+      min-height: 350px;
+      width: 100%;
+
+      // Responsive chart container
+      @media (max-width: $breakpoint-mobile-sm) {
+        // Snap scrolling on very small screens
+        flex: 0 100vw;
+        scroll-snap-align: start;
+        padding: $spacing-md $spacing-lg;
+
+        // Hide labels on very small screens, rely on hover
+        .plotly-graph-div svg {
+          // Only show tick labels on larger screens
+          @media (min-width: $breakpoint-mobile-sm + 1) {
+            text {
+              display: none !important;
+            }
+          }
+        }
+      }
+
+      // Radar chart mobile
+      &#radar {
+        aspect-ratio: 1 / 1;
+        min-height: 350px;
+      }
+
+      // Heatmap mobile
+      &#heatmap {
+        aspect-ratio: 3 / 4;
+        min-height: 400px;
+      }
+    }
+  }
+
+  // Rankings - condensed
+  .ranking {
+    grid-template-columns: 40px 1fr 60px 60px;
+    gap: $spacing-lg;
+    padding: $spacing-lg 16px;
+    font-size: $font-size-sm;
+  }
+
+  .tier {
+    display: none;
+  }
+
+  // Screenshots - single column
+  .screenshots-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .screenshot-preview {
+    height: 200px;
+  }
+
+  // Lightbox mobile adjustments
+  .lightbox-close {
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .lightbox-nav {
+    left: 8px;
+    right: 8px;
+  }
+
+  .lightbox-nav button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .lightbox-zoom-controls {
+    bottom: 16px;
+    gap: 6px;
+    padding: 0 8px;
+    width: calc(100% - 32px);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .lightbox-stage {
+    width: calc(100% - 24px);
+    height: calc(100% - 140px);
+  }
+
+  .lightbox-zoom-controls button {
+    min-width: 40px;
+    height: 40px;
+    font-size: $font-size-xs;
+    padding: 0 8px;
+
+    span {
+      display: none;
+    }
+
+    &:not(.icon-only) {
+      min-width: 40px;
+      padding: 0;
+    }
+  }
+
+  .lightbox-zoom-level {
+    bottom: 70px;
+    padding: 4px 10px;
+    font-size: $font-size-xs;
+  }
+
+  // Historical section
+  .historical-section {
+    padding: $spacing-lg;
+  }
+
+  .historical-periods {
+    flex-direction: column;
+    gap: $spacing-lg;
+  }
+
+  .period-stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-sm;
+  }
+
+  .period-stat {
+    padding: 10px;
+  }
+
+  .period-stat-value {
+    font-size: 18px;
+  }
+
+  // Evidence section
+  .evidence-section {
+    padding: $spacing-lg;
+  }
+
+  .evidence-item {
+    font-size: $font-size-xs;
+  }
+
+  // Report cards
+  .reports-list {
+    gap: $spacing-lg;
+  }
+
+  .report-card {
+    padding: $spacing-lg;
+  }
+
+  .report-title {
+    font-size: $font-size-md;
+  }
+
+  .report-stats {
+    gap: $spacing-lg;
+  }
+
+  .stat-value {
+    font-size: 16px;
+  }
+}
+
+// ===== Small Mobile Breakpoint =====
+@media (max-width: $breakpoint-mobile-sm) {
+  .title {
+    font-size: 24px;
+  }
+
+  .section-title {
+    font-size: 20px;
+  }
+
+  .metric-value {
+    font-size: 20px;
+  }
+
+  .lightbox-zoom-controls {
+    bottom: 12px;
+  }
+
+  // Charts - very small screens - stack and allow horizontal scroll
+  .charts {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; // Smooth scroll on iOS
+    display: block; // Stack charts on very small screens
+  }
+
+  .chart {
+    min-width: 300px;  // Minimum width before scroll
+    height: 350px;
+    width: 100%; // Full width of container
+
+    &#heatmap {
+      height: 400px; // More height for labels
+      min-width: 320px; // Heatmap needs even more width
+    }
+  }
+
+  // Report header - stacked
+  .report-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-lg;
+  }
+
+  .report-stats {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

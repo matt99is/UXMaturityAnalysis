@@ -1,0 +1,17 @@
+// ============================================
+// UX Analysis Reports - Main Stylesheet
+// ============================================
+// This stylesheet imports all modular partials
+// and is compiled to a single output file.
+//
+// Build: sass css/main.scss output/css/main.css --style=compressed
+// Watch: sass --watch css:output/css
+// ============================================
+
+@use 'variables';
+@use 'base';
+@use 'layout';
+@use 'components';
+@use 'sections';
+@use 'competitors';
+@use 'mobile';
