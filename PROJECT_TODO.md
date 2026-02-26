@@ -17,8 +17,8 @@
 
 ## Section 1: CSS Duplication Elimination
 
-- [ ] Audit CSS for duplicate classes and patterns
-- [ ] Consolidate `.chart` styles (appears in _sections.scss and _mobile.scss)
+- [x] Audit CSS for duplicate classes and patterns
+- [x] Consolidate `.chart` styles (appears in _sections.scss and _mobile.scss)
 - [ ] Create shared component patterns for repeated styles
 - [ ] Remove orphaned/dead CSS rules
 - [ ] Test all pages after CSS consolidation
@@ -30,7 +30,7 @@
 
 ## Section 2: Template Component Extraction
 
-- [ ] Audit templates for repeated markup (sidebar, header, theme toggle)
+- [~] Audit templates for repeated markup (sidebar, header, theme toggle)
 - [ ] Create `_sidebar.jinja2` partial
 - [ ] Create `_header.jinja2` partial
 - [ ] Create `_theme_toggle.jinja2` partial
@@ -123,7 +123,15 @@
 
 **CSS Duplication Found:**
 - `.chart` class appears in both `_sections.scss` and `_mobile.scss`
-- Need to determine if intentional (responsive override) or actual duplication
+- **Assessment:** INTENTIONAL - this is correct responsive design pattern
+  - `_sections.scss` contains base styles
+  - `_mobile.scss` contains media query overrides
+  - This is proper SCSS pattern, not duplication
+
+**Other Observations:**
+- No obvious orphaned CSS rules
+- Chart styles use design tokens correctly
+- Theme toggle appears in correct locations
 
 **Key Files Modified Today:**
 - css/_variables.scss (font sizes, accent colors)
