@@ -11,9 +11,9 @@ Updated to support hierarchical audit organization:
 """
 
 import json
-from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 
 class ReportGenerator:
@@ -28,11 +28,7 @@ class ReportGenerator:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
 
-    def save_json_report(
-        self,
-        analysis_results: List[Dict[str, Any]],
-        filename: str = None
-    ) -> str:
+    def save_json_report(self, analysis_results: List[Dict[str, Any]], filename: str = None) -> str:
         """
         Save analysis results as JSON.
 
@@ -52,19 +48,15 @@ class ReportGenerator:
         output_data = {
             "generated_at": datetime.now().isoformat(),
             "total_competitors_analyzed": len(analysis_results),
-            "analyses": analysis_results
+            "analyses": analysis_results,
         }
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(output_data, f, indent=2, ensure_ascii=False)
 
         return str(filepath)
 
-    def save_competitor_analysis(
-        self,
-        competitor_analysis: Dict[str, Any],
-        filepath: Path
-    ) -> str:
+    def save_competitor_analysis(self, competitor_analysis: Dict[str, Any], filepath: Path) -> str:
         """
         Save an individual competitor's analysis to their folder.
 
@@ -79,16 +71,12 @@ class ReportGenerator:
         filepath.parent.mkdir(parents=True, exist_ok=True)
 
         # Save just the analysis data (not wrapped)
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(competitor_analysis, f, indent=2, ensure_ascii=False)
 
         return str(filepath)
 
-    def save_audit_summary(
-        self,
-        summary_data: Dict[str, Any],
-        filepath: Path
-    ) -> str:
+    def save_audit_summary(self, summary_data: Dict[str, Any], filepath: Path) -> str:
         """
         Save audit-level summary metadata.
 
@@ -99,7 +87,7 @@ class ReportGenerator:
         Returns:
             Path to saved file
         """
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(summary_data, f, indent=2, ensure_ascii=False)
 
         return str(filepath)
@@ -108,7 +96,7 @@ class ReportGenerator:
         self,
         analysis_results: List[Dict[str, Any]],
         filename: str = None,
-        filepath: Optional[Path] = None
+        filepath: Optional[Path] = None,
     ) -> str:
         """
         Generate comprehensive markdown report.
@@ -132,7 +120,7 @@ class ReportGenerator:
 
         markdown = self._build_markdown_content(analysis_results)
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             f.write(markdown)
 
         return str(filepath)
@@ -213,10 +201,7 @@ class ReportGenerator:
                 score = criterion.get("score", 0)
 
                 if crit_id not in all_criteria_scores:
-                    all_criteria_scores[crit_id] = {
-                        "name": crit_name,
-                        "scores": []
-                    }
+                    all_criteria_scores[crit_id] = {"name": crit_name, "scores": []}
                 all_criteria_scores[crit_id]["scores"].append(score)
 
         # Calculate adoption rates
@@ -228,9 +213,7 @@ class ReportGenerator:
             data["adoption_rate"] = (len(high_performers) / len(data["scores"])) * 100
 
         sorted_by_adoption = sorted(
-            all_criteria_scores.items(),
-            key=lambda x: x[1]["adoption_rate"],
-            reverse=True
+            all_criteria_scores.items(), key=lambda x: x[1]["adoption_rate"], reverse=True
         )
 
         md += "| Feature Category | Adoption Rate | Avg Score | Market Status |\n"
@@ -389,10 +372,7 @@ class ReportGenerator:
                 score = criterion.get("score", 0)
 
                 if crit_id not in all_criteria_scores:
-                    all_criteria_scores[crit_id] = {
-                        "name": crit_name,
-                        "scores": []
-                    }
+                    all_criteria_scores[crit_id] = {"name": crit_name, "scores": []}
                 all_criteria_scores[crit_id]["scores"].append(score)
 
         # Calculate averages
@@ -402,9 +382,7 @@ class ReportGenerator:
 
         # Sort by average score
         sorted_criteria = sorted(
-            all_criteria_scores.items(),
-            key=lambda x: x[1]["average"],
-            reverse=True
+            all_criteria_scores.items(), key=lambda x: x[1]["average"], reverse=True
         )
 
         md += "**Strongest Areas (across all competitors):**\n\n"
@@ -441,7 +419,9 @@ class ReportGenerator:
         successful = [r for r in results if r.get("success")]
 
         if len(successful) < 2:
-            return "Insufficient data for strategic insights (need at least 2 successful analyses).\n"
+            return (
+                "Insufficient data for strategic insights (need at least 2 successful analyses).\n"
+            )
 
         # Calculate criteria averages
         all_criteria_scores = {}
@@ -452,10 +432,7 @@ class ReportGenerator:
                 score = criterion.get("score", 0)
 
                 if crit_id not in all_criteria_scores:
-                    all_criteria_scores[crit_id] = {
-                        "name": crit_name,
-                        "scores": []
-                    }
+                    all_criteria_scores[crit_id] = {"name": crit_name, "scores": []}
                 all_criteria_scores[crit_id]["scores"].append(score)
 
         for crit_id, data in all_criteria_scores.items():
@@ -464,9 +441,7 @@ class ReportGenerator:
             data["max_score"] = max(data["scores"])
 
         sorted_criteria = sorted(
-            all_criteria_scores.items(),
-            key=lambda x: x[1]["average"],
-            reverse=True
+            all_criteria_scores.items(), key=lambda x: x[1]["average"], reverse=True
         )
 
         md = "### White Space Opportunities\n\n"
@@ -512,7 +487,9 @@ class ReportGenerator:
 
         if high_variance_criteria:
             md += "**Fragmented Features** (high variance = opportunity for standardization):\n\n"
-            for crit_id, data, variance in sorted(high_variance_criteria, key=lambda x: x[2], reverse=True)[:3]:
+            for crit_id, data, variance in sorted(
+                high_variance_criteria, key=lambda x: x[2], reverse=True
+            )[:3]:
                 md += f"- **{data['name']}**: Wide implementation gap (variance: {variance:.1f})\n"
                 md += f"  - Some competitors excel while others underperform\n\n"
         else:
@@ -560,7 +537,9 @@ class ReportGenerator:
                     notable = []
 
         if not notable and isinstance(analysis.get("notable_states"), list):
-            notable = [str(state).strip() for state in analysis["notable_states"] if str(state).strip()]
+            notable = [
+                str(state).strip() for state in analysis["notable_states"] if str(state).strip()
+            ]
 
         if notable:
             md += "**Flagged anomalies (observation pass):**\n"
@@ -622,11 +601,7 @@ class ReportGenerator:
         md = "Visual representation of competitive positioning:\n\n"
 
         # Sort by overall score
-        sorted_results = sorted(
-            successful,
-            key=lambda x: x.get("overall_score", 0),
-            reverse=True
-        )
+        sorted_results = sorted(successful, key=lambda x: x.get("overall_score", 0), reverse=True)
 
         md += "```\n"
         md += "UX MATURITY SPECTRUM\n"
@@ -653,7 +628,9 @@ class ReportGenerator:
         md += f"**Score Spread:** {max(scores) - min(scores):.1f} points\n\n"
 
         if max(scores) - min(scores) > 2:
-            md += "**Insight:** Wide performance gap indicates opportunity to leapfrog competitors.\n"
+            md += (
+                "**Insight:** Wide performance gap indicates opportunity to leapfrog competitors.\n"
+            )
         else:
             md += "**Insight:** Tight competition - small improvements can shift market position.\n"
 
@@ -675,10 +652,7 @@ class ReportGenerator:
                 score = criterion.get("score", 0)
 
                 if crit_id not in all_criteria_scores:
-                    all_criteria_scores[crit_id] = {
-                        "name": crit_name,
-                        "scores": []
-                    }
+                    all_criteria_scores[crit_id] = {"name": crit_name, "scores": []}
                 all_criteria_scores[crit_id]["scores"].append(score)
 
         for crit_id, data in all_criteria_scores.items():
@@ -688,9 +662,7 @@ class ReportGenerator:
             data["adoption_rate"] = (len(high_performers) / len(data["scores"])) * 100
 
         sorted_criteria = sorted(
-            all_criteria_scores.items(),
-            key=lambda x: x[1]["average"],
-            reverse=True
+            all_criteria_scores.items(), key=lambda x: x[1]["average"], reverse=True
         )
 
         md = "### Table Stakes (Must-Have Features)\n\n"

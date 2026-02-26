@@ -1,0 +1,31 @@
+# Pre-commit hooks for Python code quality
+# Run automatically before each git commit
+
+repos:
+  # Black - Python code formatter
+  - repo: https://github.com/psf/black
+    rev: 26.1.0
+    hooks:
+      - id: black
+        language_version: python3.12
+        types: [python]
+        exclude: ^(templates/|\.venv/)  # Skip templates and venv
+
+  # isort - Import organizer
+  - repo: https://github.com/pycqa/isort
+    rev: 8.0.0
+    hooks:
+      - id: isort
+        language_version: python3.12
+        args: ["--profile", "black"]
+        types: [python]
+        exclude: ^(templates/|\.venv/)  # Skip templates and venv
+
+  # flake8 - Style and quality linter
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.1.0
+    hooks:
+      - id: flake8
+        language_version: python3.12
+        types: [python]
+        exclude: ^(templates/|\.venv/)  # Skip templates and venv

@@ -12,13 +12,14 @@ by sites with anti-bot protection (Cloudflare, DataDome, etc.)
 """
 
 import asyncio
+import base64
 import random
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
-from playwright.async_api import async_playwright, Browser, Page
+
+from playwright.async_api import Browser, Page, async_playwright
 from playwright_stealth import Stealth
-import base64
-from datetime import datetime
 
 
 class ScreenshotCapture:
@@ -56,25 +57,22 @@ class ScreenshotCapture:
 
         # Launch args to appear more human-like
         launch_args = [
-            '--disable-blink-features=AutomationControlled',  # Hide automation
-            '--disable-dev-shm-usage',
-            '--disable-setuid-sandbox',
-            '--no-sandbox',
-            '--disable-web-security',
-            '--disable-features=IsolateOrigins,site-per-process',
-            '--window-size=1920,1080',
+            "--disable-blink-features=AutomationControlled",  # Hide automation
+            "--disable-dev-shm-usage",
+            "--disable-setuid-sandbox",
+            "--no-sandbox",
+            "--disable-web-security",
+            "--disable-features=IsolateOrigins,site-per-process",
+            "--window-size=1920,1080",
         ]
 
-        self.browser = await self.playwright.chromium.launch(
-            headless=headless,
-            args=launch_args
-        )
+        self.browser = await self.playwright.chromium.launch(headless=headless, args=launch_args)
 
     async def close_browser(self):
         """Close browser and cleanup."""
         if self.browser:
             await self.browser.close()
-        if hasattr(self, 'playwright'):
+        if hasattr(self, "playwright"):
             await self.playwright.stop()
 
     async def _create_stealth_context(self, viewport_width: int, viewport_height: int):
@@ -91,17 +89,17 @@ class ScreenshotCapture:
         context = await self.browser.new_context(
             viewport={"width": viewport_width, "height": viewport_height},
             user_agent=user_agent,
-            locale='en-US',
-            timezone_id='America/New_York',
+            locale="en-US",
+            timezone_id="America/New_York",
             # Add realistic browser features
             extra_http_headers={
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Accept-Encoding': 'gzip, deflate, br',
-                'DNT': '1',
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1',
-            }
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept-Encoding": "gzip, deflate, br",
+                "DNT": "1",
+                "Connection": "keep-alive",
+                "Upgrade-Insecure-Requests": "1",
+            },
         )
 
         return context
@@ -152,22 +150,22 @@ class ScreenshotCapture:
 
             # Check for blocking indicators in title (more reliable)
             title_indicators = [
-                'access denied',
-                '403 forbidden',
-                'captcha',
-                'challenge',
-                'blocked',
-                'security check',
-                'attention required',
-                'bot detection',
+                "access denied",
+                "403 forbidden",
+                "captcha",
+                "challenge",
+                "blocked",
+                "security check",
+                "attention required",
+                "bot detection",
             ]
 
             for indicator in title_indicators:
                 if indicator in title:
                     return {
-                        'blocked': True,
-                        'reason': f'{indicator.title()} detected',
-                        'title': title,
+                        "blocked": True,
+                        "reason": f"{indicator.title()} detected",
+                        "title": title,
                     }
 
             # Check for strong blocking indicators in content (avoid false positives)
@@ -175,26 +173,26 @@ class ScreenshotCapture:
             content_start = content_lower[:2000]  # First 2000 chars
 
             strong_indicators = [
-                ('access denied</h1>', 'Access Denied error page'),
-                ('403 forbidden</h1>', 'HTTP 403 Forbidden'),
-                ('just a moment', 'Cloudflare challenge'),
-                ('checking your browser', 'Bot challenge page'),
-                ('why have i been blocked', 'Explicit block message'),
-                ('enable javascript and cookies', 'Security check'),
+                ("access denied</h1>", "Access Denied error page"),
+                ("403 forbidden</h1>", "HTTP 403 Forbidden"),
+                ("just a moment", "Cloudflare challenge"),
+                ("checking your browser", "Bot challenge page"),
+                ("why have i been blocked", "Explicit block message"),
+                ("enable javascript and cookies", "Security check"),
             ]
 
             for indicator, reason in strong_indicators:
                 if indicator in content_start:
                     return {
-                        'blocked': True,
-                        'reason': reason,
-                        'title': title,
+                        "blocked": True,
+                        "reason": reason,
+                        "title": title,
                     }
 
-            return {'blocked': False}
+            return {"blocked": False}
 
         except Exception as e:
-            return {'blocked': False, 'error': str(e)}
+            return {"blocked": False, "error": str(e)}
 
     async def capture_url(
         self,
@@ -205,7 +203,7 @@ class ScreenshotCapture:
         full_page: bool = True,
         wait_time: int = 3000,
         custom_output_dir: Path = None,
-        custom_filename: str = None
+        custom_filename: str = None,
     ) -> Dict[str, any]:
         """
         Capture screenshot of a URL with stealth mode.
@@ -259,14 +257,14 @@ class ScreenshotCapture:
 
             # Check if we got blocked
             block_check = await self._check_if_blocked(page)
-            if block_check['blocked']:
+            if block_check["blocked"]:
                 return {
                     "success": False,
                     "error": f"Bot detection: {block_check['reason']}",
                     "blocked": True,
-                    "block_reason": block_check['reason'],
+                    "block_reason": block_check["reason"],
                     "url": url,
-                    "viewport": {"width": viewport_width, "height": viewport_height}
+                    "viewport": {"width": viewport_width, "height": viewport_height},
                 }
 
             # Human-like scrolling (triggers lazy loading, appears natural)
@@ -311,7 +309,7 @@ class ScreenshotCapture:
                 "viewport": {"width": viewport_width, "height": viewport_height},
                 "timestamp": timestamp,
                 "http_status": response.status if response else None,
-                "stealth_mode": self.stealth_mode
+                "stealth_mode": self.stealth_mode,
             }
 
             return result
@@ -321,7 +319,7 @@ class ScreenshotCapture:
                 "success": False,
                 "error": str(e),
                 "url": url,
-                "viewport": {"width": viewport_width, "height": viewport_height}
+                "viewport": {"width": viewport_width, "height": viewport_height},
             }
 
         finally:
@@ -333,7 +331,7 @@ class ScreenshotCapture:
         site_name: str,
         viewports: List[Dict[str, int]],
         full_page: bool = True,
-        custom_output_dir: Path = None
+        custom_output_dir: Path = None,
     ) -> List[Dict[str, any]]:
         """
         Capture screenshots across multiple viewports.
@@ -364,7 +362,7 @@ class ScreenshotCapture:
                 viewport_height=viewport["height"],
                 full_page=full_page,
                 custom_output_dir=custom_output_dir,
-                custom_filename=custom_filename
+                custom_filename=custom_filename,
             )
             result["viewport_name"] = viewport["name"]
             results.append(result)
@@ -380,7 +378,7 @@ class ScreenshotCapture:
         interaction_instructions: str = None,
         timeout: int = 120,
         full_page: bool = True,
-        custom_output_dir: Path = None
+        custom_output_dir: Path = None,
     ) -> List[Dict[str, any]]:
         """
         Capture screenshots with human-in-the-loop interaction.
@@ -404,6 +402,7 @@ class ScreenshotCapture:
         (e.g., adding items to basket, logging in, etc.)
         """
         import sys
+
         from rich.console import Console
         from rich.panel import Panel
 
@@ -414,10 +413,7 @@ class ScreenshotCapture:
             raise RuntimeError("Browser not initialized. Call initialize_browser() first.")
 
         # Create a persistent stealth context (won't close between viewports)
-        context = await self._create_stealth_context(
-            viewports[0]["width"],
-            viewports[0]["height"]
-        )
+        context = await self._create_stealth_context(viewports[0]["width"], viewports[0]["height"])
 
         page = await context.new_page()
 
@@ -453,8 +449,10 @@ class ScreenshotCapture:
             # Check if blocked
             block_check = await self._check_if_blocked(page)
             blocked_instructions = ""
-            if block_check['blocked']:
-                console.print(f"\n[yellow]⚠ Bot Detection Triggered: {block_check['reason']}[/yellow]")
+            if block_check["blocked"]:
+                console.print(
+                    f"\n[yellow]⚠ Bot Detection Triggered: {block_check['reason']}[/yellow]"
+                )
                 blocked_instructions = (
                     "\n[bold red]🤖 BOT DETECTED - Manual Navigation Required:[/bold red]\n"
                     "1. The visible browser may show CAPTCHA or 'Access Denied'\n"
@@ -466,16 +464,18 @@ class ScreenshotCapture:
 
             # Display instructions to user
             console.print()
-            console.print(Panel.fit(
-                f"[bold cyan]{interaction_prompt}[/bold cyan]\n\n"
-                + (f"{interaction_instructions}\n\n" if interaction_instructions else "")
-                + blocked_instructions
-                + ("\n" if blocked_instructions else "")
-                + "[yellow]Browser window is open - interact with the page as needed.[/yellow]\n"
-                + f"[dim]Timeout: {timeout} seconds[/dim]",
-                title=f"🔧 Interactive Mode: {site_name}",
-                border_style="red" if block_check['blocked'] else "cyan"
-            ))
+            console.print(
+                Panel.fit(
+                    f"[bold cyan]{interaction_prompt}[/bold cyan]\n\n"
+                    + (f"{interaction_instructions}\n\n" if interaction_instructions else "")
+                    + blocked_instructions
+                    + ("\n" if blocked_instructions else "")
+                    + "[yellow]Browser window is open - interact with the page as needed.[/yellow]\n"
+                    + f"[dim]Timeout: {timeout} seconds[/dim]",
+                    title=f"🔧 Interactive Mode: {site_name}",
+                    border_style="red" if block_check["blocked"] else "cyan",
+                )
+            )
 
             # Wait for user to press Enter (using synchronous input - simpler and more reliable)
             try:
@@ -484,22 +484,23 @@ class ScreenshotCapture:
                 console.print("[green]✓ Proceeding with capture...[/green]")
             except (EOFError, KeyboardInterrupt):
                 console.print("[yellow]⚠ Input cancelled - skipping capture[/yellow]")
-                return [{
-                    "success": False,
-                    "error": "User cancelled",
-                    "url": url,
-                    "interactive_mode": True
-                }]
+                return [
+                    {
+                        "success": False,
+                        "error": "User cancelled",
+                        "url": url,
+                        "interactive_mode": True,
+                    }
+                ]
 
             # Capture screenshots in all viewports
             results = []
 
             for i, viewport in enumerate(viewports):
                 # Set viewport size
-                await page.set_viewport_size({
-                    "width": viewport["width"],
-                    "height": viewport["height"]
-                })
+                await page.set_viewport_size(
+                    {"width": viewport["width"], "height": viewport["height"]}
+                )
                 await asyncio.sleep(1)  # Let page adjust
 
                 # Generate timestamp (always needed for metadata)
@@ -534,22 +535,19 @@ class ScreenshotCapture:
                     "viewport": {"width": viewport["width"], "height": viewport["height"]},
                     "viewport_name": viewport["name"],
                     "timestamp": timestamp,
-                    "interactive_mode": True
+                    "interactive_mode": True,
                 }
 
                 results.append(result)
-                console.print(f"  [green]✓[/green] Captured {viewport['name']} ({viewport['width']}x{viewport['height']})")
+                console.print(
+                    f"  [green]✓[/green] Captured {viewport['name']} ({viewport['width']}x{viewport['height']})"
+                )
 
             return results
 
         except Exception as e:
             console.print(f"[red]✗ Error during interactive capture: {e}[/red]")
-            return [{
-                "success": False,
-                "error": str(e),
-                "url": url,
-                "interactive_mode": True
-            }]
+            return [{"success": False, "error": str(e), "url": url, "interactive_mode": True}]
 
         finally:
             await context.close()
@@ -567,12 +565,8 @@ class ScreenshotCapture:
         with open(filepath, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
 
-
     def load_screenshots_from_directory(
-        self,
-        screenshots_dir: Path,
-        site_name: str,
-        viewports: List[Dict[str, any]] = None
+        self, screenshots_dir: Path, site_name: str, viewports: List[Dict[str, any]] = None
     ) -> List[Dict[str, any]]:
         """
         Load pre-captured screenshots from a directory (manual mode).
@@ -603,17 +597,21 @@ class ScreenshotCapture:
         screenshots_dir = Path(screenshots_dir)
 
         if not screenshots_dir.exists():
-            return [{
-                "success": False,
-                "error": f"Screenshots directory not found: {screenshots_dir}",
-                "filepath": None,
-                "viewport": "unknown"
-            }]
+            return [
+                {
+                    "success": False,
+                    "error": f"Screenshots directory not found: {screenshots_dir}",
+                    "filepath": None,
+                    "viewport": "unknown",
+                }
+            ]
 
         results = []
 
         # Try to find screenshots with various naming patterns
-        viewport_names = ["desktop", "mobile"] if not viewports else [vp["name"] for vp in viewports]
+        viewport_names = (
+            ["desktop", "mobile"] if not viewports else [vp["name"] for vp in viewports]
+        )
 
         for viewport_name in viewport_names:
             screenshot_found = False
@@ -631,24 +629,28 @@ class ScreenshotCapture:
                 tried_paths.append(str(filepath))
 
                 if filepath.exists():
-                    results.append({
-                        "success": True,
-                        "filepath": str(filepath),
-                        "viewport": viewport_name,
-                        "mode": "manual",
-                        "timestamp": datetime.now().isoformat()
-                    })
+                    results.append(
+                        {
+                            "success": True,
+                            "filepath": str(filepath),
+                            "viewport": viewport_name,
+                            "mode": "manual",
+                            "timestamp": datetime.now().isoformat(),
+                        }
+                    )
                     screenshot_found = True
                     break
 
             if not screenshot_found:
-                results.append({
-                    "success": False,
-                    "error": f"Screenshot not found for {viewport_name}. Tried: {', '.join(possible_names)}",
-                    "filepath": None,
-                    "viewport": viewport_name,
-                    "tried_paths": tried_paths
-                })
+                results.append(
+                    {
+                        "success": False,
+                        "error": f"Screenshot not found for {viewport_name}. Tried: {', '.join(possible_names)}",
+                        "filepath": None,
+                        "viewport": viewport_name,
+                        "tried_paths": tried_paths,
+                    }
+                )
 
         return results
 
@@ -693,10 +695,7 @@ if __name__ == "__main__":
         capturer = ScreenshotCapture()
         await capturer.initialize_browser()
 
-        result = await capturer.capture_url(
-            url="https://www.example.com",
-            site_name="example"
-        )
+        result = await capturer.capture_url(url="https://www.example.com", site_name="example")
 
         print(f"Capture result: {result}")
         await capturer.close_browser()

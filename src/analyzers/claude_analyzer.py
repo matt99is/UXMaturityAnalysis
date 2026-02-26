@@ -5,15 +5,16 @@ EXTENSIBILITY NOTE: This module uses templated prompts that can be
 customized for different analysis types by injecting criteria from config.
 """
 
-import os
 import base64
+import io
+import json
+import os
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
+
 import anthropic
 from anthropic import AsyncAnthropic
-import json
 from PIL import Image
-import io
 
 
 class ClaudeUXAnalyzer:
@@ -35,7 +36,7 @@ class ClaudeUXAnalyzer:
         site_name: str,
         url: str,
         analysis_context: Optional[str] = None,
-        observation: Optional[Dict[str, Any]] = None
+        observation: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Build structured analysis prompt from criteria.
@@ -51,10 +52,10 @@ class ClaudeUXAnalyzer:
             criteria_text += f"\n{i}. **{criterion['name']}** (Weight: {criterion['weight']}/10)\n"
             criteria_text += f"   {criterion['description']}\n\n"
             criteria_text += f"   Evaluate:\n"
-            for point in criterion['evaluation_points']:
+            for point in criterion["evaluation_points"]:
                 criteria_text += f"   - {point}\n"
             criteria_text += f"\n   Benchmarks:\n"
-            for benchmark in criterion['benchmarks']:
+            for benchmark in criterion["benchmarks"]:
                 criteria_text += f"   - {benchmark}\n"
             criteria_text += "\n"
 
@@ -90,8 +91,14 @@ Nothing in notable_states should be silently ignored.
 """
 
         # Determine source description for prompt
-        source_desc = "the visual evidence documented below" if observation else f"the provided screenshot(s) of {site_name}'s page (URL: {url})"
-        evidence_instruction = "\n5. Cite direct evidence from the observation for every score" if observation else ""
+        source_desc = (
+            "the visual evidence documented below"
+            if observation
+            else f"the provided screenshot(s) of {site_name}'s page (URL: {url})"
+        )
+        evidence_instruction = (
+            "\n5. Cite direct evidence from the observation for every score" if observation else ""
+        )
 
         prompt = f"""You are a competitive intelligence analyst specializing in e-commerce UX strategy.
 {context_section}{observation_section}**IMPORTANT: Frame your analysis from a COMPETITIVE INTELLIGENCE perspective, not as recommendations to the competitor.**
@@ -189,11 +196,7 @@ Be specific and reference what you actually see in the screenshots. Think like a
         return prompt
 
     def _build_observation_prompt(
-        self,
-        analysis_name: str,
-        observation_focus: List[str],
-        site_name: str,
-        url: str
+        self, analysis_name: str, observation_focus: List[str], site_name: str, url: str
     ) -> str:
         """
         Build pass 1 observation prompt.
@@ -329,7 +332,7 @@ IMPORTANT JSON FORMATTING RULES:
         analysis_name: str,
         observation_focus: List[str],
         site_name: str,
-        url: str
+        url: str,
     ) -> Dict[str, Any]:
         """
         Pass 1: Send screenshots and return structured visual observations.
@@ -406,12 +409,12 @@ IMPORTANT JSON FORMATTING RULES:
         img = Image.open(image_path)
 
         # Convert RGBA to RGB if needed (JPEG doesn't support transparency)
-        if img.mode == 'RGBA':
-            rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+        if img.mode == "RGBA":
+            rgb_img = Image.new("RGB", img.size, (255, 255, 255))
             rgb_img.paste(img, mask=img.split()[3])  # Use alpha channel as mask
             img = rgb_img
-        elif img.mode != 'RGB':
-            img = img.convert('RGB')
+        elif img.mode != "RGB":
+            img = img.convert("RGB")
 
         # Check dimensions - Claude API has 8000 pixel max per dimension
         MAX_DIMENSION = 8000
@@ -432,14 +435,14 @@ IMPORTANT JSON FORMATTING RULES:
         if file_size <= MAX_FILE_SIZE:
             # Small file - use high quality JPEG (minimal compression)
             buffer = io.BytesIO()
-            img.save(buffer, format='JPEG', quality=95, optimize=True)
+            img.save(buffer, format="JPEG", quality=95, optimize=True)
             buffer.seek(0)
             return base64.b64encode(buffer.read()).decode("utf-8")
 
         # Large file - try progressively lower quality until under limit
         for quality in [85, 75, 65, 55, 45]:
             buffer = io.BytesIO()
-            img.save(buffer, format='JPEG', quality=quality, optimize=True)
+            img.save(buffer, format="JPEG", quality=quality, optimize=True)
             compressed_size = buffer.tell()
 
             if compressed_size <= MAX_SIZE_BYTES:
@@ -453,9 +456,10 @@ IMPORTANT JSON FORMATTING RULES:
         img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
         buffer = io.BytesIO()
-        img.save(buffer, format='JPEG', quality=70, optimize=True)
+        img.save(buffer, format="JPEG", quality=70, optimize=True)
         buffer.seek(0)
         return base64.b64encode(buffer.read()).decode("utf-8")
+
     async def analyze_screenshots(
         self,
         screenshot_paths: List[str],
@@ -464,7 +468,7 @@ IMPORTANT JSON FORMATTING RULES:
         site_name: str,
         url: str,
         analysis_context: Optional[str] = None,
-        observation: Optional[Dict[str, Any]] = None
+        observation: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Analyze UX from screenshots using Claude.
@@ -486,7 +490,9 @@ IMPORTANT JSON FORMATTING RULES:
         """
 
         # Build the analysis prompt
-        prompt = self._build_analysis_prompt(criteria, analysis_name, site_name, url, analysis_context, observation)
+        prompt = self._build_analysis_prompt(
+            criteria, analysis_name, site_name, url, analysis_context, observation
+        )
 
         if observation:
             # Pass 2: text-only - observation replaces images
@@ -499,14 +505,16 @@ IMPORTANT JSON FORMATTING RULES:
                 if not Path(path).exists():
                     continue
                 image_data = self._load_image_as_base64(path)
-                image_content.append({
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": "image/jpeg",
-                        "data": image_data
+                image_content.append(
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/jpeg",
+                            "data": image_data,
+                        },
                     }
-                })
+                )
             content = image_content + [{"type": "text", "text": prompt}]
 
         try:
@@ -514,10 +522,7 @@ IMPORTANT JSON FORMATTING RULES:
             response = await self.client.messages.create(
                 model=self.model,
                 max_tokens=6000,  # Reduced to stay within 8,000 output tokens/min rate limit
-                messages=[{
-                    "role": "user",
-                    "content": content
-                }]
+                messages=[{"role": "user", "content": content}],
             )
 
             # Extract response text
@@ -530,9 +535,11 @@ IMPORTANT JSON FORMATTING RULES:
                 # Save malformed response to file for debugging
                 debug_path = Path("output/debug_malformed_json")
                 debug_path.mkdir(parents=True, exist_ok=True)
-                timestamp = Path(screenshot_paths[0]).parent.parent.name if screenshot_paths else "unknown"
+                timestamp = (
+                    Path(screenshot_paths[0]).parent.parent.name if screenshot_paths else "unknown"
+                )
                 debug_file = debug_path / f"{site_name.replace(' ', '_')}_{timestamp}.txt"
-                with open(debug_file, 'w') as f:
+                with open(debug_file, "w") as f:
                     f.write(f"=== MALFORMED JSON DEBUG ===\n")
                     f.write(f"Site: {site_name}\n")
                     f.write(f"Error: {json_error}\n\n")
@@ -544,13 +551,10 @@ IMPORTANT JSON FORMATTING RULES:
             analysis_result["screenshots_analyzed"] = screenshot_paths
             analysis_result["model_used"] = self.model
 
-            return {
-                "success": True,
-                "analysis": analysis_result
-            }
+            return {"success": True, "analysis": analysis_result}
 
         except json.JSONDecodeError as e:
-            error_pos = getattr(e, 'pos', None)
+            error_pos = getattr(e, "pos", None)
             pos_hint = f" at position {error_pos}" if error_pos is not None else ""
             error_msg = (
                 f"Failed to parse Claude response as JSON: {e}{pos_hint}. "
@@ -559,14 +563,11 @@ IMPORTANT JSON FORMATTING RULES:
             return {
                 "success": False,
                 "error": error_msg,
-                "raw_response": response_text if 'response_text' in locals() else None
+                "raw_response": response_text if "response_text" in locals() else None,
             }
 
         except Exception as e:
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def analyze_screenshots_sync(
         self,
@@ -576,7 +577,7 @@ IMPORTANT JSON FORMATTING RULES:
         site_name: str,
         url: str,
         analysis_context: Optional[str] = None,
-        observation: Optional[Dict[str, Any]] = None
+        observation: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Synchronous version of analyze_screenshots for easier integration.
@@ -629,8 +630,7 @@ class ComparativeAnalyzer(ClaudeUXAnalyzer):
     """
 
     async def compare_competitors(
-        self,
-        competitor_analyses: List[Dict[str, Any]]
+        self, competitor_analyses: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """
         Generate comparative insights across multiple competitor analyses.
@@ -646,6 +646,5 @@ class ComparativeAnalyzer(ClaudeUXAnalyzer):
         """
         # Future implementation
         raise NotImplementedError(
-            "Comparative analysis across competitors will be implemented "
-            "in future iteration."
+            "Comparative analysis across competitors will be implemented " "in future iteration."
         )

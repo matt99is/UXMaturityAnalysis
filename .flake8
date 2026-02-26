@@ -1,0 +1,24 @@
+# Allow longer lines than default PEP 8 (79 chars)
+# This project has many JSON strings and data structures
+max-line-length = 100
+
+# Exclude specific files
+exclude =
+    .venv,
+    __pycache__,
+    _build,
+    build,
+    dist,
+    *.egg-info,
+
+# Ignore specific warnings
+per-file-ignores =
+    # Ignore __init__.py files that may only have docstring
+    __init__.py
+
+# Ignore specific error codes
+ignore =
+    # Ignore import errors for type stubs
+    E501,
+    # Allow redefinition in type stubs
+    F811,

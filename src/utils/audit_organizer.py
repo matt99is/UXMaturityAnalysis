@@ -13,12 +13,12 @@ Directory structure:
                                         /_audit_summary.json
 """
 
-import re
 import json
+import re
+from datetime import datetime
 from html import escape
 from pathlib import Path
-from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 
@@ -32,7 +32,7 @@ def get_resources_config() -> Optional[Dict]:
     try:
         config_path = Path(__file__).parent.parent.parent / "resources_integration_config.json"
         if config_path.exists():
-            with open(config_path, 'r') as f:
+            with open(config_path, "r") as f:
                 return json.load(f)
     except Exception:
         pass
@@ -72,9 +72,7 @@ def _first_existing_file(audit_root: Path, candidates: List[str], suffix: str) -
         if (audit_root / candidate).exists():
             return candidate
 
-    matches = sorted(
-        [p.name for p in audit_root.iterdir() if p.is_file() and p.suffix == suffix]
-    )
+    matches = sorted([p.name for p in audit_root.iterdir() if p.is_file() and p.suffix == suffix])
     return matches[0] if matches else None
 
 
@@ -126,7 +124,9 @@ def _compute_score_stats(audit_dir: Path) -> tuple[Optional[float], Optional[flo
     return avg_score, leader_score
 
 
-def _extract_scores_from_report_html(report_path: Path) -> tuple[Optional[float], Optional[float], int]:
+def _extract_scores_from_report_html(
+    report_path: Path,
+) -> tuple[Optional[float], Optional[float], int]:
     """Estimate score stats from generated report HTML content."""
     if not report_path.exists():
         return None, None, 0
@@ -157,7 +157,9 @@ def _extract_scores_from_report_html(report_path: Path) -> tuple[Optional[float]
     return avg_score, leader_score, len(scores)
 
 
-def _extract_scores_from_legacy_json(report_json: Path) -> tuple[Optional[float], Optional[float], Optional[int]]:
+def _extract_scores_from_legacy_json(
+    report_json: Path,
+) -> tuple[Optional[float], Optional[float], Optional[int]]:
     """Extract score stats from legacy ux_analysis_*.json reports."""
     if not report_json.exists():
         return None, None, None
@@ -267,7 +269,9 @@ def collect_legacy_runs(output_root: Path) -> List[Dict[str, Any]]:
     # Enrich legacy runs with score/competitor stats when possible.
     for run in run_map.values():
         if run.get("json_report"):
-            avg_score, leader_score, total = _extract_scores_from_legacy_json(output_root / run["json_report"])
+            avg_score, leader_score, total = _extract_scores_from_legacy_json(
+                output_root / run["json_report"]
+            )
             if run.get("avg_score") is None:
                 run["avg_score"] = avg_score
             if run.get("leader_score") is None:
@@ -275,8 +279,12 @@ def collect_legacy_runs(output_root: Path) -> List[Dict[str, Any]]:
             if run.get("total") is None and total is not None:
                 run["total"] = total
 
-        if run.get("html_report") and (run.get("avg_score") is None or run.get("leader_score") is None):
-            avg_score, leader_score, count = _extract_scores_from_report_html(output_root / run["html_report"])
+        if run.get("html_report") and (
+            run.get("avg_score") is None or run.get("leader_score") is None
+        ):
+            avg_score, leader_score, count = _extract_scores_from_report_html(
+                output_root / run["html_report"]
+            )
             if run.get("avg_score") is None:
                 run["avg_score"] = avg_score
             if run.get("leader_score") is None:
@@ -286,7 +294,11 @@ def collect_legacy_runs(output_root: Path) -> List[Dict[str, Any]]:
 
         if run.get("successful") is None and run.get("total") is not None:
             run["successful"] = run["total"]
-        if run.get("failed") is None and run.get("total") is not None and run.get("successful") is not None:
+        if (
+            run.get("failed") is None
+            and run.get("total") is not None
+            and run.get("successful") is not None
+        ):
             run["failed"] = max(0, int(run["total"]) - int(run["successful"]))
 
     return [run_map[key] for key in sorted(run_map.keys(), reverse=True)]
@@ -306,7 +318,9 @@ def collect_audit_runs(audits_root: Path) -> List[Dict[str, Any]]:
         return []
 
     runs: List[Dict[str, Any]] = []
-    audit_dirs = sorted([d for d in audits_root.iterdir() if d.is_dir()], key=lambda p: p.name, reverse=True)
+    audit_dirs = sorted(
+        [d for d in audits_root.iterdir() if d.is_dir()], key=lambda p: p.name, reverse=True
+    )
 
     for audit_dir in audit_dirs:
         summary = _load_summary(get_audit_summary_path(audit_dir))
@@ -335,7 +349,9 @@ def collect_audit_runs(audits_root: Path) -> List[Dict[str, Any]]:
             {
                 "folder": audit_dir.name,
                 "date": summary.get("audit_date", date_from_name),
-                "analysis_type": summary.get("analysis_type_name") or summary.get("analysis_type") or type_from_name,
+                "analysis_type": summary.get("analysis_type_name")
+                or summary.get("analysis_type")
+                or type_from_name,
                 "analysis_type_key": summary.get("analysis_type") or type_from_name,
                 "total": summary.get("total_competitors"),
                 "successful": summary.get("successful_analyses"),
@@ -577,34 +593,31 @@ def extract_competitor_name(url: str) -> str:
         hostname = parsed.netloc or parsed.path
 
         # Remove common prefixes (www., m., shop., store., etc.)
-        hostname = re.sub(r'^(www\.|m\.|shop\.|store\.|secure\.)', '', hostname)
+        hostname = re.sub(r"^(www\.|m\.|shop\.|store\.|secure\.)", "", hostname)
 
         # Get the main domain name (before first dot)
         # e.g., amazon.com → amazon, zooplus.co.uk → zooplus
-        parts = hostname.split('.')
+        parts = hostname.split(".")
         if parts:
             name = parts[0]
         else:
             name = hostname
 
         # Sanitize: lowercase, remove special characters, keep alphanumeric and hyphens
-        name = re.sub(r'[^a-z0-9-]', '', name.lower())
+        name = re.sub(r"[^a-z0-9-]", "", name.lower())
 
         # Remove leading/trailing hyphens
-        name = name.strip('-')
+        name = name.strip("-")
 
-        return name if name else 'competitor'
+        return name if name else "competitor"
 
     except Exception:
         # Fallback: use a generic name
-        return 'competitor'
+        return "competitor"
 
 
 def create_audit_directory_structure(
-    base_dir: str,
-    analysis_type: str,
-    competitors: List[Dict[str, str]],
-    audit_date: str = None
+    base_dir: str, analysis_type: str, competitors: List[Dict[str, str]], audit_date: str = None
 ) -> Dict[str, Path]:
     """
     Create the hierarchical directory structure for an audit run.
@@ -640,7 +653,7 @@ def create_audit_directory_structure(
     # Create competitor subfolders
     competitor_paths = {}
     for competitor in competitors:
-        comp_name = competitor['name']
+        comp_name = competitor["name"]
         comp_root = audit_root / comp_name
         comp_screenshots = comp_root / "screenshots"
 
@@ -648,22 +661,12 @@ def create_audit_directory_structure(
         comp_root.mkdir(exist_ok=True)
         comp_screenshots.mkdir(exist_ok=True)
 
-        competitor_paths[comp_name] = {
-            'root': comp_root,
-            'screenshots': comp_screenshots
-        }
+        competitor_paths[comp_name] = {"root": comp_root, "screenshots": comp_screenshots}
 
-    return {
-        'audit_root': audit_root,
-        'competitors': competitor_paths
-    }
+    return {"audit_root": audit_root, "competitors": competitor_paths}
 
 
-def get_screenshot_path(
-    competitor_paths: Dict,
-    competitor_name: str,
-    viewport_name: str
-) -> Path:
+def get_screenshot_path(competitor_paths: Dict, competitor_name: str, viewport_name: str) -> Path:
     """
     Get the path for a screenshot file.
 
@@ -678,15 +681,12 @@ def get_screenshot_path(
     if competitor_name not in competitor_paths:
         raise ValueError(f"Competitor '{competitor_name}' not in paths")
 
-    screenshots_dir = competitor_paths[competitor_name]['screenshots']
+    screenshots_dir = competitor_paths[competitor_name]["screenshots"]
     filename = f"{viewport_name}.png"
     return screenshots_dir / filename
 
 
-def get_analysis_path(
-    competitor_paths: Dict,
-    competitor_name: str
-) -> Path:
+def get_analysis_path(competitor_paths: Dict, competitor_name: str) -> Path:
     """
     Get the path for a competitor's analysis JSON file.
 
@@ -700,7 +700,7 @@ def get_analysis_path(
     if competitor_name not in competitor_paths:
         raise ValueError(f"Competitor '{competitor_name}' not in paths")
 
-    comp_root = competitor_paths[competitor_name]['root']
+    comp_root = competitor_paths[competitor_name]["root"]
     return comp_root / "analysis.json"
 
 
@@ -737,7 +737,7 @@ def generate_audit_summary(
     successful_count: int,
     failed_count: int,
     start_time: datetime,
-    end_time: datetime
+    end_time: datetime,
 ) -> Dict:
     """
     Generate audit summary metadata.
@@ -765,13 +765,7 @@ def generate_audit_summary(
         "successful_analyses": successful_count,
         "failed_analyses": failed_count,
         "runtime_seconds": round(runtime_seconds, 2),
-        "competitors": [
-            {
-                "name": comp['name'],
-                "url": comp['url']
-            }
-            for comp in competitors
-        ]
+        "competitors": [{"name": comp["name"], "url": comp["url"]} for comp in competitors],
     }
 
 

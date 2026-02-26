@@ -8,10 +8,11 @@ Adds visual annotations to screenshots highlighting key findings:
 - Text labels explaining findings
 """
 
-from PIL import Image, ImageDraw, ImageFont
-from pathlib import Path
-from typing import List, Dict, Any, Tuple
 import os
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
+
+from PIL import Image, ImageDraw, ImageFont
 
 
 class ScreenshotAnnotator:
@@ -22,10 +23,10 @@ class ScreenshotAnnotator:
     def __init__(self):
         # Color scheme for annotations
         self.colors = {
-            'advantage': '#48bb78',      # Green
-            'vulnerability': '#f56565',  # Red
-            'parity': '#4299e1',        # Blue
-            'highlight': '#fbbf24'      # Yellow
+            "advantage": "#48bb78",  # Green
+            "vulnerability": "#f56565",  # Red
+            "parity": "#4299e1",  # Blue
+            "highlight": "#fbbf24",  # Yellow
         }
 
         # Try to load a system font, fall back to default
@@ -34,10 +35,10 @@ class ScreenshotAnnotator:
     def _load_font(self, size: int = 24) -> ImageFont:
         """Load system font or fall back to default."""
         font_paths = [
-            '/System/Library/Fonts/Helvetica.ttc',
-            '/System/Library/Fonts/Supplemental/Arial.ttf',
-            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-            '/usr/share/fonts/TTF/DejaVuSans.ttf'
+            "/System/Library/Fonts/Helvetica.ttc",
+            "/System/Library/Fonts/Supplemental/Arial.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/TTF/DejaVuSans.ttf",
         ]
 
         for font_path in font_paths:
@@ -51,10 +52,7 @@ class ScreenshotAnnotator:
         return ImageFont.load_default()
 
     def annotate_screenshot(
-        self,
-        screenshot_path: str,
-        annotations: List[Dict[str, Any]],
-        output_path: str = None
+        self, screenshot_path: str, annotations: List[Dict[str, Any]], output_path: str = None
     ) -> str:
         """
         Add annotations to a screenshot.
@@ -72,7 +70,7 @@ class ScreenshotAnnotator:
         """
         # Load image
         img = Image.open(screenshot_path)
-        draw = ImageDraw.Draw(img, 'RGBA')
+        draw = ImageDraw.Draw(img, "RGBA")
 
         # Calculate scaling for mobile vs desktop
         is_mobile = img.width < 500
@@ -81,40 +79,35 @@ class ScreenshotAnnotator:
         # Add overall badges at top
         badge_y = 20
         for annotation in annotations:
-            if annotation.get('region') is None:
+            if annotation.get("region") is None:
                 # This is an overall badge
                 self._draw_badge(
-                    draw, img,
-                    annotation.get('label', ''),
-                    annotation.get('type', 'highlight'),
-                    20, badge_y,
-                    scale
+                    draw,
+                    img,
+                    annotation.get("label", ""),
+                    annotation.get("type", "highlight"),
+                    20,
+                    badge_y,
+                    scale,
                 )
                 badge_y += int(60 * scale)
 
         # Add region-specific annotations
         for annotation in annotations:
-            if annotation.get('region'):
-                x, y, w, h = annotation['region']
-                ann_type = annotation.get('type', 'highlight')
-                label = annotation.get('label', '')
+            if annotation.get("region"):
+                x, y, w, h = annotation["region"]
+                ann_type = annotation.get("type", "highlight")
+                label = annotation.get("label", "")
 
                 # Draw bounding box
                 self._draw_box(
-                    draw,
-                    (x, y, x + w, y + h),
-                    self.colors[ann_type],
-                    width=int(4 * scale)
+                    draw, (x, y, x + w, y + h), self.colors[ann_type], width=int(4 * scale)
                 )
 
                 # Draw label
                 if label:
                     self._draw_label(
-                        draw,
-                        label,
-                        x, y - int(35 * scale),
-                        self.colors[ann_type],
-                        scale
+                        draw, label, x, y - int(35 * scale), self.colors[ann_type], scale
                     )
 
         # Save annotated image
@@ -122,15 +115,11 @@ class ScreenshotAnnotator:
             path = Path(screenshot_path)
             output_path = str(path.parent / f"{path.stem}_annotated{path.suffix}")
 
-        img.save(output_path, 'PNG', optimize=True)
+        img.save(output_path, "PNG", optimize=True)
         return output_path
 
     def _draw_box(
-        self,
-        draw: ImageDraw,
-        coords: Tuple[int, int, int, int],
-        color: str,
-        width: int = 4
+        self, draw: ImageDraw, coords: Tuple[int, int, int, int], color: str, width: int = 4
     ):
         """Draw a colored bounding box."""
         # Convert hex to RGB
@@ -141,17 +130,11 @@ class ScreenshotAnnotator:
             draw.rectangle(
                 [coords[0] + i, coords[1] + i, coords[2] - i, coords[3] - i],
                 outline=rgb + (200,),  # Add alpha
-                width=1
+                width=1,
             )
 
     def _draw_label(
-        self,
-        draw: ImageDraw,
-        text: str,
-        x: int,
-        y: int,
-        color: str,
-        scale: float = 1.0
+        self, draw: ImageDraw, text: str, x: int, y: int, color: str, scale: float = 1.0
     ):
         """Draw text label with background."""
         rgb = self._hex_to_rgb(color)
@@ -169,16 +152,11 @@ class ScreenshotAnnotator:
         draw.rectangle(
             [x, y, x + text_width + padding * 2, y + text_height + padding * 2],
             fill=rgb + (230,),  # Semi-transparent background
-            outline=rgb + (255,)
+            outline=rgb + (255,),
         )
 
         # Draw text
-        draw.text(
-            (x + padding, y + padding),
-            text,
-            fill=(255, 255, 255, 255),
-            font=font
-        )
+        draw.text((x + padding, y + padding), text, fill=(255, 255, 255, 255), font=font)
 
     def _draw_badge(
         self,
@@ -188,10 +166,10 @@ class ScreenshotAnnotator:
         badge_type: str,
         x: int,
         y: int,
-        scale: float = 1.0
+        scale: float = 1.0,
     ):
         """Draw an overall badge (not tied to specific region)."""
-        color = self.colors.get(badge_type, self.colors['highlight'])
+        color = self.colors.get(badge_type, self.colors["highlight"])
         rgb = self._hex_to_rgb(color)
 
         font_size = int(18 * scale)
@@ -216,23 +194,14 @@ class ScreenshotAnnotator:
             radius,
             fill=rgb + (240,),
             outline=rgb + (255,),
-            width=2
+            width=2,
         )
 
         # Draw text
-        draw.text(
-            (x + padding_x, y + padding_y),
-            text,
-            fill=(255, 255, 255, 255),
-            font=font
-        )
+        draw.text((x + padding_x, y + padding_y), text, fill=(255, 255, 255, 255), font=font)
 
     def _draw_rounded_rectangle(
-        self,
-        draw: ImageDraw,
-        coords: List[Tuple[int, int]],
-        radius: int,
-        **kwargs
+        self, draw: ImageDraw, coords: List[Tuple[int, int]], radius: int, **kwargs
     ):
         """Draw a rounded rectangle."""
         x1, y1 = coords[0]
@@ -250,13 +219,11 @@ class ScreenshotAnnotator:
 
     def _hex_to_rgb(self, hex_color: str) -> Tuple[int, int, int]:
         """Convert hex color to RGB tuple."""
-        hex_color = hex_color.lstrip('#')
-        return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        hex_color = hex_color.lstrip("#")
+        return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
 
     def create_annotations_from_analysis(
-        self,
-        criteria_scores: List[Dict[str, Any]],
-        top_n: int = 3
+        self, criteria_scores: List[Dict[str, Any]], top_n: int = 3
     ) -> List[Dict[str, Any]]:
         """
         Auto-generate annotations from analysis results.
@@ -271,23 +238,29 @@ class ScreenshotAnnotator:
         annotations = []
 
         # Sort by competitive status
-        advantages = [c for c in criteria_scores if c.get('competitive_status') == 'advantage']
-        vulnerabilities = [c for c in criteria_scores if c.get('competitive_status') == 'vulnerability']
+        advantages = [c for c in criteria_scores if c.get("competitive_status") == "advantage"]
+        vulnerabilities = [
+            c for c in criteria_scores if c.get("competitive_status") == "vulnerability"
+        ]
 
         # Add top advantages as badges
-        for criterion in sorted(advantages, key=lambda x: x.get('score', 0), reverse=True)[:top_n]:
-            annotations.append({
-                'type': 'advantage',
-                'region': None,  # Overall badge
-                'label': f"✓ {criterion['criterion_name']}: {criterion['score']:.1f}/10"
-            })
+        for criterion in sorted(advantages, key=lambda x: x.get("score", 0), reverse=True)[:top_n]:
+            annotations.append(
+                {
+                    "type": "advantage",
+                    "region": None,  # Overall badge
+                    "label": f"✓ {criterion['criterion_name']}: {criterion['score']:.1f}/10",
+                }
+            )
 
         # Add top vulnerabilities as badges
-        for criterion in sorted(vulnerabilities, key=lambda x: x.get('score', 0))[:top_n]:
-            annotations.append({
-                'type': 'vulnerability',
-                'region': None,
-                'label': f"✗ {criterion['criterion_name']}: {criterion['score']:.1f}/10"
-            })
+        for criterion in sorted(vulnerabilities, key=lambda x: x.get("score", 0))[:top_n]:
+            annotations.append(
+                {
+                    "type": "vulnerability",
+                    "region": None,
+                    "label": f"✗ {criterion['criterion_name']}: {criterion['score']:.1f}/10",
+                }
+            )
 
         return annotations
