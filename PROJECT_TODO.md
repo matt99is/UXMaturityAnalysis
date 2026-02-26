@@ -30,13 +30,14 @@
 
 ## Section 2: Template Component Extraction
 
-- [~] Audit templates for repeated markup (sidebar, header, theme toggle)
+- [x] Audit templates for repeated markup (sidebar, header, theme toggle)
+- [x] Create `_theme_toggle.jinja2` partial
+- [x] Create `_brand.jinja2` partial
 - [ ] Create `_sidebar.jinja2` partial
 - [ ] Create `_header.jinja2` partial
-- [ ] Create `_theme_toggle.jinja2` partial
 - [ ] Create `_footer.jinja2` partial
-- [ ] Update index.html.jinja2 to use partials
-- [ ] Update report.html.jinja2 to use partials
+- [x] Update index.html.jinja2 to use partials
+- [x] Update report.html.jinja2 to use partials
 - [ ] Test all templates with partials
 
 **Priority:** High
@@ -46,13 +47,13 @@
 
 ## Section 3: Developer Onboarding Guide
 
-- [ ] Create `docs/ONBOARDING.md` with:
-  - [ ] Project structure overview
-  - [ ] How to run analysis
-  - [ ] How to add new page types
-  - [ ] How to modify reports
-  - [ ] Common troubleshooting steps
-- [ ] Create `docs/COMMON_TASKS.md` (add report type, change colors, deploy)
+- [x] Create `docs/ONBOARDING.md` with:
+  - [x] Project structure overview
+  - [x] How to run analysis
+  - [x] How to add new page types
+  - [x] How to modify reports
+  - [x] Common troubleshooting steps
+- [x] Create `docs/COMMON_TASKS.md` (add report type, change colors, deploy)
 - [ ] Add quick reference links to README
 
 **Priority:** Medium
