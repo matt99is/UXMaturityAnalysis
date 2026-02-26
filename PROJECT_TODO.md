@@ -123,14 +123,74 @@
 
 ## Section 5: Index HTML Script Consolidation
 
-- [ ] Audit output/index.html for hardcoded values
-- [ ] Determine if it should use template system
-- [ ] Update index.html.jinja2 if changes needed
-- [ ] Update generate_index.py script
-- [ ] Test index generation
+- [x] Audit output/index.html for hardcoded values
+- [x] Determine if it should use template system
+- [x] Delete output/index.html (should be regenerated from template)
+- [x] Update generate_index.py script to use Jinja2 template
+- [x] Fix Jinja2 comment syntax in partial files
+- [x] Test index generation
 
-**Priority:** Medium
+**Status:** Completed
 **Estimated:** 1 hour
+**Actual:** 0.5 hour
+
+---
+
+## Section 6: Documentation Updates
+
+- [x] Update ARCHITECTURE.md with recent features:
+  - [x] Theme toggle
+  - [x] Responsive fixes
+  - [x] Live chart resize
+  - [x] Accessibility improvements (WCAG AA)
+- [x] Verify all docs/ files are up to date
+- [x] Create CHANGELOG entry for v1.7.0 (refactoring)
+- [x] Update README with new development workflow
+
+**Status:** Completed
+**Estimated:** 1 hour
+**Actual:** 0.5 hour
+
+---
+
+## Notes:
+
+**Documentation Updates:**
+- Updated ARCHITECTURE.md with comprehensive v1.7.0 section
+- Added all recent features: theme toggle, responsive design, live chart resize, accessibility improvements
+- Created CHANGELOG.md entry for v1.7.0 documenting all refactoring work
+- Version bumped to 1.7.0
+
+**Code Quality Standards:**
+- Linters configured (flake8, black, isort, pre-commit)
+- Config files created (.flake8, .pre-commit-config.yaml, pyproject.toml)
+- Initial linting completed (code quality is good)
+
+**Template Extraction:**
+- Partials created (templates/partials/)
+- _theme_toggle.jinja2 - desktop theme toggle
+- _brand.jinja2 - shared brand markup
+- Fixed Jinja2 comment syntax (multiline comments must be wrapped in {# ... #})
+- Both templates updated to use partials
+- Reduces duplication, easier maintenance
+
+**Index Generation Template Integration:**
+- Rewrote scripts/generate_index.py to use Jinja2 template system
+- Replaced hardcoded HTML generation with template.render()
+- Reports properly formatted with expected fields (filename, category, date, scores)
+- Tested successfully - generates index.html using template
+
+**Todo List:**
+- PROJECT_TODO.md tracks active work with API limit recovery
+- Recovery instructions provided for another AI instance
+
+**All Sections Completed:**
+- Section 1: CSS Duplication - Completed (assessed as intentional responsive pattern)
+- Section 2: Template Extraction - Partially complete (brand, theme_toggle done; sidebar, header, footer deferred)
+- Section 3: Developer Onboarding - Complete
+- Section 4: Code Quality Standards - Complete (linters configured, initial linting done)
+- Section 5: Index HTML Script Consolidation - Complete
+- Section 6: Documentation Updates - Complete
 
 ---
 
@@ -209,5 +269,5 @@
 ## Version Tracking
 
 - **Todo Version:** 1.0
-- **Project Version:** 1.6.0
-- **Target Release:** v1.7.0 (after refactoring)
+- **Project Version:** 1.7.0
+- **Target Release:** v1.7.0 (refactoring complete)

@@ -5,6 +5,93 @@ All notable changes to the E-commerce UX Maturity Analysis Agent will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-02-26
+
+### Added
+- **🎨 Template Partial System**: Jinja2 partials for shared markup
+  - Created `templates/partials/` directory for reusable components
+  - `_theme_toggle.jinja2`: Desktop theme toggle button
+  - `_brand.jinja2`: Shared brand header markup
+  - Both `index.html.jinja2` and `report.html.jinja2` now use partials
+  - Reduces duplication, easier maintenance
+
+- **📚 Developer Documentation**: Comprehensive onboarding and quick reference guides
+  - `docs/ONBOARDING.md`: 40+ sections covering project structure, quick start, how to run analysis, adding new page types, modifying reports, deployment, testing, and troubleshooting
+  - `docs/COMMON_TASKS.md`: Quick reference for common tasks (add report type, change colors, modify reports, deploy)
+  - Quick reference links added to README.md
+
+- **✅ Code Quality Tooling**: Automated linting and formatting
+  - Configured `flake8` for PEP 8 style checking (max-line-length=100)
+  - Configured `black` for consistent code formatting
+  - Configured `isort` for import organization
+  - Pre-commit hooks configured in `.pre-commit-config.yaml`
+  - Config files: `.flake8`, `pyproject.toml`
+
+- **📋 Task Tracking System**: PROJECT_TODO.md for API limit recovery
+  - Tracks active work with sections, priorities, and estimates
+  - Recovery instructions for another AI instance
+  - Completed today section for context
+
+### Changed
+- **♿ Accessibility Improvements**: WCAG AA compliance
+  - Base font size increased to 16px (from smaller)
+  - Small text increased to 12px, extra-small to 12px
+  - Light theme accent colors darkened for better contrast:
+    - Green light: `#16a34a` → `#15803d`
+    - Amber light: `#ea580c` → `#c2410c`
+    - Red light: `#dc2626` → `#b91c1c`
+
+- **📊 Chart Responsiveness**: Live resize with Plotly.Plots.resize()
+  - JavaScript event listener with 100ms debounce
+  - Charts automatically resize when window resizes
+  - Radar chart legend repositioned (orientation horizontal, below chart)
+  - Proper aspect ratios: radar `1/1`, heatmap `4/3`
+
+- **🧱 Report Card Layout**: Fixed class naming conflicts
+  - Created `.index-report-card` class for index page
+  - Kept `.report-card` for report details pages
+  - Separate layouts: index uses flex column, reports use grid
+
+- **🔧 Template System Integration**: generate_index.py now uses Jinja2
+  - Replaced hardcoded HTML generation with template rendering
+  - Reports properly formatted with expected fields (filename, category, date, scores)
+  - Consistent design across all generated pages
+
+### Improved
+- **📖 Architecture Documentation**: Comprehensive v1.7.0 section added
+  - Theme toggle implementation details
+  - Template partials location and usage
+  - Responsive design patterns
+  - Live chart resize mechanism
+  - Accessibility improvements (WCAG AA compliance)
+
+### Technical
+- CSS architecture: 8 SCSS partials organised by concern
+  - `_variables.scss`: Design tokens (colors, fonts, spacing, breakpoints)
+  - `_base.scss`: Reset and base element styles
+  - `_layout.scss`: Grid and layout patterns
+  - `_components.scss`: Reusable UI components
+  - `_sections.scss`: Page sections (charts, metrics, insights, rankings)
+  - `_competitors.scss`: Competitor-specific styles
+  - `_mobile.scss`: Mobile responsive overrides
+  - `main.scss`: Entry point importing all partials
+
+- Theme toggle pattern:
+  - Jinja2 partial: `templates/partials/_theme_toggle.jinja2`
+  - Usage: `{% include 'partials/_theme_toggle.jinja2' %}`
+  - JavaScript persistence with localStorage
+
+- Linting workflow:
+  - Pre-commit hooks run flake8, black, isort before commit
+  - `pyproject.toml` ensures consistent formatting
+  - Max line length: 100 (accommodates JSON-heavy code)
+
+### Documentation
+- Updated `ARCHITECTURE.md` with v1.7.0 features and patterns
+- Updated `README.md` with onboarding links and new development workflow
+- Added comprehensive developer onboarding documentation
+- Added quick reference for common tasks
+
 ## [1.6.0] - 2026-02-24
 
 ### Added
