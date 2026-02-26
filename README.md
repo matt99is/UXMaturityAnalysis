@@ -971,11 +971,13 @@ SOFTWARE.
 
 ### Getting Help
 
-1. **Check Documentation**: Review README and docs folder
-2. **View Demo Report**: Open `docs/DEMO_REPORT.html` in browser to see example output
-3. **Run Diagnostics**: `python3 tests/verify_setup.py`
-4. **Check Version**: `python3 main.py --version`
-5. **Open Issue**: GitHub Issues with version info and details
+1. **Onboarding Guide**: [docs/ONBOARDING.md](docs/ONBOARDING.md) - Start here for new developers
+2. **Common Tasks**: [docs/COMMON_TASKS.md](docs/COMMON_TASKS.md) - Quick reference for frequent tasks
+3. **Check Documentation**: Review README and docs folder
+4. **View Demo Report**: Open `docs/DEMO_REPORT.html` in browser to see example output
+5. **Run Diagnostics**: `python3 tests/verify_setup.py`
+6. **Check Version**: `python3 main.py --version`
+7. **Open Issue**: GitHub Issues with version info and details
 
 ---
 
