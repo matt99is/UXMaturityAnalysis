@@ -80,7 +80,45 @@ The script will:
 
 ---
 
-### Option 3: GitHub + Netlify (Auto-deploy)
+### Option 3: Automatic Deployment (Recommended)
+
+After one-time setup, deployment happens automatically after each analysis.
+
+#### First-Time Setup
+
+1. Run setup wizard:
+   ```bash
+   python3 scripts/setup_netlify.py
+   ```
+
+2. Follow prompts to:
+   - Link `output/` directory to Netlify site
+   - Configure custom domain: `analysis.mattlelonek.co.uk`
+   - Add DNS records as shown
+
+#### Automatic Deployment
+
+After setup, every analysis automatically deploys:
+
+```bash
+# Runs analysis AND auto-deploys
+python3 main.py --urls https://example.com --config competitors.json
+
+# Skip deployment when needed
+python3 main.py --urls https://example.com --config competitors.json --no-deploy
+```
+
+The analysis pipeline now:
+1. Captures screenshots
+2. Runs AI analysis
+3. Generates reports
+4. Builds CSS
+5. Generates index
+6. **Deploys to Netlify automatically**
+
+---
+
+### Option 4: GitHub + Netlify (Auto-deploy)
 
 #### Setup (One-time, 10 minutes)
 

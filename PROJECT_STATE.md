@@ -1,6 +1,6 @@
 # Project State: UX Maturity Analysis
 
-**Version:** 1.7.0
+**Version:** 1.8.0
 **Status:** Production Ready
 **Last Updated:** 2026-02-27
 **Context Load Priority:** HIGH (load this file first)
@@ -22,13 +22,9 @@ Items currently in progress. Move to Completed when done.
 
 ## Next Up
 
-### 1. Netlify Auto-Deploy
-**Priority:** High | **Estimated:** 2-3 hours | **Plan:** `docs/archive/2026-02/2026-02-26-netlify-auto-deploy-implementation.md`
-- One-time setup wizard (`scripts/setup_netlify.py`)
-- Auto-deploy after analysis via `deploy_reports()` in main.py
-- Custom domain: `analysis.mattlelonek.co.uk`
-- `--no-deploy` flag for manual control
-- Files: `scripts/setup_netlify.py`, `main.py`, `netlify.toml`
+### [No pending tasks]
+
+All planned work complete. Ready for new feature requests.
 
 ---
 
@@ -36,6 +32,9 @@ Items currently in progress. Move to Completed when done.
 
 Last 10 completed items for context.
 
+- [x] v1.8.0: Automatic Netlify deployment (setup wizard + `deploy_reports()` in main.py)
+- [x] v1.8.0: `--no-deploy` CLI flag for manual control
+- [x] v1.8.0: `netlify.toml` build configuration
 - [x] v1.7.0: Template partials (`_theme_toggle.jinja2`, `_brand.jinja2`)
 - [x] v1.7.0: Auto-build CSS in report generation (`_build_css()` in html_report_generator.py)
 - [x] v1.7.0: WCAG AA accessibility improvements (font sizes, contrast)
@@ -43,9 +42,6 @@ Last 10 completed items for context.
 - [x] v1.7.0: Theme toggle (dark/light) with localStorage persistence
 - [x] v1.7.0: Code quality tooling (flake8, black, isort, pre-commit)
 - [x] v1.7.0: Developer docs (ONBOARDING.md, COMMON_TASKS.md)
-- [x] v1.7.0: Report card layout fixes (class naming conflicts)
-- [x] v1.7.0: Index generation via Jinja2 templates
-- [x] v1.6.0: Two-pass analysis pipeline (observation.json + analysis.json)
 
 ---
 

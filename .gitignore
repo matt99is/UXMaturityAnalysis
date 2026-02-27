@@ -57,3 +57,6 @@ Thumbs.db
 
 # Codex/Code runtime artifacts
 .code/agents/
+
+# Local Netlify folder
+.netlify

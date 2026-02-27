@@ -22,6 +22,8 @@ import argparse
 import json
 import os
 import sys
+import time
+import subprocess
 from pathlib import Path
 from typing import List, Dict, Any
 from datetime import datetime
@@ -53,6 +55,71 @@ from src.utils.audit_organizer import (
 )
 from src.utils.page_type_detector import get_page_type_display_name
 from src.version import __version__, __title__
+
+
+def deploy_reports(output_dir: Path, skip: bool = False) -> bool:
+    """
+    Automatically deploy generated reports to Netlify.
+
+    Args:
+        output_dir: Path to output directory
+        skip: If True, skip deployment
+
+    Returns:
+        bool: True if deployment succeeded or was skipped
+    """
+    if skip:
+        print("⏭️  Deployment skipped (--no-deploy flag)")
+        return True
+
+    # Check if Netlify site is configured
+    state_file = output_dir / '.netlify' / 'state.json'
+    if not state_file.exists():
+        print("⚠️  Netlify site not configured")
+        print("  Run: python3 scripts/setup_netlify.py")
+        print("Deployment skipped. Reports saved locally.\n")
+        return False
+
+    print("\n🚀 Deploying to Netlify...")
+
+    # Retry logic for network issues
+    max_retries = 3
+    for attempt in range(1, max_retries + 1):
+        try:
+            result = subprocess.run(
+                ['netlify', 'deploy', '--prod', '--dir', str(output_dir)],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+
+            if result.returncode == 0:
+                print("✅ Deployment successful: https://analysis.mattlelonek.co.uk")
+                return True
+            else:
+                if attempt < max_retries:
+                    print(f"❌ Deployment failed. Retrying... ({attempt}/{max_retries})")
+                    time.sleep(2 ** attempt)  # Exponential backoff
+                else:
+                    print(f"❌ Deployment failed after {max_retries} attempts")
+                    if result.stderr:
+                        print(f"  Error: {result.stderr}")
+                    print("\nManual deployment option:")
+                    print("  python3 scripts/deploy_netlify.py")
+                    return False
+
+        except subprocess.TimeoutExpired:
+            if attempt < max_retries:
+                print(f"⏱️  Timeout. Retrying... ({attempt}/{max_retries})")
+                time.sleep(2 ** attempt)
+            else:
+                print("❌ Deployment timed out")
+                return False
+        except Exception as e:
+            print(f"❌ Deployment error: {e}")
+            return False
+
+    return False
 
 
 class UXAnalysisOrchestrator:
@@ -894,6 +961,12 @@ For more examples and documentation, see README.md
         help="Directory containing manually captured screenshots (used with --manual-mode)"
     )
 
+    parser.add_argument(
+        "--no-deploy",
+        action="store_true",
+        help="Skip automatic Netlify deployment"
+    )
+
     args = parser.parse_args()
 
     # Load environment variables
@@ -1098,6 +1171,11 @@ For more examples and documentation, see README.md
                 console.print(f"  • {comp_name} [dim]({comp_path})[/dim]")
 
         console.print(f"\n[bold]Comparison report:[/bold] [cyan]{audit_root / '_comparison_report.md'}[/cyan]")
+
+        # Deploy to Netlify if configured
+        output_dir = Path("output")
+        skip_deploy = args.no_deploy if hasattr(args, 'no_deploy') else False
+        deploy_reports(output_dir, skip=skip_deploy)
 
     except (EOFError, KeyboardInterrupt):
         console.print("\n\n[bold yellow]⚠ Analysis cancelled by user[/bold yellow]")

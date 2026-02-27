@@ -5,6 +5,24 @@ All notable changes to the E-commerce UX Maturity Analysis Agent will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-02-27
+
+### Added
+- **🚀 Automatic Netlify Deployment:** Reports deploy automatically after analysis
+  - `scripts/setup_netlify.py` - One-time configuration wizard
+  - Auto-deployment integrated into main.py analysis pipeline
+  - Custom domain support: analysis.mattlelonek.co.uk
+  - `--no-deploy` flag for manual control
+  - Retry logic with exponential backoff for network issues
+
+### Changed
+- **📦 Build Configuration:** Added `netlify.toml` for Netlify configuration
+  - Specifies `output` as publish directory
+  - Configures local dev server
+
+### Documentation
+- Updated NETLIFY.md with automatic deployment workflow (Option 3)
+
 ## [1.7.0] - 2026-02-26
 
 ### Added
