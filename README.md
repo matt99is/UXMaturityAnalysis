@@ -1,6 +1,6 @@
 # E-commerce UX Maturity Analysis Agent
 
-**Version:** 1.6.0
+**Version:** 1.7.0
 **Status:** Production Ready
 **Python:** 3.9+
 
