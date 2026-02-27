@@ -82,12 +82,26 @@ def deploy_reports(output_dir: Path, skip: bool = False) -> bool:
 
     print("\n🚀 Deploying to Netlify...")
 
+    # Get site ID from state file for reliable deployment
+    try:
+        import json
+        with open(state_file) as f:
+            state = json.load(f)
+        site_id = state.get('siteId', '')
+    except Exception:
+        site_id = ''
+
     # Retry logic for network issues
     max_retries = 3
     for attempt in range(1, max_retries + 1):
         try:
+            # Build deploy command - run from project root where netlify.toml is
+            cmd = ['netlify', 'deploy', '--prod', '--dir', str(output_dir)]
+            if site_id:
+                cmd.extend(['--site', site_id])
+
             result = subprocess.run(
-                ['netlify', 'deploy', '--prod', '--dir', str(output_dir)],
+                cmd,
                 capture_output=True,
                 text=True,
                 timeout=60
