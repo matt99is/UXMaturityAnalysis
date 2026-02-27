@@ -79,3 +79,61 @@ output/
 - Rate-limit control:
   - Sequential analysis
   - \`ANALYSIS_DELAY = 90\` seconds between competitors
+
+---
+
+## Future Architecture (Multi-Tenant SaaS)
+
+The current prototype is designed to evolve into a multi-tenant product where agencies or brands can run reports against their own competitor lists and benchmarks.
+
+### Target Data Model
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Tenant    │────<│  Competitor │     │  Benchmark  │
+│             │     │             │     │             │
+│ - slug      │     │ - tenant_id │     │ - tenant_id │
+│ - name      │     │ - name      │     │ - name      │
+│ - settings  │     │ - url       │     │ - criteria  │
+└─────────────┘     │ - page_type │     │ - weights   │
+      │             └─────────────┘     └─────────────┘
+      │
+      └────────────┐
+                   ▼
+            ┌─────────────┐
+            │   Report    │
+            │             │
+            │ - tenant_id │
+            │ - type      │
+            │ - date      │
+            │ - data_json │
+            │ - html_path │
+            └─────────────┘
+```
+
+### Target URL Structure
+
+```
+/{tenant}/                    → Tenant dashboard
+/{tenant}/basket-pages/       → Latest basket report
+/{tenant}/history/            → All past reports
+/{tenant}/competitors/        → Manage competitor list
+/{tenant}/benchmarks/         → Manage custom benchmarks
+```
+
+### Migration Path
+
+1. **Phase 1 (Current):** Single tenant, file-based, password-protected
+2. **Phase 2:** Add tenant slug to URLs, isolate configs per folder
+3. **Phase 3:** Add Supabase for auth + metadata, keep static reports
+4. **Phase 4:** Full SaaS with user management, billing, etc.
+
+### Technology Considerations
+
+| Component | Now | Future |
+|-----------|-----|--------|
+| Hosting | Netlify static | Netlify + Supabase |
+| Auth | Password protection | Supabase Auth |
+| Config | YAML files | Database + YAML templates |
+| Reports | Static HTML | Static HTML (generated on demand) |
+| API | None | Supabase REST/Realtime |

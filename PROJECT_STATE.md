@@ -49,6 +49,44 @@ Last 10 completed items for context.
 
 Key patterns and decisions for AI context.
 
+### Current State (Prototype)
+
+Single-tenant, file-based static site. All reports visible to anyone with access.
+
+**Future Direction (Documented)**
+
+This prototype is designed to evolve into a multi-tenant SaaS:
+
+| Aspect | Now | Future |
+|--------|-----|--------|
+| Tenants | Single | Multiple (agencies, brands) |
+| Competitors | Global config | Per-tenant lists |
+| Benchmarks | Fixed criteria | Per-tenant custom benchmarks |
+| Auth | Netlify password | Per-user accounts |
+| Storage | Static files | Database (Supabase) |
+| URLs | `/basket-pages/` | `/{tenant}/basket-pages/` |
+
+**Future Data Model:**
+```
+Tenant
+├── competitors: [{ name, url, page_types[] }]
+├── benchmarks: [{ name, criteria, weights }]
+└── reports: [{ type, date, generated }]
+
+User → belongs to Tenant
+Report → belongs to Tenant, uses Tenant's competitors + benchmarks
+```
+
+**Migration Path:**
+1. Add tenant slug to URL structure (`/{tenant}/basket-pages/`)
+2. Move config files into tenant folders
+3. Add Supabase for auth + metadata
+4. Keep reports as static HTML (generated on demand)
+
+See `docs/ARCHITECTURE.md` for technical details.
+
+---
+
 ### Tech Stack
 - Python 3.9+, Playwright, Claude API, Jinja2, Sass/SCSS, Plotly
 
