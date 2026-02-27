@@ -94,7 +94,7 @@ def generate_index_html(audits_dir: Path = Path("output/audits")):
         category = analysis_type_key if len(parts) >= 2 else 'other'
 
         reports.append({
-            'filename': f"{folder_name}/{html_report.name}",
+            'filename': f"audits/{folder_name}/{html_report.name}",
             'category': category,
             'date': formatted_date,
             'full_title': analysis_type_display,
