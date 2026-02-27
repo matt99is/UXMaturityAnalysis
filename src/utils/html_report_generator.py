@@ -499,7 +499,7 @@ class HTMLReportGenerator:
         return evidence
 
     def _prepare_competitor_data(
-        self, results: List[Dict[str, Any]], output_path: Path
+        self, results: List[Dict[str, Any]], output_path: Path, audit_date: str = None
     ) -> List[Dict[str, Any]]:
         """
         Prepare competitor data for template rendering.
@@ -507,6 +507,7 @@ class HTMLReportGenerator:
         Args:
             results: List of competitor analysis results
             output_path: Path where HTML will be saved (for relative paths)
+            audit_date: Date string for new structure screenshot paths
 
         Returns:
             List of prepared competitor data
@@ -529,11 +530,20 @@ class HTMLReportGenerator:
 
             if result.get("screenshot_metadata"):
                 for ss in result["screenshot_metadata"]:
-                    # Get relative path
                     ss_path = ss.get("filepath")
                     if ss_path:
                         try:
-                            rel_path = os.path.relpath(ss_path, output_path.parent)
+                            # For new structure, use simplified path relative to type directory
+                            if audit_date:
+                                # Screenshots are at screenshots/{date}/{competitor}/{file}
+                                # Report is at {date}.html in the type directory
+                                comp_name = result.get("site_name", "unknown")
+                                viewport = ss.get("viewport_name", "desktop").lower()
+                                rel_path = f"screenshots/{audit_date}/{comp_name}/{viewport}.png"
+                            else:
+                                # Legacy: calculate relative path
+                                rel_path = os.path.relpath(ss_path, output_path.parent)
+
                             screenshots.append(
                                 {
                                     "path": rel_path,
@@ -749,6 +759,111 @@ class HTMLReportGenerator:
 
         return str(output_path)
 
+    def generate_type_index_page(
+        self,
+        analysis_type: str,
+        type_title: str,
+        reports: List[Dict[str, Any]],
+    ) -> str:
+        """
+        Generate an index page for a specific analysis type.
+
+        Args:
+            analysis_type: Type slug (e.g., "basket_pages")
+            type_title: Human-readable title (e.g., "Basket Pages")
+            reports: List of report metadata dicts with keys:
+                - date: Report date string (YYYY-MM-DD)
+                - filename: HTML filename (e.g., "2026-02-27.html")
+                - competitors: Number of competitors
+                - avg_score: Average score
+                - leader_score: Leader score
+
+        Returns:
+            Path to generated index file
+        """
+        type_slug = analysis_type.replace("_", "-")
+        type_dir = self.output_dir / type_slug
+        type_dir.mkdir(parents=True, exist_ok=True)
+
+        # Build simple HTML for type index
+        rows = []
+        for report in sorted(reports, key=lambda r: r.get("date", ""), reverse=True):
+            date_str = report.get("date", "Unknown")
+            filename = report.get("filename", "#")
+            competitors = report.get("competitors", 0)
+            avg_score = report.get("avg_score", 0) or 0
+            leader_score = report.get("leader_score", 0) or 0
+
+            # Format date for display
+            try:
+                display_date = datetime.strptime(date_str, "%Y-%m-%d").strftime("%d %B %Y")
+            except ValueError:
+                display_date = date_str
+
+            is_latest = rows == []  # First row is latest
+            badge = '<span class="report-badge">LATEST</span>' if is_latest else '<span class="report-badge old">ARCHIVED</span>'
+
+            rows.append(f"""
+            <div class="report-card {'latest' if is_latest else ''}" onclick="window.location.href='{filename}'">
+                <div class="report-header">
+                    <div class="report-date">{display_date}</div>
+                    {badge}
+                </div>
+                <div class="report-stats">
+                    <div class="stat">
+                        <div class="stat-value">{competitors}</div>
+                        <div class="stat-label">Competitors</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">{avg_score:.1f}</div>
+                        <div class="stat-label">Avg Score</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">{leader_score:.1f}</div>
+                        <div class="stat-label">Leader</div>
+                    </div>
+                </div>
+            </div>
+            """)
+
+        empty_state = """
+        <div class="empty-state">
+            <h3>No reports yet</h3>
+            <p>Run an analysis to generate the first report</p>
+        </div>
+        """ if not reports else ""
+
+        html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{type_title} | UX Analytics</title>
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <a href="../index.html" class="back-link">← Back to Dashboard</a>
+            <div class="brand">UX Analytics</div>
+        </aside>
+        <main class="main">
+            <h1 class="title">{type_title}</h1>
+            <p class="subtitle">All analysis runs for {type_title.lower()}</p>
+            <div class="url-box">/{type_slug}/</div>
+            {"".join(rows) if rows else empty_state}
+        </main>
+    </div>
+</body>
+</html>
+"""
+
+        output_path = type_dir / "index.html"
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(html_content)
+
+        return str(output_path)
+
     def generate_html_report(
         self,
         results: List[Dict[str, Any]],
@@ -800,6 +915,8 @@ class HTMLReportGenerator:
         report_short_title: str,
         category: str,
         output_filename: str,
+        analysis_type: str = None,
+        audit_date: str = None,
     ) -> str:
         """
         Generate a complete report page with all tabs and visualizations.
@@ -809,7 +926,9 @@ class HTMLReportGenerator:
             report_title: Full title for the page
             report_short_title: Short title for breadcrumb
             category: Category description
-            output_filename: Output HTML filename
+            output_filename: Output HTML filename (or use analysis_type + audit_date)
+            analysis_type: Type of analysis (e.g., "basket_pages") for new structure
+            audit_date: Date string (e.g., "2026-02-27") for new structure
 
         Returns:
             Path to generated HTML file
@@ -822,7 +941,17 @@ class HTMLReportGenerator:
             self._copy_css()
 
         template = self.env.get_template("report.html.jinja2")
-        output_path = self.output_dir / output_filename
+
+        # Determine output path based on new or legacy structure
+        if analysis_type and audit_date:
+            # New structure: output/{type}/{date}.html
+            type_slug = analysis_type.replace("_", "-")
+            type_dir = self.output_dir / type_slug
+            type_dir.mkdir(parents=True, exist_ok=True)
+            output_path = type_dir / f"{audit_date}.html"
+        else:
+            # Legacy structure: output/{filename}
+            output_path = self.output_dir / output_filename
 
         # Prepare data
         successful_results = [r for r in results if r.get("success") and r.get("overall_score")]
@@ -841,7 +970,7 @@ class HTMLReportGenerator:
 
         # Prepare competitor data
         competitors, screenshot_sets = self._prepare_competitor_data(
-            successful_results, output_path
+            successful_results, output_path, audit_date=audit_date
         )
 
         # Create charts
@@ -855,11 +984,18 @@ class HTMLReportGenerator:
         heatmap_json = ""
 
         # Link report pages back to the project-level output index.
-        project_output_index = Path(__file__).resolve().parents[2] / "output" / "index.html"
-        try:
-            index_href = os.path.relpath(project_output_index, output_path.parent)
-        except ValueError:
-            index_href = "index.html"
+        # For new structure: reports are at /{type}/{date}.html, index is at /index.html
+        # For legacy structure: use relative path calculation
+        if analysis_type and audit_date:
+            # New structure - index is two levels up from the report
+            index_href = "../index.html"
+        else:
+            # Legacy structure
+            project_output_index = Path(__file__).resolve().parents[2] / "output" / "index.html"
+            try:
+                index_href = os.path.relpath(project_output_index, output_path.parent)
+            except ValueError:
+                index_href = "index.html"
 
         if radar_fig:
             radar_json = f"""

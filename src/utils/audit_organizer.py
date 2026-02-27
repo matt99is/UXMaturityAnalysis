@@ -2,15 +2,32 @@
 Audit organization utilities for structured output management.
 
 This module handles the hierarchical organization of audit outputs:
-- Audit run folders (grouped by date and analysis type)
-- Competitor subfolders
-- Screenshots and analysis files
+- Type-based folders containing dated reports
+- Competitor subfolders with screenshots
+- Screenshots organized by date
 
-Directory structure:
-    output/audits/{date}_{analysis_type}/{competitor}/screenshots/
-                                                     /analysis.json
-                                        /_comparison_report.md
-                                        /_audit_summary.json
+Directory structure (NEW v1.9.0):
+    output/
+    ├── index.html                                   # Main dashboard
+    ├── css/main.css
+    ├── basket-pages/
+    │   ├── index.html                               # List of all basket reports
+    │   ├── 2026-02-27.html                          # Specific dated report
+    │   ├── 2026-02-27.json                          # Summary data
+    │   └── screenshots/
+    │       └── 2026-02-27/
+    │           └── {competitor}/
+    │               ├── desktop.png
+    │               ├── mobile.png
+    │               ├── observation.json
+    │               └── analysis.json
+    ├── product-pages/
+    │   └── ...
+    └── checkout/
+        └── ...
+
+Legacy structure (still supported for reading):
+    output/audits/{date}_{type}/
 """
 
 import json
@@ -39,9 +56,23 @@ def get_resources_config() -> Optional[Dict]:
     return None
 
 
+def get_output_dir(default_base: str = "output") -> Path:
+    """
+    Get the output directory for this project.
+
+    Args:
+        default_base: Name of the output folder (default: "output")
+
+    Returns:
+        Path to <project_root>/<default_base>/
+    """
+    project_root = Path(__file__).resolve().parents[2]
+    return project_root / default_base
+
+
 def get_audits_dir(default_base: str = "output") -> Path:
     """
-    Get the audits subdirectory inside this project's output folder.
+    Get the legacy audits subdirectory (for backward compatibility).
 
     Args:
         default_base: Name of the output folder (default: "output")
@@ -51,6 +82,22 @@ def get_audits_dir(default_base: str = "output") -> Path:
     """
     project_root = Path(__file__).resolve().parents[2]
     return project_root / default_base / "audits"
+
+
+def get_type_dir(base_dir: str, analysis_type: str) -> Path:
+    """
+    Get the directory for a specific analysis type.
+
+    Args:
+        base_dir: Base output directory (e.g., "output")
+        analysis_type: Type of analysis (e.g., "basket_pages")
+
+    Returns:
+        Path to output/{analysis_type}/
+    """
+    # Convert snake_case to kebab-case for URLs
+    type_slug = analysis_type.replace("_", "-")
+    return get_output_dir(base_dir) / type_slug
 
 
 def _load_summary(summary_path: Path) -> Dict[str, Any]:
@@ -304,6 +351,113 @@ def collect_legacy_runs(output_root: Path) -> List[Dict[str, Any]]:
     return [run_map[key] for key in sorted(run_map.keys(), reverse=True)]
 
 
+def collect_new_structure_runs(output_root: Path) -> List[Dict[str, Any]]:
+    """
+    Collect runs from the new structure: output/{type}/{date}.html
+
+    Args:
+        output_root: Path to output/
+
+    Returns:
+        List of dictionaries sorted newest-first by date.
+    """
+    if not output_root.exists():
+        return []
+
+    runs: List[Dict[str, Any]] = []
+
+    # Look for type directories (basket-pages, product-pages, checkout)
+    for type_dir in output_root.iterdir():
+        if not type_dir.is_dir():
+            continue
+        if type_dir.name in ("audits", "css"):
+            continue
+
+        # Convert kebab-case back to snake_case for the key
+        analysis_type_key = type_dir.name.replace("-", "_")
+
+        # Look for dated HTML reports in this type directory
+        for html_file in sorted(type_dir.glob("*.html"), key=lambda p: p.name, reverse=True):
+            if html_file.name == "index.html":
+                continue
+
+            # Extract date from filename (e.g., 2026-02-27.html -> 2026-02-27)
+            date_match = re.match(r"(\d{4}-\d{2}-\d{2})\.html", html_file.name)
+            if not date_match:
+                continue
+
+            date_str = date_match.group(1)
+
+            # Try to load summary JSON if it exists
+            json_path = type_dir / f"{date_str}.json"
+            summary = _load_summary(json_path) if json_path.exists() else {}
+
+            # Compute scores from competitor analysis files
+            screenshots_dir = type_dir / "screenshots" / date_str
+            avg_score = _coerce_float(summary.get("avg_score"))
+            leader_score = _coerce_float(summary.get("leader_score"))
+            total_competitors = summary.get("total_competitors")
+
+            if avg_score is None or leader_score is None:
+                # Count competitor directories and compute scores
+                if screenshots_dir.exists():
+                    competitor_dirs = [d for d in screenshots_dir.iterdir() if d.is_dir()]
+                    if total_competitors is None:
+                        total_competitors = len(competitor_dirs)
+
+                    scores = []
+                    for comp_dir in competitor_dirs:
+                        analysis_file = comp_dir / "analysis.json"
+                        if analysis_file.exists():
+                            try:
+                                with open(analysis_file, "r", encoding="utf-8") as f:
+                                    data = json.load(f)
+                                score = _coerce_float(data.get("overall_score"))
+                                if score is not None:
+                                    scores.append(score)
+                            except (OSError, json.JSONDecodeError):
+                                pass
+
+                    if scores:
+                        if avg_score is None:
+                            avg_score = round(sum(scores) / len(scores), 1)
+                        if leader_score is None:
+                            leader_score = round(max(scores), 1)
+
+            # Build human-readable type name
+            analysis_type_name = type_dir.name.replace("-", " ").title()
+            if "basket" in analysis_type_name.lower():
+                analysis_type_name = "Basket Pages"
+            elif "product" in analysis_type_name.lower():
+                analysis_type_name = "Product Pages"
+            elif "checkout" in analysis_type_name.lower():
+                analysis_type_name = "Checkout"
+
+            # URL path to the report
+            html_url = f"{type_dir.name}/{html_file.name}"
+
+            runs.append({
+                "folder": f"{date_str}_{analysis_type_key}",
+                "date": date_str,
+                "analysis_type": analysis_type_name,
+                "analysis_type_key": analysis_type_key,
+                "total": total_competitors,
+                "successful": total_competitors,
+                "failed": 0,
+                "runtime_seconds": summary.get("runtime_seconds"),
+                "html_report": html_url,
+                "markdown_report": None,
+                "summary_file": f"{type_dir.name}/{date_str}.json" if json_path.exists() else None,
+                "avg_score": avg_score,
+                "leader_score": leader_score,
+                "_is_new_structure": True,
+            })
+
+    # Sort by date descending
+    runs.sort(key=lambda r: r.get("date", ""), reverse=True)
+    return runs
+
+
 def collect_audit_runs(audits_root: Path) -> List[Dict[str, Any]]:
     """
     Collect metadata and report links for all audit runs.
@@ -419,7 +573,13 @@ def build_frontend_report_cards(base_path: Path) -> List[Dict[str, Any]]:
         List of report card dictionaries for templates/index.html.jinja2
     """
     output_root, audits_root = _resolve_output_and_audits_roots(base_path)
-    runs = collect_audit_runs(audits_root) + collect_legacy_runs(output_root)
+
+    # Collect runs from all three sources: new structure, legacy audits, and flat legacy
+    runs = (
+        collect_new_structure_runs(output_root) +
+        collect_audit_runs(audits_root) +
+        collect_legacy_runs(output_root)
+    )
 
     cards: List[Dict[str, Any]] = []
     for run in runs:
@@ -622,6 +782,9 @@ def create_audit_directory_structure(
     """
     Create the hierarchical directory structure for an audit run.
 
+    NEW STRUCTURE (v1.9.0):
+        output/{type}/screenshots/{date}/{competitor}/
+
     Args:
         base_dir: Base output directory (e.g., "output")
         analysis_type: Type of analysis (e.g., "basket_pages")
@@ -631,7 +794,10 @@ def create_audit_directory_structure(
     Returns:
         Dictionary mapping keys to Path objects:
         {
-            'audit_root': Path to audit root folder,
+            'audit_root': Path to type folder (e.g., output/basket-pages/),
+            'audit_date': Date string (e.g., '2026-02-27'),
+            'report_html': Path to output/{type}/{date}.html,
+            'report_json': Path to output/{type}/{date}.json,
             'competitors': {
                 'competitor_name': {
                     'root': Path to competitor folder,
@@ -644,26 +810,35 @@ def create_audit_directory_structure(
     if audit_date is None:
         audit_date = datetime.now().strftime("%Y-%m-%d")
 
-    # Create audit root directory: use Resources path if configured
-    audit_folder_name = f"{audit_date}_{analysis_type}"
-    base_output_dir = get_audits_dir(base_dir)
-    audit_root = base_output_dir / audit_folder_name
-    audit_root.mkdir(parents=True, exist_ok=True)
+    # Get type directory (e.g., output/basket-pages/)
+    type_dir = get_type_dir(base_dir, analysis_type)
+    type_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create screenshots directory for this date
+    screenshots_base = type_dir / "screenshots" / audit_date
+    screenshots_base.mkdir(parents=True, exist_ok=True)
 
     # Create competitor subfolders
     competitor_paths = {}
     for competitor in competitors:
         comp_name = competitor["name"]
-        comp_root = audit_root / comp_name
-        comp_screenshots = comp_root / "screenshots"
+        comp_root = screenshots_base / comp_name
 
-        # Create directories
+        # Create competitor directory
         comp_root.mkdir(exist_ok=True)
-        comp_screenshots.mkdir(exist_ok=True)
 
-        competitor_paths[comp_name] = {"root": comp_root, "screenshots": comp_screenshots}
+        competitor_paths[comp_name] = {
+            "root": comp_root,
+            "screenshots": comp_root,  # Screenshots are now in the same folder
+        }
 
-    return {"audit_root": audit_root, "competitors": competitor_paths}
+    return {
+        "audit_root": type_dir,
+        "audit_date": audit_date,
+        "report_html": type_dir / f"{audit_date}.html",
+        "report_json": type_dir / f"{audit_date}.json",
+        "competitors": competitor_paths,
+    }
 
 
 def get_screenshot_path(competitor_paths: Dict, competitor_name: str, viewport_name: str) -> Path:
@@ -681,9 +856,10 @@ def get_screenshot_path(competitor_paths: Dict, competitor_name: str, viewport_n
     if competitor_name not in competitor_paths:
         raise ValueError(f"Competitor '{competitor_name}' not in paths")
 
-    screenshots_dir = competitor_paths[competitor_name]["screenshots"]
+    # Screenshots are stored directly in the competitor folder
+    comp_root = competitor_paths[competitor_name]["root"]
     filename = f"{viewport_name}.png"
-    return screenshots_dir / filename
+    return comp_root / filename
 
 
 def get_analysis_path(competitor_paths: Dict, competitor_name: str) -> Path:
@@ -702,6 +878,24 @@ def get_analysis_path(competitor_paths: Dict, competitor_name: str) -> Path:
 
     comp_root = competitor_paths[competitor_name]["root"]
     return comp_root / "analysis.json"
+
+
+def get_observation_path(competitor_paths: Dict, competitor_name: str) -> Path:
+    """
+    Get the path for a competitor's observation JSON file.
+
+    Args:
+        competitor_paths: Dictionary from create_audit_directory_structure
+        competitor_name: Clean competitor name
+
+    Returns:
+        Path object for observation.json
+    """
+    if competitor_name not in competitor_paths:
+        raise ValueError(f"Competitor '{competitor_name}' not in paths")
+
+    comp_root = competitor_paths[competitor_name]["root"]
+    return comp_root / "observation.json"
 
 
 def get_comparison_report_path(audit_root: Path) -> Path:

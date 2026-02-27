@@ -1,6 +1,6 @@
 # Project State: UX Maturity Analysis
 
-**Version:** 1.8.0
+**Version:** 1.9.0
 **Status:** Production Ready
 **Last Updated:** 2026-02-27
 **Context Load Priority:** HIGH (load this file first)
@@ -32,16 +32,16 @@ All planned work complete. Ready for new feature requests.
 
 Last 10 completed items for context.
 
+- [x] v1.9.0: New output structure (`/{type}/{date}.html`) for better URL organization
+- [x] v1.9.0: Type index pages (e.g., `/basket-pages/`) showing all reports of that type
+- [x] v1.9.0: Updated audit_organizer.py for new directory structure
+- [x] v1.9.0: Updated html_report_generator.py with type/date parameters
+- [x] v1.9.0: Updated generate_index.py for new structure + legacy support
 - [x] v1.8.0: Automatic Netlify deployment (setup wizard + `deploy_reports()` in main.py)
 - [x] v1.8.0: `--no-deploy` CLI flag for manual control
 - [x] v1.8.0: `netlify.toml` build configuration
 - [x] v1.7.0: Template partials (`_theme_toggle.jinja2`, `_brand.jinja2`)
 - [x] v1.7.0: Auto-build CSS in report generation (`_build_css()` in html_report_generator.py)
-- [x] v1.7.0: WCAG AA accessibility improvements (font sizes, contrast)
-- [x] v1.7.0: Live chart resize with Plotly.Plots.resize()
-- [x] v1.7.0: Theme toggle (dark/light) with localStorage persistence
-- [x] v1.7.0: Code quality tooling (flake8, black, isort, pre-commit)
-- [x] v1.7.0: Developer docs (ONBOARDING.md, COMMON_TASKS.md)
 
 ---
 
@@ -113,18 +113,36 @@ Capture (Playwright) → Observe (Pass 1) → Score (Pass 2) → Generate Report
 **Sequential AI analysis:** 90s delay between competitors (rate limit compliance)
 
 ### Output Structure
+
+**New structure (v1.9.0+):**
 ```
 output/
-├── index.html              # Master index (auto-generated)
-└── audits/{date}_{type}/   # Per-audit folder
-    ├── _comparison_report.md
-    ├── {audit}_report.html
-    ├── _audit_summary.json
-    └── {competitor}/
-        ├── screenshots/
-        ├── observation.json
-        └── analysis.json
+├── index.html                    # Main dashboard
+├── css/main.css                  # Compiled CSS
+├── basket-pages/                 # Type directory
+│   ├── index.html                # List of all basket reports
+│   ├── 2026-02-27.html           # Specific dated report
+│   ├── 2026-02-27.json           # Report summary data
+│   └── screenshots/
+│       └── 2026-02-27/
+│           └── {competitor}/
+│               ├── desktop.png
+│               ├── mobile.png
+│               ├── observation.json
+│               └── analysis.json
+├── product-pages/
+│   └── ...
+└── audits/                       # Legacy structure (still supported)
+    └── {date}_{type}/
+        ├── _comparison_report.md
+        ├── {audit}_report.html
+        └── ...
 ```
+
+**URL structure:**
+- `/` → Main dashboard
+- `/basket-pages/` → List of all basket page reports
+- `/basket-pages/2026-02-27.html` → Specific report
 
 ### Code Quality
 - Linters: flake8, black, isort
