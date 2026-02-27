@@ -5,6 +5,48 @@ All notable changes to the E-commerce UX Maturity Analysis Agent will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-02-27
+
+### Changed
+- **📁 New Output Structure**: Reports now use type-based URL structure
+  - Reports at `/{type}/{date}.html` instead of `/audits/{date}_{type}/`
+  - Type directories use kebab-case (e.g., `/basket-pages/`, `/product-pages/`)
+  - Screenshots moved to `/{type}/screenshots/{date}/{competitor}/`
+  - Legacy `/audits/` structure still supported for backward compatibility
+
+### Added
+- **📋 Type Index Pages**: Each analysis type has its own index
+  - `/basket-pages/` lists all basket page reports with stats
+  - Shows latest vs archived badges
+  - Displays competitor count, average score, leader score per report
+  - Easy navigation between historical reports
+
+- **🔄 Backward Compatibility**: Both structures work together
+  - `generate_index.py` discovers reports from both new and legacy structures
+  - Main dashboard shows reports from all sources
+  - Smooth migration path for existing deployments
+
+### Technical
+- Updated `audit_organizer.py`:
+  - New `get_output_dir()` and `get_type_dir()` functions
+  - `create_audit_directory_structure()` creates new layout
+  - `collect_new_structure_runs()` discovers new format reports
+  - Added `get_observation_path()` helper
+
+- Updated `html_report_generator.py`:
+  - `generate_report_page()` accepts `analysis_type` and `audit_date` params
+  - New `generate_type_index_page()` for type-specific index pages
+  - `_prepare_competitor_data()` handles new screenshot paths
+
+- Updated `generate_index.py`:
+  - `collect_new_structure_reports()` scans new layout
+  - `generate_type_index()` creates per-type index pages
+  - `generate_main_index()` combines both structures
+
+### Documentation
+- Updated `ARCHITECTURE.md` with new output layout
+- Updated `PROJECT_STATE.md` to v1.9.0
+
 ## [1.8.0] - 2026-02-27
 
 ### Added

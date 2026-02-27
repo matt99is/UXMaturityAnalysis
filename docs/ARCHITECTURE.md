@@ -1,6 +1,6 @@
 # Architecture & Extensibility Guide
 
-This document describes the current (v1.7.0) architecture for UX Maturity Analysis Agent.
+This document describes the current (v1.9.0) architecture for UX Maturity Analysis Agent.
 
 ## System Overview
 \`\`\`
@@ -15,7 +15,7 @@ main.py (orchestrator)
 └─ report generators
    ├─ report_generator.py (markdown + summary json)
    ├─ html_report_generator.py (interactive html)
-   └─ audit_organizer.py (output layout + output/index.html)
+   └─ audit_organizer.py (output layout + index generation)
 ```
 
 ## Pipeline Flow
@@ -40,6 +40,7 @@ main.py (orchestrator)
 - Interactive HTML report
 - Audit summary JSON
 - Project-level index generated at \`output/index.html\`
+- Type-level index generated at \`output/{type}/index.html\`
 
 ## Configuration Model
 Configuration is sourced from \`criteria_config/*.yaml\` (not from a monolithic runtime \`config.yaml\`).
@@ -54,22 +55,44 @@ Each analysis YAML typically includes:
 
 \`config_loader.py\` maps each file to an \`AnalysisType\` model.
 
-## Output Layout
+## Output Layout (v1.9.0+)
+
+**New structure:**
 \`\`\`
 output/
-├─ index.html
-└─ audits/
+├─ index.html                    # Main dashboard
+├─ css/main.css                  # Compiled CSS
+├─ basket-pages/                 # Type directory (kebab-case)
+│  ├─ index.html                 # List of all basket reports
+│  ├─ 2026-02-27.html            # Specific dated report
+│  ├─ 2026-02-27.json            # Report summary data
+│  └─ screenshots/
+│     └─ 2026-02-27/
+│        └─ {competitor}/
+│           ├─ desktop.png
+│           ├─ mobile.png
+│           ├─ observation.json
+│           └─ analysis.json
+├─ product-pages/
+│  └─ ...
+└─ audits/                       # Legacy structure (still supported)
    └─ {YYYY-MM-DD}_{analysis_type}/
       ├─ _comparison_report.md
       ├─ {audit_folder}_report.html
-      ├─ _audit_summary.json
-      └─ {competitor}/
-         ├─ screenshots/
-         │  ├─ desktop.png
-         │  └─ mobile.png
-         ├─ observation.json
-         └─ analysis.json
+      └─ ...
 ```
+
+**URL structure:**
+- \`/\` → Main dashboard (all report types)
+- \`/basket-pages/\` → List of all basket page reports
+- \`/basket-pages/2026-02-27.html\` → Specific dated report
+- \`/product-pages/\` → List of product page reports
+
+**Benefits:**
+- Clean, predictable URLs
+- Easy to share specific reports
+- Historical tracking per type
+- Ready for multi-tenant future (\`/{tenant}/{type}/\`)
 
 ## Key Runtime Settings
 - Model selection precedence:
