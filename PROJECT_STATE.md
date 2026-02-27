@@ -50,11 +50,13 @@ Prioritized backlog. Top items = highest priority.
 - Audit CSS for unused rules
 - Files: `css/`
 
-### 6. GitHub Actions Auto-Deploy
-**Priority:** Future | **Estimated:** 2 hours
-- Create `.github/workflows/deploy.yml`
-- Configure Netlify deployment
-- Files: `.github/workflows/`
+### 6. Netlify Auto-Deploy
+**Priority:** Future | **Estimated:** 2-3 hours | **Plan:** `docs/archive/2026-02/2026-02-26-netlify-auto-deploy-implementation.md`
+- One-time setup wizard (`scripts/setup_netlify.py`)
+- Auto-deploy after analysis via `deploy_reports()` in main.py
+- Custom domain: `analysis.mattlelonek.co.uk`
+- `--no-deploy` flag for manual control
+- Files: `scripts/setup_netlify.py`, `main.py`, `netlify.toml`
 
 ---
 
@@ -170,3 +172,4 @@ python3 -m http.server 8000 --directory output
 | `docs/ONBOARDING.md` | Developer onboarding guide |
 | `docs/COMMON_TASKS.md` | Quick reference for frequent tasks |
 | `docs/deployment/` | Netlify deployment guides |
+| `docs/archive/` | Historical design docs (see INDEX.md) |
