@@ -54,8 +54,10 @@ Key patterns and decisions for AI context.
 
 ### Pipeline Flow
 ```
-Capture (Playwright) → Observe (Pass 1) → Score (Pass 2) → Generate Reports
+Capture (Playwright) → Observe (Pass 1) → Score (Pass 2) → Generate Reports → Deploy (Netlify)
 ```
+
+**Live site:** https://analysis.mattlelonek.co.uk
 
 ### Key Patterns
 
@@ -96,14 +98,17 @@ output/
 ## Quick Reference
 
 ```bash
-# Run analysis
+# Run analysis (auto-deploys to Netlify)
 python3 main.py --config competitors.json --analysis-type basket_pages
+
+# Run analysis without deploying
+python3 main.py --config competitors.json --no-deploy
 
 # Regenerate reports from existing screenshots
 python3 scripts/reanalyze_screenshots.py output/audits/2026-02-24_basket_pages
 
-# Build CSS (manual until auto-build implemented)
-python3 scripts/build_css.py
+# Manual deploy
+netlify deploy --prod --dir=output
 
 # Run linters
 pre-commit run --all-files
