@@ -25,8 +25,11 @@ class ClaudeUXAnalyzer:
     on criteria from config, making it work with any analysis type.
     """
 
-    def __init__(self, api_key: str, model: str = "claude-sonnet-4-5-20250929"):
-        self.client = AsyncAnthropic(api_key=api_key)
+    def __init__(self, api_key: str, model: str = "claude-sonnet-4-5-20250929", base_url: str = None):
+        client_kwargs = {"api_key": api_key}
+        if base_url:
+            client_kwargs["base_url"] = base_url
+        self.client = AsyncAnthropic(**client_kwargs)
         self.model = model
 
     def _build_analysis_prompt(
@@ -370,7 +373,7 @@ IMPORTANT JSON FORMATTING RULES:
         try:
             response = await self.client.messages.create(
                 model=self.model,
-                max_tokens=3000,
+                max_tokens=8000,
                 messages=[{"role": "user", "content": content}],
             )
 
@@ -383,9 +386,14 @@ IMPORTANT JSON FORMATTING RULES:
             return {"success": True, "observation": observation}
 
         except json.JSONDecodeError as e:
+            error_msg = (
+                f"Pass 1 truncated — response hit {8000} token limit. Debug file saved."
+                if response.stop_reason == "max_tokens"
+                else f"Pass 1 malformed JSON (char {e.pos}). Debug file saved."
+            )
             return {
                 "success": False,
-                "error": f"Failed to parse observation response as JSON: {e}",
+                "error": error_msg,
                 "raw_response": response_text if "response_text" in locals() else None,
             }
         except Exception as e:
@@ -521,7 +529,7 @@ IMPORTANT JSON FORMATTING RULES:
             # Call Claude API (async for parallel execution)
             response = await self.client.messages.create(
                 model=self.model,
-                max_tokens=6000,  # Reduced to stay within 8,000 output tokens/min rate limit
+                max_tokens=16000,
                 messages=[{"role": "user", "content": content}],
             )
 
@@ -554,11 +562,10 @@ IMPORTANT JSON FORMATTING RULES:
             return {"success": True, "analysis": analysis_result}
 
         except json.JSONDecodeError as e:
-            error_pos = getattr(e, "pos", None)
-            pos_hint = f" at position {error_pos}" if error_pos is not None else ""
             error_msg = (
-                f"Failed to parse Claude response as JSON: {e}{pos_hint}. "
-                f"Raw response saved to output/debug_malformed_json/ for inspection."
+                f"Pass 2 truncated — response hit {16000} token limit. Debug file saved."
+                if response.stop_reason == "max_tokens"
+                else f"Pass 2 malformed JSON (char {getattr(e, 'pos', '?')}). Debug file saved."
             )
             return {
                 "success": False,
