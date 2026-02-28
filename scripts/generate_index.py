@@ -269,28 +269,26 @@ def generate_type_index(type_key: str, type_data: dict, output_dir: Path):
 def generate_main_index(output_dir: Path, reports_by_type: dict, legacy_reports: list):
     """Generate the main index.html dashboard."""
 
-    # Build combined list for template
-    # Group by type, show summary stats
-    type_summaries = []
+    # Build combined list - show ALL reports individually, not grouped
+    all_reports = []
 
-    # Add new structure types
+    # Add all new structure reports as individual cards
     for type_key, type_data in reports_by_type.items():
-        latest = type_data.get("latest")
-        type_summaries.append({
-            "filename": f"{type_data['type_slug']}/",
-            "category": type_key,
-            "date": latest["date"] if latest else "",
-            "sort_date": latest["sort_date"] if latest else "",
-            "full_title": type_data["type_name"],
-            "avg_score": latest["avg_score"] if latest else 0,
-            "leader_score": latest["leader_score"] if latest else 0,
-            "competitors": latest["competitors"] if latest else 0,
-            "category_description": f"{type_data['total_reports']} reports available",
-            "total_reports": type_data["total_reports"],
-        })
+        for report in type_data.get("reports", []):
+            all_reports.append({
+                "filename": report["filename"],
+                "category": type_key,
+                "date": report["date"],
+                "sort_date": report["sort_date"],
+                "full_title": type_data["type_name"],
+                "avg_score": report["avg_score"],
+                "leader_score": report["leader_score"],
+                "competitors": report["competitors"],
+                "category_description": f"{report['competitors']} competitors analyzed",
+            })
 
-    # Add legacy reports (ungrouped, shown individually)
-    all_reports = type_summaries + legacy_reports
+    # Add legacy reports
+    all_reports.extend(legacy_reports)
 
     # Sort by date
     all_reports.sort(key=lambda r: r.get("sort_date", ""), reverse=True)

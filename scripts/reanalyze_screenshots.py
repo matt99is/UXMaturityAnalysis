@@ -162,6 +162,9 @@ async def reanalyze_audit(
             with open(analysis_path, 'r') as f:
                 existing_analysis = json.load(f)
 
+            # Mark as successful for report generator
+            existing_analysis["success"] = True
+
             # Inject competitor_root so report generators can resolve relative observation_file
             existing_analysis["competitor_root"] = str(comp_dir)
 

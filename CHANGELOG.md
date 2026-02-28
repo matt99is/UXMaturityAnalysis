@@ -5,6 +5,26 @@ All notable changes to the E-commerce UX Maturity Analysis Agent will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-02-28
+
+### Changed
+- **📊 Index Direct Links**: Report cards now link directly to reports instead of type index pages
+  - Simplified navigation: click card → view report (no intermediate page)
+  - Better UX for prototype with limited historical reports
+  - All reports shown individually (not grouped by type)
+
+### Fixed
+- **🔄 Reanalyze Script Bug**: Fixed `success` field missing from loaded analyses
+  - `reanalyze_screenshots.py` now marks existing analyses as successful
+  - HTML report generation works correctly when reusing cached analyses
+  - All 16 competitors now included in regenerated reports
+
+### Technical
+- Updated `generate_index.py`: Changed type summaries to show all reports individually
+- Updated `reanalyze_screenshots.py`: Added `existing_analysis["success"] = True` when loading cached analyses
+- Moved competitor folders from `example-assets/` to proper `basket-pages/` structure
+- Created summary JSON files for report metadata (`2026-02-28.json`)
+
 ## [1.10.0] - 2026-02-28
 
 ### Added

@@ -1,6 +1,6 @@
 # Project State: UX Maturity Analysis
 
-**Version:** 1.10.0
+**Version:** 1.11.0
 **Status:** Production Ready
 **Last Updated:** 2026-02-28
 **Context Load Priority:** HIGH (load this file first)
@@ -22,9 +22,29 @@ Items currently in progress. Move to Completed when done.
 
 ## Next Up
 
-### [No pending tasks]
+### Polish Report Design (Standard for Future Reports)
 
-All planned work complete. Ready for new feature requests.
+The current 16-competitor basket page report needs polish to set the standard for all future reports:
+- Review visual hierarchy and spacing
+- Ensure consistent styling across all sections
+- Verify mobile responsiveness
+- Check chart readability with 16+ competitors
+- Standardize competitor card layout
+- Consider pagination or lazy loading for large competitor lists
+
+**Files:** `templates/report.html.jinja2`, `css/_*.scss`
+
+### Headless auto-capture mode (`--headless` flag)
+
+Interactive mode requires a visible browser, which doesn't work on a headless remote server (VS Code Remote SSH). Add a `--headless` flag that:
+- Launches Playwright with `headless=True`
+- Uses `capture_multiple_viewports` instead of `capture_with_interaction` (no user prompts, no display needed)
+- Skips the Y/R/S confirmation prompt after each capture
+- Bot-protected sites will fail silently — document this limitation
+
+**Files:** `main.py` (add `--headless` CLI arg, branch capture path), `screenshot_capture.py` (no changes needed, already supports headless)
+
+**Note:** For remote workflows, `reanalyze_screenshots.py` + manual screenshot upload is the current workaround.
 
 ---
 
@@ -32,6 +52,9 @@ All planned work complete. Ready for new feature requests.
 
 Last 10 completed items for context.
 
+- [x] v1.11.0: Index direct links - cards link directly to reports (not type index)
+- [x] v1.11.0: Fixed reanalyze_screenshots.py - all 16 competitors now included
+- [x] v1.11.0: Moved competitor folders to proper basket-pages/ structure
 - [x] v1.10.0: Rich progress bar + live countdown in analysis loops (main.py + reanalyze_screenshots.py)
 - [x] v1.10.0: Improved error messages (truncation vs malformed JSON, no double-printing)
 - [x] v1.10.0: Raised max_tokens — Pass 1: 8000, Pass 2: 16000
