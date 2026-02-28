@@ -506,7 +506,11 @@ class UXAnalysisOrchestrator:
             if progress is not None and task_id is not None:
                 progress.update(task_id, description=desc)
 
-        self.console.print(f"\n[bold cyan]Analyzing:[/bold cyan] {site_name}")
+        def _print(*args, **kwargs):
+            con = progress.console if progress is not None else self.console
+            con.print(*args, **kwargs)
+
+        _print(f"\n[bold cyan]Analyzing:[/bold cyan] {site_name}")
 
         try:
             # Determine observation file path (if competitor_paths available)
@@ -529,19 +533,19 @@ class UXAnalysisOrchestrator:
 
             if use_existing:
                 _update(f"Pass 1: Loading cached observation for {site_name}...")
-                self.console.print(f"  [dim]↻ Loading existing observation from {observation_path.name}[/dim]")
+                _print(f"  [dim]↻ Loading existing observation from {observation_path.name}[/dim]")
                 try:
                     with open(observation_path, 'r') as f:
                         observation = json.load(f)
                 except (json.JSONDecodeError, OSError) as exc:
-                    self.console.print(
+                    _print(
                         f"  [yellow]⚠ Existing observation invalid ({exc}); re-running pass 1[/yellow]"
                     )
                     use_existing = False
 
             if not use_existing:
                 _update(f"Pass 1: Observing {site_name}...")
-                self.console.print(f"  [cyan]Pass 1: Observing screenshots...[/cyan]")
+                _print(f"  [cyan]Pass 1: Observing screenshots...[/cyan]")
                 observation_focus = list(getattr(self.analysis_type_config, 'observation_focus', []))
 
                 observe_result = await self.claude_analyzer._observe_screenshots(
@@ -553,7 +557,7 @@ class UXAnalysisOrchestrator:
                 )
 
                 if not observe_result.get("success"):
-                    self.console.print(f"  [red]Observation failed: {observe_result.get('error')}[/red]")
+                    _print(f"  [red]Observation failed: {observe_result.get('error')}[/red]")
                     return {
                         "success": False,
                         "site_name": site_name,
@@ -569,13 +573,13 @@ class UXAnalysisOrchestrator:
                     observation_path.parent.mkdir(parents=True, exist_ok=True)
                     with open(observation_path, 'w') as f:
                         json.dump(observation, f, indent=2)
-                    self.console.print(f"  [green]✓ Observation saved ({len(observation.get('notable_states', []))} notable states)[/green]")
+                    _print(f"  [green]✓ Observation saved ({len(observation.get('notable_states', []))} notable states)[/green]")
                 else:
-                    self.console.print(f"  [green]✓ Observation complete ({len(observation.get('notable_states', []))} notable states)[/green]")
+                    _print(f"  [green]✓ Observation complete ({len(observation.get('notable_states', []))} notable states)[/green]")
 
             # --- Pass 2: Score ---
             _update(f"Pass 2: Scoring {site_name}...")
-            self.console.print(f"  [cyan]Pass 2: Scoring against criteria...[/cyan]")
+            _print(f"  [cyan]Pass 2: Scoring against criteria...[/cyan]")
 
             criteria_dicts = [
                 {
@@ -600,7 +604,7 @@ class UXAnalysisOrchestrator:
             )
 
             if not analysis_result.get("success"):
-                self.console.print(f"  [red]Scoring failed: {analysis_result.get('error')}[/red]")
+                _print(f"  [red]Scoring failed: {analysis_result.get('error')}[/red]")
                 return {
                     "success": False,
                     "site_name": site_name,
@@ -615,7 +619,7 @@ class UXAnalysisOrchestrator:
             result_data["screenshots_analyzed"] = screenshot_paths
             result_data["model_used"] = self.claude_analyzer.model
 
-            self.console.print(f"  [green]✓ Analysis complete[/green]")
+            _print(f"  [green]✓ Analysis complete[/green]")
 
             # Save analysis.json if competitor_paths available
             if competitor_paths:
@@ -639,7 +643,7 @@ class UXAnalysisOrchestrator:
             }
 
         except Exception as e:
-            self.console.print(f"  [red]Error: {str(e)}[/red]")
+            _print(f"  [red]Error: {str(e)}[/red]")
             return {
                 "success": False,
                 "site_name": site_name,
