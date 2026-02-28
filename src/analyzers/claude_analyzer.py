@@ -435,9 +435,7 @@ IMPORTANT JSON FORMATTING RULES:
             new_width = int(img.width * scale_factor)
             new_height = int(img.height * scale_factor)
             img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            print(f"  [DEBUG] Resized image from {original_size} to ({new_width}, {new_height})")
-        else:
-            print(f"  [DEBUG] Image dimensions OK: {original_size}")
+
 
         # Check if we need aggressive compression
         file_size = os.path.getsize(image_path)

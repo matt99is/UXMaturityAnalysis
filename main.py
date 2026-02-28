@@ -39,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from src.config_loader import AnalysisConfig
 from src.analyzers.screenshot_capture import ScreenshotCapture
 from src.analyzers.claude_analyzer import ClaudeUXAnalyzer
+from src.analyzers.glm_analyzer import GLMUXAnalyzer
 from src.utils.report_generator import ReportGenerator
 from src.utils.html_report_generator import HTMLReportGenerator
 from src.utils.audit_organizer import (
@@ -151,19 +152,46 @@ class UXAnalysisOrchestrator:
         analysis_type: str = "basket_pages",
         config_path: str = "config.yaml",
         manual_mode: bool = False,
-        screenshots_dir: str = None
+        screenshots_dir: str = None,
+        llm_provider: str = None
     ):
-        resolved_model = (
-            model
-            or os.getenv("CLAUDE_MODEL")
-            or os.getenv("claude_model")
-            or "claude-sonnet-4-5-20250929"
-        )
         self.console = Console()
         self.analysis_config = AnalysisConfig(config_path)
         self.analysis_type_config = self.analysis_config.get_analysis_type(analysis_type)
         self.screenshot_capturer = ScreenshotCapture()
-        self.claude_analyzer = ClaudeUXAnalyzer(api_key=api_key, model=resolved_model)
+
+        # LLM Provider selection (anthropic or glm)
+        self.llm_provider = (
+            llm_provider
+            or os.getenv("LLM_PROVIDER")
+            or "anthropic"
+        ).lower()
+
+        if self.llm_provider == "glm":
+            # GLM provider - uses api.z.ai Anthropic-compatible endpoint
+            resolved_model = (
+                model
+                or os.getenv("GLM_MODEL")
+                or "glm-5"
+            )
+            glm_base_url = os.getenv("GLM_BASE_URL", "https://api.z.ai/api/anthropic")
+            glm_api_key = os.getenv("GLM_API_KEY") or api_key
+            self.analyzer = ClaudeUXAnalyzer(api_key=glm_api_key, model=resolved_model, base_url=glm_base_url)
+            self.console.print(f"[dim]Using GLM provider: {resolved_model}[/dim]")
+        else:
+            # Default: Anthropic provider
+            resolved_model = (
+                model
+                or os.getenv("CLAUDE_MODEL")
+                or os.getenv("claude_model")
+                or "claude-sonnet-4-5-20250929"
+            )
+            self.analyzer = ClaudeUXAnalyzer(api_key=api_key, model=resolved_model)
+            self.console.print(f"[dim]Using Anthropic provider: {resolved_model}[/dim]")
+
+        # Keep backward compatibility alias
+        self.claude_analyzer = self.analyzer
+
         project_output_dir = get_audits_dir("output").parent
         self.report_generator = ReportGenerator(output_dir=str(project_output_dir))
         self.html_report_generator = HTMLReportGenerator(output_dir=str(project_output_dir))
@@ -458,7 +486,9 @@ class UXAnalysisOrchestrator:
 
     async def analyze_competitor_from_screenshots(
         self,
-        capture_data: Dict[str, Any]
+        capture_data: Dict[str, Any],
+        progress=None,
+        task_id=None,
     ) -> Dict[str, Any]:
         """
         Analyze a competitor using two-pass pipeline:
@@ -471,6 +501,10 @@ class UXAnalysisOrchestrator:
         url = capture_data["url"]
         screenshot_paths = capture_data["screenshot_paths"]
         competitor_paths = capture_data.get("competitor_paths")
+
+        def _update(desc: str):
+            if progress is not None and task_id is not None:
+                progress.update(task_id, description=desc)
 
         self.console.print(f"\n[bold cyan]Analyzing:[/bold cyan] {site_name}")
 
@@ -505,6 +539,7 @@ class UXAnalysisOrchestrator:
                     use_existing = False
 
             if not use_existing:
+                _update(f"Pass 1: Observing {site_name}...")
                 self.console.print(f"  [cyan]Pass 1: Observing screenshots...[/cyan]")
                 observation_focus = list(getattr(self.analysis_type_config, 'observation_focus', []))
 
@@ -537,14 +572,8 @@ class UXAnalysisOrchestrator:
                 else:
                     self.console.print(f"  [green]✓ Observation complete ({len(observation.get('notable_states', []))} notable states)[/green]")
 
-            # Surface notable states to console
-            notable = observation.get("notable_states", [])
-            if notable:
-                self.console.print(f"  [yellow]Notable states:[/yellow]")
-                for state in notable:
-                    self.console.print(f"    [yellow]• {state}[/yellow]")
-
             # --- Pass 2: Score ---
+            _update(f"Pass 2: Scoring {site_name}...")
             self.console.print(f"  [cyan]Pass 2: Scoring against criteria...[/cyan]")
 
             criteria_dicts = [
