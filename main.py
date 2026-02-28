@@ -29,7 +29,7 @@ from typing import List, Dict, Any
 from datetime import datetime
 from dotenv import load_dotenv
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 from rich.panel import Panel
 from rich.table import Table
 
