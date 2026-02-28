@@ -370,6 +370,7 @@ IMPORTANT JSON FORMATTING RULES:
 
         content = image_content + [{"type": "text", "text": prompt}]
 
+        response = None
         try:
             response = await self.client.messages.create(
                 model=self.model,
@@ -386,10 +387,11 @@ IMPORTANT JSON FORMATTING RULES:
             return {"success": True, "observation": observation}
 
         except json.JSONDecodeError as e:
+            truncated = response is not None and response.stop_reason == "max_tokens"
             error_msg = (
-                f"Pass 1 truncated — response hit {8000} token limit. Debug file saved."
-                if response.stop_reason == "max_tokens"
-                else f"Pass 1 malformed JSON (char {e.pos}). Debug file saved."
+                "Pass 1 truncated — response hit 8000 token limit."
+                if truncated
+                else f"Pass 1 malformed JSON (char {e.pos})."
             )
             return {
                 "success": False,
@@ -525,6 +527,7 @@ IMPORTANT JSON FORMATTING RULES:
                 )
             content = image_content + [{"type": "text", "text": prompt}]
 
+        response = None
         try:
             # Call Claude API (async for parallel execution)
             response = await self.client.messages.create(
@@ -562,9 +565,10 @@ IMPORTANT JSON FORMATTING RULES:
             return {"success": True, "analysis": analysis_result}
 
         except json.JSONDecodeError as e:
+            truncated = response is not None and response.stop_reason == "max_tokens"
             error_msg = (
-                f"Pass 2 truncated — response hit {16000} token limit. Debug file saved."
-                if response.stop_reason == "max_tokens"
+                "Pass 2 truncated — response hit 16000 token limit. Debug file saved."
+                if truncated
                 else f"Pass 2 malformed JSON (char {getattr(e, 'pos', '?')}). Debug file saved."
             )
             return {
