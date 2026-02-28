@@ -541,19 +541,20 @@ IMPORTANT JSON FORMATTING RULES:
             try:
                 analysis_result = self._parse_json_response(response_text)
             except json.JSONDecodeError as json_error:
-                # Save malformed response to file for debugging
-                debug_path = Path("output/debug_malformed_json")
-                debug_path.mkdir(parents=True, exist_ok=True)
-                timestamp = (
-                    Path(screenshot_paths[0]).parent.parent.name if screenshot_paths else "unknown"
-                )
-                debug_file = debug_path / f"{site_name.replace(' ', '_')}_{timestamp}.txt"
-                with open(debug_file, "w") as f:
-                    f.write(f"=== MALFORMED JSON DEBUG ===\n")
-                    f.write(f"Site: {site_name}\n")
-                    f.write(f"Error: {json_error}\n\n")
-                    f.write(f"=== RAW RESPONSE ===\n")
-                    f.write(response_text)
+                # Only save debug file for genuinely malformed JSON, not truncations
+                if not (response is not None and response.stop_reason == "max_tokens"):
+                    debug_path = Path("output/debug_malformed_json")
+                    debug_path.mkdir(parents=True, exist_ok=True)
+                    timestamp = (
+                        Path(screenshot_paths[0]).parent.parent.name if screenshot_paths else "unknown"
+                    )
+                    debug_file = debug_path / f"{site_name.replace(' ', '_')}_{timestamp}.txt"
+                    with open(debug_file, "w") as f:
+                        f.write(f"=== MALFORMED JSON DEBUG ===\n")
+                        f.write(f"Site: {site_name}\n")
+                        f.write(f"Error: {json_error}\n\n")
+                        f.write(f"=== RAW RESPONSE ===\n")
+                        f.write(response_text)
                 raise  # Re-raise the original error
 
             # Add metadata
@@ -565,7 +566,7 @@ IMPORTANT JSON FORMATTING RULES:
         except json.JSONDecodeError as e:
             truncated = response is not None and response.stop_reason == "max_tokens"
             error_msg = (
-                "Pass 2 truncated — response hit 16000 token limit. Debug file saved."
+                "Pass 2 truncated — response hit 16000 token limit."
                 if truncated
                 else f"Pass 2 malformed JSON (char {getattr(e, 'pos', '?')}). Debug file saved."
             )
