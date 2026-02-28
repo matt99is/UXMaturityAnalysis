@@ -646,6 +646,22 @@ class UXAnalysisOrchestrator:
                 "error": str(e)
             }
 
+    async def _wait_with_countdown(
+        self,
+        delay: int,
+        next_name: str,
+        progress=None,
+        task_id=None,
+    ):
+        """Waits `delay` seconds, updating progress description each second."""
+        for remaining in range(delay, 0, -1):
+            if progress is not None and task_id is not None:
+                progress.update(
+                    task_id,
+                    description=f"Next: {next_name} in {remaining}s  •  Ctrl+C to quit",
+                )
+            await asyncio.sleep(1)
+
     async def analyze_competitors(
         self,
         competitors: List[Dict[str, str]],
