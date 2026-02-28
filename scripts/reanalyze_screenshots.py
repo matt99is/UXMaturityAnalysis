@@ -16,6 +16,8 @@ import sys
 import os
 import json
 from pathlib import Path
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
+from rich.console import Console
 
 # Add parent directory to path so we can import from main and src
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -35,8 +37,9 @@ async def reanalyze_audit(
     """Reanalyze all competitors in an existing audit folder."""
 
     audit_dir = Path(audit_path)
+    console = Console()
     if not audit_dir.exists():
-        print(f"Error: Audit directory not found: {audit_path}")
+        console.print(f"Error: Audit directory not found: {audit_path}")
         return
 
     # Load audit summary if exists, otherwise create minimal one
@@ -59,7 +62,7 @@ async def reanalyze_audit(
         else:
             analysis_type = 'basket_pages'  # Default
 
-        print(f"No audit summary found. Inferring analysis type from folder name: {analysis_type}")
+        console.print(f"No audit summary found. Inferring analysis type from folder name: {analysis_type}")
 
         # Create minimal audit summary
         audit_summary = {
@@ -68,25 +71,25 @@ async def reanalyze_audit(
             'created_by': 'reanalysis_script'
         }
 
-    print(f"Analysis type: {analysis_type}")
+    console.print(f"Analysis type: {analysis_type}")
 
     # Load config for analysis type
     config = AnalysisConfig()
     analysis_type_config = config.get_analysis_type(analysis_type)
 
     if not analysis_type_config:
-        print(f"Error: Analysis type '{analysis_type}' not found in config")
+        console.print(f"Error: Analysis type '{analysis_type}' not found in config")
         return
 
     # Find all competitor folders
     competitor_folders = [d for d in audit_dir.iterdir() if d.is_dir() and not d.name.startswith('_')]
 
-    print(f"Found {len(competitor_folders)} competitors to reanalyze\n")
+    console.print(f"Found {len(competitor_folders)} competitors to reanalyze\n")
 
     # Get API key from environment
     api_key = os.getenv('ANTHROPIC_API_KEY')
     if not api_key:
-        print("Error: ANTHROPIC_API_KEY environment variable not set")
+        console.print("Error: ANTHROPIC_API_KEY environment variable not set")
         return
 
     # Create orchestrator
@@ -100,7 +103,7 @@ async def reanalyze_audit(
     for comp_folder in competitor_folders:
         screenshots_dir = comp_folder / "screenshots"
         if not screenshots_dir.exists():
-            print(f"Skipping {comp_folder.name}: No screenshots folder")
+            console.print(f"Skipping {comp_folder.name}: No screenshots folder")
             continue
 
         # Find screenshot files
@@ -114,7 +117,7 @@ async def reanalyze_audit(
             screenshots.append(str(mobile_shot))
 
         if not screenshots:
-            print(f"Skipping {comp_folder.name}: No screenshots found")
+            console.print(f"Skipping {comp_folder.name}: No screenshots found")
             continue
 
         competitors_data.append({
@@ -174,77 +177,93 @@ async def reanalyze_audit(
                 existing_analysis['screenshot_metadata'] = screenshot_metadata
 
             existing_results.append(existing_analysis)
-            print(f"  [↻] {comp_data['site_name']}: Using existing analysis")
+            console.print(f"  [↻] {comp_data['site_name']}: Using existing analysis")
         else:
             comp_data['_skip_observe'] = (not force_observe) and observation_path.exists()
             if comp_data['_skip_observe']:
-                print(
+                console.print(
                     f"  [→] {comp_data['site_name']}: Will skip observation "
                     "(observation.json exists)"
                 )
             elif force_observe and observation_path.exists():
-                print(f"  [→] {comp_data['site_name']}: Will re-observe (--force-observe)")
+                console.print(f"  [→] {comp_data['site_name']}: Will re-observe (--force-observe)")
             needs_analysis.append(comp_data)
 
-    print(f"\nFound {len(existing_results)} existing analyses, need to analyze {len(needs_analysis)} competitors\n")
+    console.print(f"\nFound {len(existing_results)} existing analyses, need to analyze {len(needs_analysis)} competitors\n")
 
     results = existing_results.copy()
 
     # Only run AI analysis for competitors that don't have analysis.json
     if needs_analysis:
-        print("═══ Phase 2: AI Analysis (Sequential) ═══")
-
         # Delay between analyses to respect 8,000 output tokens/min rate limit
         ANALYSIS_DELAY = 90  # Two-pass: ~9000 output tokens per competitor, 8000/min limit
 
-        print(f"Analyzing {len(needs_analysis)} competitors sequentially...")
-        print(f"Rate limit protection: {ANALYSIS_DELAY}s delay between analyses\n")
+        console.print("\n[bold cyan]═══ Phase 2: AI Analysis (Sequential) ═══[/bold cyan]")
+        console.print(f"[bold]Analyzing {len(needs_analysis)} competitors sequentially...[/bold]")
+        console.print(f"[dim]Rate limit protection: {ANALYSIS_DELAY}s delay between analyses[/dim]\n")
 
-        # Process sequentially
-        for idx, comp_data in enumerate(needs_analysis, 1):
-            print(f"Analyzing {idx}/{len(needs_analysis)}: {comp_data['site_name']}")
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[bold cyan]Analyzing competitors[/bold cyan]"),
+            BarColumn(),
+            TextColumn("{task.completed}/{task.total}"),
+            TextColumn("[dim]{task.description}[/dim]"),
+            TimeElapsedColumn(),
+            console=console,
+        ) as progress:
+            task_id = progress.add_task("", total=len(needs_analysis))
 
-            # Analyze this competitor
-            try:
-                analysis_result = await orchestrator.analyze_competitor_from_screenshots(comp_data)
-            except Exception as e:
-                print(f"  [✗] {str(e)}")
-                results.append({
-                    "success": False,
-                    "site_name": comp_data['site_name'],
-                    "url": comp_data['url'],
-                    "error": str(e)
-                })
-                continue
+            for idx, comp_data in enumerate(needs_analysis, 1):
+                progress.console.print(
+                    f"[cyan]Analyzing {idx}/{len(needs_analysis)}:[/cyan] {comp_data['site_name']}"
+                )
 
-            # Process result
-            if analysis_result.get("success"):
-                print(f"  [✓] Success!")
-            else:
-                print(f"  [⚠] {analysis_result.get('error', 'Unknown error')}")
+                try:
+                    analysis_result = await orchestrator.analyze_competitor_from_screenshots(
+                        comp_data, progress=progress, task_id=task_id
+                    )
+                except Exception as e:
+                    progress.console.print(f"  [red]✗ {str(e)}[/red]")
+                    results.append({
+                        "success": False,
+                        "site_name": comp_data['site_name'],
+                        "url": comp_data['url'],
+                        "error": str(e)
+                    })
+                    progress.update(task_id, advance=1)
+                    continue
 
-            results.append(analysis_result)
+                if analysis_result.get("success"):
+                    progress.console.print(f"  [green]✓ {comp_data['site_name']}[/green]")
+                else:
+                    progress.console.print(
+                        f"  [yellow]⚠ {analysis_result.get('error', 'Unknown error')}[/yellow]"
+                    )
 
-            # Wait between analyses (except for last one)
-            if idx < len(needs_analysis):
-                print(f"Waiting {ANALYSIS_DELAY}s before next analysis...\n")
-                await asyncio.sleep(ANALYSIS_DELAY)
+                results.append(analysis_result)
+                progress.update(task_id, advance=1)
+
+                if idx < len(needs_analysis):
+                    next_name = needs_analysis[idx]['site_name']
+                    await orchestrator._wait_with_countdown(
+                        ANALYSIS_DELAY, next_name, progress=progress, task_id=task_id
+                    )
     else:
-        print("All competitors already have analysis.json - skipping AI analysis")
+        console.print("All competitors already have analysis.json - skipping AI analysis")
 
-    print(f"\n✓ Reanalysis complete!")
+    console.print(f"\n✓ Reanalysis complete!")
 
     # Generate reports
-    print("\nGenerating reports...")
+    console.print("\nGenerating reports...")
     report_paths = orchestrator.generate_reports(
         results=results,
         audit_structure=audit_structure,
         audit_summary=audit_summary
     )
 
-    print(f"\n✓ Reports generated:")
+    console.print(f"\n✓ Reports generated:")
     for report_type, path in report_paths.items():
-        print(f"  - {report_type}: {path}")
+        console.print(f"  - {report_type}: {path}")
 
 if __name__ == "__main__":
     import argparse
