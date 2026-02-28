@@ -738,48 +738,67 @@ class UXAnalysisOrchestrator:
             processed_results = []
             if successful_captures:
                 try:
-                    for idx, capture_data in enumerate(successful_captures, 1):
-                        self.console.print(f"[cyan]Analyzing {idx}/{len(successful_captures)}:[/cyan] {capture_data['site_name']}")
+                    with Progress(
+                        SpinnerColumn(),
+                        TextColumn("[bold cyan]Analyzing competitors[/bold cyan]"),
+                        BarColumn(),
+                        TextColumn("{task.completed}/{task.total}"),
+                        TextColumn("[dim]{task.description}[/dim]"),
+                        TimeElapsedColumn(),
+                        console=self.console,
+                    ) as progress:
+                        task_id = progress.add_task("", total=len(successful_captures))
 
-                        # Analyze this competitor
-                        try:
-                            analysis_result = await self.analyze_competitor_from_screenshots(capture_data)
-                        except Exception as e:
-                            self.console.print(f"  [red]✗ {capture_data['site_name']}: {str(e)}[/red]")
-                            processed_results.append({
-                                "success": False,
-                                "site_name": capture_data['site_name'],
-                                "url": capture_data['url'],
-                                "error": str(e)
-                            })
-                            continue
+                        for idx, capture_data in enumerate(successful_captures, 1):
+                            progress.console.print(
+                                f"[cyan]Analyzing {idx}/{len(successful_captures)}:[/cyan] {capture_data['site_name']}"
+                            )
 
-                        # Process result
-                        if analysis_result.get("success"):
-                            self.console.print(f"  [green]✓ {capture_data['site_name']}[/green]")
-                        else:
-                            self.console.print(f"  [yellow]⚠ {capture_data['site_name']}: {analysis_result.get('error', 'Unknown error')}[/yellow]")
-
-                        processed_results.append(analysis_result)
-
-                        # Save individual competitor analysis if audit structure provided
-                        if audit_structure and analysis_result.get("success"):
                             try:
-                                analysis_path = get_analysis_path(
-                                    audit_structure['competitors'],
-                                    capture_data['site_name']
-                                )
-                                self.report_generator.save_competitor_analysis(
-                                    analysis_result,
-                                    analysis_path
+                                analysis_result = await self.analyze_competitor_from_screenshots(
+                                    capture_data, progress=progress, task_id=task_id
                                 )
                             except Exception as e:
-                                self.console.print(f"  [yellow]Warning: Could not save {capture_data['site_name']}: {e}[/yellow]")
+                                progress.console.print(f"  [red]✗ {capture_data['site_name']}: {str(e)}[/red]")
+                                processed_results.append({
+                                    "success": False,
+                                    "site_name": capture_data['site_name'],
+                                    "url": capture_data['url'],
+                                    "error": str(e)
+                                })
+                                progress.update(task_id, advance=1)
+                                continue
 
-                        # Wait between analyses (except for last one)
-                        if idx < len(successful_captures):
-                            self.console.print(f"[dim]Waiting {ANALYSIS_DELAY}s before next analysis...[/dim]\n")
-                            await asyncio.sleep(ANALYSIS_DELAY)
+                            if analysis_result.get("success"):
+                                progress.console.print(f"  [green]✓ {capture_data['site_name']}[/green]")
+                            else:
+                                progress.console.print(
+                                    f"  [yellow]⚠ {capture_data['site_name']}: {analysis_result.get('error', 'Unknown error')}[/yellow]"
+                                )
+
+                            processed_results.append(analysis_result)
+
+                            if audit_structure and analysis_result.get("success"):
+                                try:
+                                    analysis_path = get_analysis_path(
+                                        audit_structure['competitors'],
+                                        capture_data['site_name']
+                                    )
+                                    self.report_generator.save_competitor_analysis(
+                                        analysis_result, analysis_path
+                                    )
+                                except Exception as e:
+                                    progress.console.print(
+                                        f"  [yellow]Warning: Could not save {capture_data['site_name']}: {e}[/yellow]"
+                                    )
+
+                            progress.update(task_id, advance=1)
+
+                            if idx < len(successful_captures):
+                                next_name = successful_captures[idx]['site_name']
+                                await self._wait_with_countdown(
+                                    ANALYSIS_DELAY, next_name, progress=progress, task_id=task_id
+                                )
 
                     # Combine failed captures with processed analysis results
                     results = failed_captures + processed_results
