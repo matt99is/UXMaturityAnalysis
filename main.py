@@ -528,6 +528,7 @@ class UXAnalysisOrchestrator:
             )
 
             if use_existing:
+                _update(f"Pass 1: Loading cached observation for {site_name}...")
                 self.console.print(f"  [dim]↻ Loading existing observation from {observation_path.name}[/dim]")
                 try:
                     with open(observation_path, 'r') as f:
