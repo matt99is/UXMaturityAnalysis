@@ -1,8 +1,8 @@
 # Project State: UX Maturity Analysis
 
-**Version:** 1.9.0
+**Version:** 1.10.0
 **Status:** Production Ready
-**Last Updated:** 2026-02-27
+**Last Updated:** 2026-02-28
 **Context Load Priority:** HIGH (load this file first)
 
 ---
@@ -32,6 +32,10 @@ All planned work complete. Ready for new feature requests.
 
 Last 10 completed items for context.
 
+- [x] v1.10.0: Rich progress bar + live countdown in analysis loops (main.py + reanalyze_screenshots.py)
+- [x] v1.10.0: Improved error messages (truncation vs malformed JSON, no double-printing)
+- [x] v1.10.0: Raised max_tokens — Pass 1: 8000, Pass 2: 16000
+- [x] v1.10.0: Removed notable states bullet list and [DEBUG] image prints
 - [x] v1.9.0: New output structure (`/{type}/{date}.html`) for better URL organization
 - [x] v1.9.0: Type index pages (e.g., `/basket-pages/`) showing all reports of that type
 - [x] v1.9.0: Updated audit_organizer.py for new directory structure

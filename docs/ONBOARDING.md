@@ -1,7 +1,7 @@
 # Developer Onboarding Guide
 
-**Last Updated:** 2026-02-26
-**Project:** UX Maturity Analysis Agent v1.6.0
+**Last Updated:** 2026-02-28
+**Project:** UX Maturity Analysis Agent v1.10.0
 
 ---
 

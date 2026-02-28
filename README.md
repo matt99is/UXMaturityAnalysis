@@ -1,6 +1,6 @@
 # E-commerce UX Maturity Analysis Agent
 
-**Version:** 1.7.0
+**Version:** 1.10.0
 **Status:** Production Ready
 **Python:** 3.9+
 
@@ -61,13 +61,15 @@ This tool automates competitive UX analysis for e-commerce sites by:
 - 🔄 **Retry Option**: Not happy with screenshots? Retry before analyzing
 - 📁 **Manual Mode**: Upload your own screenshots for heavily bot-protected sites
 - ⌨️ **Cancel Anytime**: Press Ctrl+C or skip individual competitors
+- 📊 **Rich Progress Bar**: Live progress bar with spinner, X/Y count, pass description, and elapsed time
+- ⏱️ **Live Countdown**: 90-second waits between competitors show a live countdown instead of silence
 
 ### Analysis & Reports
 - 🎯 **UX Maturity Focus**: Evaluate UX maturity across multiple dimensions
 - 📊 **Research-backed Evaluation**: Baymard Institute and Nielsen Norman Group criteria
 - 📱 **Desktop & Mobile Analysis**: Multi-viewport screenshot capture
 - 🧪 **Two-Pass Pipeline**: Observe first, score second, with explicit evidence trail
-- 🔄 **Reanalyze Capability**: Regenerate reports from existing screenshots (NEW in v1.3.2)
+- 🔄 **Reanalyze Capability**: Regenerate reports from existing screenshots without re-capturing
 
 ### Output & Indexing
 - 📁 **Project-Local Storage**: Reports are written to `output/` inside this repository
@@ -284,8 +286,6 @@ python3 main.py --manual-mode --screenshots-dir ./my-screenshots --urls https://
 
 ## Reanalyze Script
 
-🆕 **NEW in v1.3.2**: Regenerate reports from existing screenshots without re-capturing!
-
 ### Why Use Reanalyze?
 
 - **No Browser Interaction**: Skip the screenshot capture phase entirely
@@ -481,32 +481,41 @@ criteria:
 
 ## Output Structure
 
-The tool organizes output by audit run with hierarchical structure:
+The tool organises output using a type-based URL structure (v1.9.0+):
 
 ```
 output/
-├── index.html                           # Master index for all audit runs
-└── audits/
-    └── 2026-02-24_basket_pages/         # Audit folder
-        ├── _comparison_report.md         # Markdown UX maturity report
-        ├── 2026-02-24_basket_pages_report.html  # Interactive HTML report
-        ├── _audit_summary.json           # Audit metadata
-        ├── nike/                         # Competitor folder
-        │   ├── screenshots/
-        │   │   ├── desktop.png           # Desktop viewport screenshot
-        │   │   └── mobile.png            # Mobile viewport screenshot
-        │   ├── observation.json          # Pass 1 observation evidence
-        │   └── analysis.json             # Pass 2 scored analysis
-        └── ...
+├── index.html                           # Main dashboard (all report types)
+├── css/main.css                         # Compiled CSS
+├── basket-pages/                        # Type directory (kebab-case)
+│   ├── index.html                       # List of all basket page reports
+│   ├── 2026-02-28.html                  # Specific dated report
+│   ├── 2026-02-28.json                  # Report summary data
+│   └── screenshots/
+│       └── 2026-02-28/
+│           └── {competitor}/
+│               ├── desktop.png          # Desktop viewport screenshot
+│               ├── mobile.png           # Mobile viewport screenshot
+│               ├── observation.json     # Pass 1 observation evidence
+│               └── analysis.json        # Pass 2 scored analysis
+├── product-pages/
+│   └── ...
+└── audits/                              # Legacy structure (still supported)
+    └── {YYYY-MM-DD}_{analysis_type}/
+        ├── _comparison_report.md
+        └── {audit_folder}_report.html
 ```
+
+**URL structure:**
+- `/` → Main dashboard
+- `/basket-pages/` → List of all basket page reports
+- `/basket-pages/2026-02-28.html` → Specific dated report
 
 ### File Descriptions
 
-- **`output/index.html`**: Master index listing all audit runs and report links
-- **`{audit_folder}_report.html`**: Interactive report with charts, filtering, annotations
-- **`_comparison_report.md`**: Markdown report with strategic insights and competitive analysis
-- **`_audit_summary.json`**: Metadata about the audit (timestamp, analysis type, competitors)
-- **`screenshots/`**: Desktop and mobile PNG screenshots for each competitor
+- **`output/index.html`**: Main dashboard listing all audit runs and report links
+- **`{type}/{date}.html`**: Interactive report with charts, filtering, annotations
+- **`{type}/{date}.json`**: Report summary data
 - **`observation.json`**: Pass 1 visual state observations + notable states
 - **`analysis.json`**: Pass 2 scoring with evidence citations, strengths, vulnerabilities
 
@@ -570,7 +579,7 @@ Complete competitive ranking table showing all competitors:
 
 **Note**: Rankings table is **never filtered** - always shows all competitors for full competitive landscape view.
 
-#### 4. Filter & Search Panel 🆕 v1.3.2
+#### 4. Filter & Search Panel
 
 Interactive controls to explore competitor profiles (not rankings):
 
@@ -588,7 +597,7 @@ Filter count shows: "Showing X of Y competitors"
 - ✅ Visual analysis charts (radar, bar, heatmap)
 - ❌ Rankings table (always shows all competitors)
 
-#### 5. Visual Analysis Charts 🆕 v1.3.2
+#### 5. Visual Analysis Charts
 
 All charts update dynamically based on active filters!
 
@@ -868,16 +877,18 @@ Model selection precedence:
 ## Roadmap
 
 **Recently Completed** ✅
+- [x] 📊 Rich progress bar + live countdown during analysis (v1.10.0)
+- [x] ✉️ Improved error messages distinguishing truncation vs malformed JSON (v1.10.0)
+- [x] 📁 Type-based output structure (`/basket-pages/2026-02-28.html`) + type index pages (v1.9.0)
+- [x] 🚀 Automatic Netlify deployment after analysis (v1.8.0)
+- [x] 🎨 Template partial system + SCSS architecture (v1.7.0)
+- [x] ♿ WCAG AA accessibility improvements (v1.7.0)
 - [x] 🧭 Two-pass analysis pipeline with `observation.json` evidence (v1.6.0)
 - [x] 🗂️ Project-level reports index at `output/index.html` (v1.6.0)
-- [x] 📁 Enforced in-project report output under `output/audits/` (v1.6.0)
 - [x] 🤖 Environment-based default Claude model selection (v1.6.0)
 - [x] 🛡️ Dark pattern detection enhancements (v1.5.0)
-- [x] 📦 Product page criteria enhancements with 2025-2026 research (v1.5.0)
 - [x] 💳 Express payment options criterion (v1.5.0)
-- [x] ⚖️ Sequential analysis for API rate limit compliance (v1.5.0)
 - [x] 🔄 Reanalyze script for report regeneration (v1.3.2)
-- [x] 🎨 Advanced filtering with dynamic dropdowns and chart updates (v1.3.2)
 - [x] 🎯 Strategic insights and rankings (v1.3.0)
 - [x] 📊 Interactive HTML reports with charts (v1.2.0)
 
@@ -899,7 +910,7 @@ This project uses [Semantic Versioning](https://semver.org/):
 - **MINOR** version for added functionality in a backward compatible manner
 - **PATCH** version for backward compatible bug fixes
 
-**Current Version:** 1.6.0
+**Current Version:** 1.10.0
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and upgrade instructions.
 
@@ -913,8 +924,8 @@ Or programmatically:
 
 ```python
 from src.version import __version__, get_version_info
-print(f"Version: {__version__}")  # 1.6.0
-print(f"Version Info: {get_version_info()}")  # (1, 6, 0)
+print(f"Version: {__version__}")  # 1.10.0
+print(f"Version Info: {get_version_info()}")  # (1, 10, 0)
 ```
 
 ---

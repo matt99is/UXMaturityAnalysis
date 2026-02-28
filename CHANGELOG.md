@@ -5,6 +5,33 @@ All notable changes to the E-commerce UX Maturity Analysis Agent will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-02-28
+
+### Added
+- **🖥️ Rich Progress Bar**: Persistent progress bar during analysis in both `main.py` and `reanalyze_screenshots.py`
+  - Spinner, competitor count (X/Y), live pass description, elapsed time
+  - Description updates: "Pass 1: Observing {name}...", "Pass 2: Scoring {name}..."
+- **⏱️ Live Countdown**: 90-second waits between competitors now show live countdown
+  - New `_wait_with_countdown()` helper replaces bare `asyncio.sleep()`
+  - Progress description ticks each second: "Next: {name} in 87s  •  Ctrl+C to quit"
+
+### Changed
+- **🔇 Reduced CLI Noise**: Removed notable states bullet list from console output
+  - Summary line (`✓ Observation saved (N notable states)`) retained
+  - Removed `[DEBUG] Image dimensions OK` prints from image loader
+
+### Improved
+- **✉️ Error Messages**: Clearer, human-readable error messages for analysis failures
+  - Distinguishes truncation (`stop_reason == "max_tokens"`) from malformed JSON
+  - "Pass 1 truncated — response hit 8000 token limit." instead of raw exception string
+  - "Pass 2 malformed JSON (char 13547)." with position for debugging
+  - Debug files saved to `output/debug_malformed_json/` for malformed JSON only (not truncation)
+
+### Technical
+- `analyze_competitor_from_screenshots` accepts optional `progress` and `task_id` params
+- All internal console prints routed through `_print` closure → prevents visual artifacts when called from `reanalyze_screenshots.py` (avoids two-Console conflict)
+- `max_tokens` raised: Pass 1 to 8000, Pass 2 to 16000 (claude-sonnet-4-6 supports 64K output)
+
 ## [1.9.0] - 2026-02-27
 
 ### Changed
