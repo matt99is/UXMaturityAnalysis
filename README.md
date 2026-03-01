@@ -1,6 +1,6 @@
 # E-commerce UX Maturity Analysis Agent
 
-**Version:** 1.10.0
+**Version:** 1.12.0
 **Status:** Production Ready
 **Python:** 3.9+
 
@@ -830,6 +830,7 @@ UXMaturityAnalysis/
 
 - **playwright**: Browser automation for screenshot capture
 - **anthropic**: Claude API client for AI analysis
+- **openai**: OpenAI-compatible API client (for GLM and other providers)
 - **pydantic**: Data validation and settings management
 - **pyyaml**: Configuration file parsing
 - **python-dotenv**: Environment variable management
@@ -852,6 +853,10 @@ VIEWPORT_WIDTH=1920
 VIEWPORT_HEIGHT=1080
 MOBILE_VIEWPORT_WIDTH=375
 MOBILE_VIEWPORT_HEIGHT=812
+
+# Alternative LLM Providers (optional)
+# LLM_PROVIDER=anthropic  # "anthropic" (default) or "glm" for GLM-5 via ZhipuAI
+# GLM_API_KEY=your_glm_key_here  # Required if LLM_PROVIDER=glm
 ```
 
 Model selection precedence:
@@ -910,7 +915,7 @@ This project uses [Semantic Versioning](https://semver.org/):
 - **MINOR** version for added functionality in a backward compatible manner
 - **PATCH** version for backward compatible bug fixes
 
-**Current Version:** 1.10.0
+**Current Version:** 1.11.0
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and upgrade instructions.
 
@@ -924,7 +929,7 @@ Or programmatically:
 
 ```python
 from src.version import __version__, get_version_info
-print(f"Version: {__version__}")  # 1.10.0
+print(f"Version: {__version__}")  # 1.12.0
 print(f"Version Info: {get_version_info()}")  # (1, 10, 0)
 ```
 

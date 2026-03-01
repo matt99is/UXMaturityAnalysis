@@ -1,8 +1,8 @@
 # Project State: UX Maturity Analysis
 
-**Version:** 1.11.0
+**Version:** 1.12.0
 **Status:** Production Ready
-**Last Updated:** 2026-02-28
+**Last Updated:** 2026-03-01
 **Context Load Priority:** HIGH (load this file first)
 
 ---
@@ -52,6 +52,8 @@ Interactive mode requires a visible browser, which doesn't work on a headless re
 
 Last 10 completed items for context.
 
+- [x] v1.12.0: GLM analyzer with OpenAI-compatible API support (glm_analyzer.py)
+- [x] v1.12.0: Added openai>=1.0.0 dependency for alternative LLM providers
 - [x] v1.11.0: Index direct links - cards link directly to reports (not type index)
 - [x] v1.11.0: Fixed reanalyze_screenshots.py - all 16 competitors now included
 - [x] v1.11.0: Moved competitor folders to proper basket-pages/ structure
