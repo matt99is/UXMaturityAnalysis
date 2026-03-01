@@ -118,10 +118,18 @@
   border: 1px solid var(--border);
   border-radius: $border-radius;
   padding: $spacing-xl;
+  position: relative;
+  overflow: hidden;
 
-  &.leader { border-left: 3px solid var(--green); }
-  &.threat  { border-left: 3px solid var(--red); }
-  &.opp     { border-left: 3px solid var(--teal); }
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--teal) 0%, var(--teal-dim) 100%);
+  }
 }
 
 .insight-type {
@@ -330,18 +338,6 @@
   font-weight: $font-weight-bold;
   color: var(--text-dim);
   text-align: center;
-
-  &.rank-1 {
-    color: var(--amber);
-  }
-
-  &.rank-2 {
-    color: var(--text-muted);
-  }
-
-  &.rank-3 {
-    color: var(--green-dim);
-  }
 }
 
 .name {
