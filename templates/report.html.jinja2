@@ -158,25 +158,42 @@
                 {% if comp.evidence_items %}
                 <div class="evidence-card-inline">
                   <div class="evidence-card-inline-title">Evidence Highlights</div>
-                  <ul class="evidence-card-inline-list">
-                    {% for evidence_item in comp.evidence_items %}
-                    <li class="evidence-card-inline-item">
-                      <i data-lucide="{{ evidence_item.icon }}" class="evidence-icon {{ evidence_item.icon_class }}"></i>
-                      <span class="evidence-text">{{ evidence_item.text }}</span>
+                  <ul class="evidence-highlights-list">
+                    {% for item in comp.evidence_items %}
+                    <li class="evidence-highlight-item evidence-highlight-item--{{ item.competitive_status }}">
+                      <div class="evidence-highlight-header">
+                        <span class="evidence-highlight-criterion">{{ item.criterion_name }}</span>
+                        <span class="evidence-highlight-badge evidence-highlight-badge--{{ item.competitive_status }}">{{ item.competitive_status | title }}</span>
+                      </div>
+                      <p class="evidence-highlight-text">{{ item.text }}</p>
                     </li>
                     {% endfor %}
                   </ul>
                 </div>
                 {% endif %}
 
-                <div class="criteria">
-                  {% for criterion in comp.criteria_scores %}
-                  <div class="criterion">
-                    <span class="criterion-name">{{ criterion.criterion_name }}</span>
-                    <span class="criterion-score {% if criterion.score >= 7 %}high{% elif criterion.score >= 5 %}med{% endif %}">{{ criterion.score|round(1) }}</span>
+                {% if comp.top_strengths or comp.top_vulnerabilities %}
+                <div class="criteria-split">
+                  <div class="criteria-col criteria-col--strengths">
+                    <div class="criteria-col-header">Strengths</div>
+                    {% for criterion in comp.top_strengths %}
+                    <div class="criteria-col-item">
+                      <span class="criteria-col-name">{{ criterion.criterion_name }}</span>
+                      <span class="criteria-col-score criteria-col-score--strength">{{ criterion.score|round(1) }}</span>
+                    </div>
+                    {% endfor %}
                   </div>
-                  {% endfor %}
+                  <div class="criteria-col criteria-col--vulnerabilities">
+                    <div class="criteria-col-header">Vulnerabilities</div>
+                    {% for criterion in comp.top_vulnerabilities %}
+                    <div class="criteria-col-item">
+                      <span class="criteria-col-name">{{ criterion.criterion_name }}</span>
+                      <span class="criteria-col-score criteria-col-score--vulnerability">{{ criterion.score|round(1) }}</span>
+                    </div>
+                    {% endfor %}
+                  </div>
                 </div>
+                {% endif %}
 
                 {% if comp.screenshots %}
                 <div class="screenshots-section">
@@ -311,13 +328,13 @@
 
     let currentSet = [];
     let currentIndex = 0;
-    let zoomLevel = 1.6;
+    let zoomLevel = 1.0;  // Start at 100% - full resolution
     let panX = 0;
     let panY = 0;
     let isDragging = false;
     let dragStartX = 0;
     let dragStartY = 0;
-    const MIN_ZOOM = 1;
+    const MIN_ZOOM = 0.25;  // Allow zooming out to see full image
     const MAX_ZOOM = 4;
 
     const lightbox = document.getElementById('lightbox');
@@ -341,7 +358,7 @@
     }
 
     function resetZoomAndPan() {
-      zoomLevel = 1.6;
+      zoomLevel = 1.0;  // Reset to 100% - full resolution
       panX = 0;
       panY = 0;
       applyLightboxTransform();

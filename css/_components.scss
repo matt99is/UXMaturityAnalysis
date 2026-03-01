@@ -346,3 +346,130 @@
   color: var(--text-muted);
   line-height: 1.5;
 }
+
+// ===== Evidence Highlight Cards =====
+.evidence-highlights-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.evidence-highlight-item {
+  padding: $spacing-md $spacing-lg;
+  border-left: 3px solid var(--border);
+  background: var(--bg);
+  border-radius: 0 $border-radius-sm $border-radius-sm 0;
+
+  &--vulnerability {
+    border-left-color: var(--red);
+  }
+
+  &--strength {
+    border-left-color: var(--green);
+  }
+}
+
+.evidence-highlight-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xs;
+}
+
+.evidence-highlight-criterion {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing-wide;
+  color: var(--text-dim);
+}
+
+.evidence-highlight-badge {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing-normal;
+  padding: 2px $spacing-sm;
+  border-radius: $border-radius-sm;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &--vulnerability {
+    background: var(--red-dim);
+    color: var(--red);
+  }
+
+  &--strength {
+    background: var(--green-dim);
+    color: var(--green);
+  }
+}
+
+.evidence-highlight-text {
+  font-size: $font-size-sm;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+// ===== Criteria Split (Strengths / Vulnerabilities) =====
+.criteria-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-lg;
+}
+
+.criteria-col-header {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing-wide;
+  margin-bottom: $spacing-sm;
+  padding-bottom: $spacing-sm;
+  border-bottom: 1px solid var(--border);
+
+  .criteria-col--strengths & {
+    color: var(--green);
+  }
+
+  .criteria-col--vulnerabilities & {
+    color: var(--red);
+  }
+}
+
+.criteria-col-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: $spacing-sm;
+  padding: $spacing-xs 0;
+  border-bottom: 1px solid var(--border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.criteria-col-name {
+  font-size: $font-size-sm;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.criteria-col-score {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &--strength {
+    color: var(--green);
+  }
+
+  &--vulnerability {
+    color: var(--red);
+  }
+}
