@@ -75,6 +75,17 @@ def test_prepare_competitor_data_includes_top_strengths_and_vulnerabilities(tmp_
     assert comp["top_vulnerabilities"][0]["criterion_name"] == "Weak A"
 
 
+def test_get_top_criteria_falls_back_to_score_threshold_for_vulnerability():
+    generator = HTMLReportGenerator(output_dir="/tmp/test_out")
+    result = _make_result([
+        {"criterion_name": "High", "score": 8},
+        {"criterion_name": "Low", "score": 3},
+        {"criterion_name": "Mid", "score": 5},
+    ])
+    top = generator._get_top_criteria(result, "vulnerability", top=3, ascending=True)
+    assert top[0]["criterion_name"] == "Low"
+
+
 def test_prepare_competitor_data_uses_raw_filepath_over_annotated(tmp_path: Path):
     raw_screenshot = tmp_path / "screenshots" / "desktop.png"
     annotated_screenshot = tmp_path / "screenshots" / "desktop_annotated.png"

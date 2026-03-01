@@ -650,9 +650,9 @@ class HTMLReportGenerator:
         # Fallback: use score thresholds when competitive_status is not populated
         if not filtered:
             if status == "strength":
-                filtered = [c for c in criteria_scores if c.get("score", 0) >= 7]
+                filtered = [c for c in criteria_scores if c.get("score", 0) >= 8]
             elif status == "vulnerability":
-                filtered = [c for c in criteria_scores if c.get("score", 0) < 5]
+                filtered = [c for c in criteria_scores if c.get("score", 0) < 6]
 
         return sorted(filtered, key=lambda c: c.get("score", 0), reverse=not ascending)[:top]
 
