@@ -118,31 +118,27 @@
   border: 1px solid var(--border);
   border-radius: $border-radius;
   padding: $spacing-xl;
-  position: relative;
-  overflow: hidden;
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--teal) 0%, var(--teal-dim) 100%);
-  }
+  &.leader { border-left: 3px solid var(--green); }
+  &.threat  { border-left: 3px solid var(--red); }
+  &.opp     { border-left: 3px solid var(--teal); }
 }
 
-.insight-title {
-  font-size: $font-size-lg;
+.insight-type {
+  font-size: $font-size-xs;
   font-weight: $font-weight-semibold;
-  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing-wide;
+  color: var(--text-dim);
   margin-bottom: $spacing-md;
+  display: block;
 }
 
-.insight-description {
-  font-size: $font-size-base;
+.insight-text {
+  font-size: $font-size-sm;
   color: var(--text-muted);
   line-height: 1.6;
+  margin: 0;
 }
 
 // ===== Historical Section =====
