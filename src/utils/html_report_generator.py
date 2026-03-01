@@ -201,10 +201,10 @@ class HTMLReportGenerator:
         if not successful_results:
             return None
 
-        # Get top competitors
+        # Sort all competitors by score; top_n are visible by default, rest hidden but toggleable
         sorted_results = sorted(
             successful_results, key=lambda x: x.get("overall_score", 0), reverse=True
-        )[:top_n]
+        )
 
         if not sorted_results:
             return None
@@ -224,6 +224,8 @@ class HTMLReportGenerator:
                 f'<b>{result.get("site_name", "Unknown")}</b><br>{full_name}<br>Score: %{{r:.1f}}/10<extra></extra>'
                 for full_name in criteria_names
             ]
+            # Top N competitors visible by default; others hidden but available via legend
+            visible = True if i < top_n else "legendonly"
             traces.append(
                 go.Scatterpolar(
                     r=scores,
@@ -232,6 +234,7 @@ class HTMLReportGenerator:
                     name=result.get("site_name", "Unknown"),
                     line={"color": colors[i % len(colors)], "width": 2},
                     hovertemplate=hover_templates,  # Custom hover with full names
+                    visible=visible,
                 )
             )
 
@@ -396,15 +399,19 @@ class HTMLReportGenerator:
             # Determine competitive position
             if score >= 8.0:
                 tier = "Market Leader"
+                tier_class = "leader"
             elif score >= 6.5:
                 tier = "Strong Contender"
+                tier_class = "strong"
             elif score >= 5.0:
                 tier = "Competitive"
+                tier_class = "competitive"
             else:
                 tier = "Needs Improvement"
+                tier_class = "needs-improvement"
 
             rankings.append(
-                {"rank": rank, "name": comp.get("site_name"), "score": score, "tier": tier}
+                {"rank": rank, "name": comp.get("site_name"), "score": score, "tier": tier, "tier_class": tier_class}
             )
 
         return rankings

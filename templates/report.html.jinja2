@@ -122,8 +122,8 @@
           <div class="ranking">
             <span class="rank {% if rank_item.rank == 1 %}rank-1{% elif rank_item.rank == 2 %}rank-2{% elif rank_item.rank == 3 %}rank-3{% endif %}">{{ rank_item.rank }}</span>
             <span class="name">{{ rank_item.name }}</span>
-            <span class="score {% if rank_item.score >= 7.5 %}high{% elif rank_item.score >= 6 %}med{% endif %}">{{ rank_item.score|round(1) }}</span>
-            <span class="tier {% if rank_item.score >= 7.5 %}leader{% elif rank_item.score >= 6.5 %}strong{% else %}competitive{% endif %}">{{ rank_item.tier }}</span>
+            <span class="score">{{ rank_item.score|round(1) }}</span>
+            <span class="tier {{ rank_item.tier_class }}">{{ rank_item.tier }}</span>
           </div>
           {% endfor %}
         </div>

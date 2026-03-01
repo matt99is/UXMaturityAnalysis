@@ -222,9 +222,10 @@
 .tier {
   @extend .badge;
 
-  &.leader { background: var(--amber-dim); color: var(--amber); }
-  &.strong { background: var(--green-dim); color: var(--green); }
-  &.competitive { background: var(--red-dim); color: var(--red); }
+  &.leader { background: var(--green-dim); color: var(--green); }
+  &.strong { background: var(--teal-dim); color: var(--teal); }
+  &.competitive { background: var(--teal-dim); color: var(--teal); }
+  &.needs-improvement { background: var(--red-dim); color: var(--red); }
 }
 
 // ===== Annotation Lozenges =====
