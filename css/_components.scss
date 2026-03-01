@@ -358,17 +358,8 @@
 
 .evidence-highlight-item {
   padding: $spacing-md $spacing-lg;
-  border-left: 3px solid var(--border);
   background: var(--bg);
-  border-radius: 0 $border-radius-sm $border-radius-sm 0;
-
-  &--vulnerability {
-    border-left-color: var(--red);
-  }
-
-  &--strength {
-    border-left-color: var(--green);
-  }
+  border-radius: $border-radius-sm;
 }
 
 .evidence-highlight-header {
