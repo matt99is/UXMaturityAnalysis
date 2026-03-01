@@ -1,0 +1,230 @@
+{
+  "competitors": [
+    {
+      "id": "petsathome",
+      "name": "Pets at Home",
+      "overall_score": 7.2,
+      "color": "#14b8a6",
+      "color_dim": "rgba(20, 184, 166, 0.1)",
+      "initial": "P",
+      "success": true,
+      "criteria_scores": [
+        {
+          "criterion_name": "Shipping Cost Transparency",
+          "score": 8.5,
+          "competitive_status": "strength",
+          "evidence": "Delivery costs are displayed clearly on every product card and in the basket summary, with a prominent free shipping threshold banner shown throughout the journey."
+        },
+        {
+          "criterion_name": "Subscription & Auto-Delivery",
+          "score": 7.0,
+          "evidence": "Auto-delivery options are available but subscription management is buried in account settings rather than surfaced at point of purchase."
+        },
+        {
+          "criterion_name": "Basket Summary & Total Clarity",
+          "score": 6.5,
+          "evidence": "The basket total is shown but VAT breakdown and savings are not consistently surfaced, creating uncertainty before checkout."
+        },
+        {
+          "criterion_name": "Product Details in Cart",
+          "score": 7.5,
+          "evidence": "Product images and names appear clearly in the cart with variant details shown."
+        },
+        {
+          "criterion_name": "Mobile Layout & Usability",
+          "score": 8.0,
+          "competitive_status": "strength",
+          "evidence": "Mobile basket layout is clean and thumb-friendly with a persistent sticky checkout CTA that remains visible while scrolling."
+        },
+        {
+          "criterion_name": "Express Checkout Options",
+          "score": 4.5,
+          "competitive_status": "vulnerability",
+          "evidence": "Only PayPal is offered as an express checkout option; Apple Pay and Google Pay are absent despite being the market standard. This creates significant friction for mobile users."
+        }
+      ],
+      "evidence_items": [],
+      "screenshot_metadata": [
+        {
+          "filepath": "screenshots/desktop.png",
+          "viewport_name": "Desktop View",
+          "annotations": [
+            {
+              "type": "strength",
+              "icon": "check",
+              "text": "Clear shipping costs displayed"
+            },
+            {
+              "type": "weakness",
+              "icon": "alert-triangle",
+              "text": "Free shipping bar not prominent"
+            }
+          ]
+        },
+        {
+          "filepath": "screenshots/mobile.png",
+          "viewport_name": "Mobile View",
+          "annotations": [
+            {
+              "type": "strength",
+              "icon": "check",
+              "text": "Mobile-optimized layout"
+            },
+            {
+              "type": "weakness",
+              "icon": "alert-triangle",
+              "text": "Text size could be larger"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "petsbasket",
+      "name": "Petsbasket",
+      "overall_score": 6.8,
+      "color": "#f59e0b",
+      "color_dim": "rgba(245, 158, 11, 0.1)",
+      "initial": "P",
+      "success": true,
+      "criteria_scores": [
+        {
+          "criterion_name": "Shipping Cost Transparency",
+          "score": 7.5,
+          "evidence": "Shipping costs are shown at basket stage but require user to enter postcode before seeing final delivery price."
+        },
+        {
+          "criterion_name": "Subscription & Auto-Delivery",
+          "score": 4.0,
+          "competitive_status": "vulnerability",
+          "evidence": "No subscription or auto-delivery option exists on the platform. Repeat purchase journeys require manual re-ordering, putting the site at a significant disadvantage versus competitors offering autoship."
+        },
+        {
+          "criterion_name": "Basket Summary & Total Clarity",
+          "score": 7.5,
+          "competitive_status": "strength",
+          "evidence": "The basket clearly shows itemised costs, total savings from promotions, and the running total updates in real time as quantities are adjusted without a page reload."
+        },
+        {
+          "criterion_name": "Product Details in Cart",
+          "score": 6.0,
+          "evidence": "Product names are shown but images are small on mobile and variant details such as weight or flavour are truncated."
+        },
+        {
+          "criterion_name": "Mobile Layout & Usability",
+          "score": 7.0,
+          "evidence": "Mobile layout is functional and well-spaced with reasonable tap targets, though the checkout button is not sticky on long baskets."
+        },
+        {
+          "criterion_name": "Express Checkout Options",
+          "score": 3.5,
+          "competitive_status": "vulnerability",
+          "evidence": "No express checkout options are present. Users must complete full guest or account registration before paying, adding significant friction at the most critical conversion point."
+        }
+      ],
+      "evidence_items": [],
+      "screenshot_metadata": [
+        {
+          "filepath": "screenshots/desktop.png",
+          "viewport_name": "Desktop View",
+          "annotations": [
+            {
+              "type": "strength",
+              "icon": "check",
+              "text": "Clear product grid"
+            },
+            {
+              "type": "weakness",
+              "icon": "alert-triangle",
+              "text": "Basket summary could be more prominent"
+            }
+          ]
+        },
+        {
+          "filepath": "screenshots/mobile.png",
+          "viewport_name": "Mobile View",
+          "annotations": [
+            {
+              "type": "strength",
+              "icon": "check",
+              "text": "Mobile-optimized layout"
+            },
+            {
+              "type": "weakness",
+              "icon": "alert-triangle",
+              "text": "Text size could be larger"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chewy",
+      "name": "Chewy",
+      "overall_score": 8.1,
+      "color": "#22c55e",
+      "color_dim": "rgba(34, 197, 94, 0.1)",
+      "initial": "C",
+      "success": true,
+      "criteria_scores": [
+        {
+          "criterion_name": "Shipping Cost Transparency",
+          "score": 8.5,
+          "competitive_status": "strength",
+          "evidence": "Free shipping eligibility is surfaced immediately in the basket with a clear progress bar showing how much more to spend. Paid shipping costs are shown upfront without requiring address entry."
+        },
+        {
+          "criterion_name": "Subscription & Auto-Delivery",
+          "score": 9.0,
+          "competitive_status": "strength",
+          "evidence": "Autoship is deeply integrated into the basket — every eligible product shows the autoship price reduction inline with a one-click toggle. Frequency selection is intuitive and the savings are quantified clearly."
+        },
+        {
+          "criterion_name": "Basket Summary & Total Clarity",
+          "score": 7.5,
+          "evidence": "The basket total section is clear and itemised, though the autoship and one-time totals are shown separately which can cause brief confusion when switching between modes."
+        },
+        {
+          "criterion_name": "Product Details in Cart",
+          "score": 8.5,
+          "competitive_status": "strength",
+          "evidence": "Full product details including image, name, size, flavour, and quantity are shown in the cart. Users can edit variant selections without leaving the cart view."
+        },
+        {
+          "criterion_name": "Mobile Layout & Usability",
+          "score": 8.5,
+          "competitive_status": "strength",
+          "evidence": "Mobile cart is excellently optimised with a persistent sticky order summary and checkout button. Touch targets are generous and the layout collapses cleanly to a single-column view."
+        },
+        {
+          "criterion_name": "Express Checkout Options",
+          "score": 5.5,
+          "competitive_status": "vulnerability",
+          "evidence": "Despite strong UX elsewhere, express checkout options are limited to PayPal. Apple Pay is not supported which is a notable gap given the proportion of mobile traffic to pet retail sites."
+        }
+      ],
+      "evidence_items": [],
+      "screenshot_metadata": [
+        {
+          "filepath": "screenshots/desktop.png",
+          "viewport_name": "Desktop View",
+          "annotations": [
+            {
+              "type": "strength",
+              "icon": "check",
+              "text": "Very clear basket summary"
+            },
+            {
+              "type": "strength",
+              "icon": "check",
+              "text": "Excellent mobile layout"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "report_title": "Basket Pages Analysis (Reference)",
+  "report_short_title": "Basket Pages",
+  "category": "UK Retail Pet Food"
+}
