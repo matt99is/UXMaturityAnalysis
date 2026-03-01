@@ -589,6 +589,8 @@ class HTMLReportGenerator:
         )
 
         # Score-threshold fallbacks when competitive_status is absent
+        # Thresholds mirror _get_top_criteria: vulnerability < 6, strength >= 8.
+        # Scores in [6, 8) are intentionally excluded from both lists.
         if not vulnerabilities:
             vulnerabilities = sorted(
                 [c for c in criteria_scores if c.get("score", 0) < 6],

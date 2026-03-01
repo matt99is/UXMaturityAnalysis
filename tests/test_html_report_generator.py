@@ -134,6 +134,16 @@ def test_build_evidence_items_selects_worst_vuln_best_strength_second_vuln():
     assert names[2] == "Vuln2"
 
 
+def test_build_evidence_items_returns_empty_when_no_text_available():
+    generator = HTMLReportGenerator(output_dir="/tmp/test_out")
+    result = _make_result([
+        {"criterion_name": "Weak", "score": 1, "competitive_status": "vulnerability",
+         "evidence": "", "observations": ""},
+    ])
+    items = generator._build_competitor_evidence_items(result)
+    assert items == []
+
+
 def test_prepare_competitor_data_uses_raw_filepath_over_annotated(tmp_path: Path):
     raw_screenshot = tmp_path / "screenshots" / "desktop.png"
     annotated_screenshot = tmp_path / "screenshots" / "desktop_annotated.png"
