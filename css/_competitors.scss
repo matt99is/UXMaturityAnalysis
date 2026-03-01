@@ -144,8 +144,8 @@
   }
 
   img {
-    max-width: 92vw;
-    max-height: 86vh;
+    // Full resolution - no viewport constraints
+    // User can pan around the native image size
     border-radius: $border-radius;
     display: block;
     pointer-events: none;

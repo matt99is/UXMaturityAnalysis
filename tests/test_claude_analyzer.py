@@ -260,17 +260,20 @@ async def test_analyze_competitor_stores_relative_observation_file(tmp_path) -> 
     from unittest.mock import AsyncMock, MagicMock, patch
     from PIL import Image
 
-    # Stub out playwright so main.py can be imported without the package installed
+    # Stub out playwright and openai so main.py can be imported without the packages installed
     playwright_stub = MagicMock()
     playwright_stealth_stub = MagicMock()
+    openai_stub = MagicMock()
     modules_to_stub = {
         "playwright": playwright_stub,
         "playwright.async_api": playwright_stub,
         "playwright_stealth": playwright_stealth_stub,
         "src.analyzers.screenshot_capture": MagicMock(),
+        "openai": openai_stub,
     }
-    # Remove 'main' from sys.modules so the stubbed import is fresh
+    # Remove 'main' and 'src.analyzers.glm_analyzer' from sys.modules so the stubbed import is fresh
     sys.modules.pop("main", None)
+    sys.modules.pop("src.analyzers.glm_analyzer", None)
 
     with patch.dict(sys.modules, modules_to_stub):
         from main import UXAnalysisOrchestrator
