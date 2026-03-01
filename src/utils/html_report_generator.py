@@ -567,6 +567,8 @@ class HTMLReportGenerator:
                     "screenshots": screenshots,
                     "notable_states": result.get("notable_states", []),
                     "evidence_items": self._build_competitor_evidence_items(result),
+                    "top_strengths": self._get_top_criteria(result, "strength", top=3, ascending=False),
+                    "top_vulnerabilities": self._get_top_criteria(result, "vulnerability", top=3, ascending=True),
                 }
             )
 
@@ -637,6 +639,22 @@ class HTMLReportGenerator:
                 break
 
         return deduped
+
+    def _get_top_criteria(
+        self, result: Dict[str, Any], status: str, top: int, ascending: bool
+    ) -> List[Dict[str, Any]]:
+        """Return top N criteria filtered by competitive_status, sorted by score."""
+        criteria_scores = result.get("criteria_scores", []) or []
+        filtered = [c for c in criteria_scores if c.get("competitive_status") == status]
+
+        # Fallback: use score thresholds when competitive_status is not populated
+        if not filtered:
+            if status == "strength":
+                filtered = [c for c in criteria_scores if c.get("score", 0) >= 7]
+            elif status == "vulnerability":
+                filtered = [c for c in criteria_scores if c.get("score", 0) < 5]
+
+        return sorted(filtered, key=lambda c: c.get("score", 0), reverse=not ascending)[:top]
 
     def _get_annotations_for_screenshot(
         self, screenshot: Dict[str, Any], result: Dict[str, Any]
