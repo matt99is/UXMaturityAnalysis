@@ -86,6 +86,54 @@ def test_get_top_criteria_falls_back_to_score_threshold_for_vulnerability():
     assert top[0]["criterion_name"] == "Low"
 
 
+def test_build_evidence_items_does_not_truncate_text():
+    generator = HTMLReportGenerator(output_dir="/tmp/test_out")
+    long_evidence = "x" * 500
+    result = _make_result([
+        {"criterion_name": "Weak", "score": 1, "competitive_status": "vulnerability",
+         "evidence": long_evidence, "observations": ""},
+    ])
+    items = generator._build_competitor_evidence_items(result)
+    assert any(item["text"] == long_evidence for item in items)
+
+
+def test_build_evidence_items_includes_criterion_name():
+    generator = HTMLReportGenerator(output_dir="/tmp/test_out")
+    result = _make_result([
+        {"criterion_name": "Shipping Cost", "score": 1, "competitive_status": "vulnerability",
+         "evidence": "No free delivery threshold shown.", "observations": ""},
+    ])
+    items = generator._build_competitor_evidence_items(result)
+    assert any(item["criterion_name"] == "Shipping Cost" for item in items)
+
+
+def test_build_evidence_items_includes_competitive_status():
+    generator = HTMLReportGenerator(output_dir="/tmp/test_out")
+    result = _make_result([
+        {"criterion_name": "Checkout CTA", "score": 8, "competitive_status": "strength",
+         "evidence": "Clear CTA with strong contrast.", "observations": ""},
+    ])
+    items = generator._build_competitor_evidence_items(result)
+    assert any(item["competitive_status"] == "strength" for item in items)
+
+
+def test_build_evidence_items_selects_worst_vuln_best_strength_second_vuln():
+    generator = HTMLReportGenerator(output_dir="/tmp/test_out")
+    result = _make_result([
+        {"criterion_name": "Vuln1", "score": 1, "competitive_status": "vulnerability",
+         "evidence": "v1 evidence", "observations": ""},
+        {"criterion_name": "Vuln2", "score": 2, "competitive_status": "vulnerability",
+         "evidence": "v2 evidence", "observations": ""},
+        {"criterion_name": "Strength1", "score": 9, "competitive_status": "strength",
+         "evidence": "s1 evidence", "observations": ""},
+    ])
+    items = generator._build_competitor_evidence_items(result)
+    names = [i["criterion_name"] for i in items]
+    assert names[0] == "Vuln1"
+    assert names[1] == "Strength1"
+    assert names[2] == "Vuln2"
+
+
 def test_prepare_competitor_data_uses_raw_filepath_over_annotated(tmp_path: Path):
     raw_screenshot = tmp_path / "screenshots" / "desktop.png"
     annotated_screenshot = tmp_path / "screenshots" / "desktop_annotated.png"

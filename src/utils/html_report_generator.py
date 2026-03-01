@@ -575,70 +575,52 @@ class HTMLReportGenerator:
         return prepared_competitors, screenshot_sets
 
     def _build_competitor_evidence_items(self, result: Dict[str, Any]) -> List[Dict[str, str]]:
-        """Build compact evidence snippets for each competitor card."""
-        items: List[Dict[str, str]] = []
-
-        notable_states = result.get("notable_states", []) or []
-        for state in notable_states[:2]:
-            state_text = str(state).strip()
-            if not state_text:
-                continue
-
-            lowered = state_text.lower()
-            if any(token in lowered for token in ["missing", "lack", "unclear", "hidden", "error"]):
-                icon, icon_class = "alert-circle", "warning"
-            elif any(
-                token in lowered for token in ["good", "excellent", "clear", "prominent", "strong"]
-            ):
-                icon, icon_class = "check-circle-2", "success"
-            else:
-                icon, icon_class = "info", "info"
-
-            items.append(
-                {
-                    "icon": icon,
-                    "icon_class": icon_class,
-                    "text": state_text[:160],
-                }
-            )
-
+        """Build attributed evidence items for each competitor card."""
         criteria_scores = result.get("criteria_scores", []) or []
-        strengths = [c for c in criteria_scores if c.get("score", 0) >= 8]
-        weaknesses = [c for c in criteria_scores if c.get("score", 0) < 6]
 
+        vulnerabilities = sorted(
+            [c for c in criteria_scores if c.get("competitive_status") == "vulnerability"],
+            key=lambda c: c.get("score", 0),
+        )
+        strengths = sorted(
+            [c for c in criteria_scores if c.get("competitive_status") == "strength"],
+            key=lambda c: c.get("score", 0),
+            reverse=True,
+        )
+
+        # Score-threshold fallbacks when competitive_status is absent
+        if not vulnerabilities:
+            vulnerabilities = sorted(
+                [c for c in criteria_scores if c.get("score", 0) < 6],
+                key=lambda c: c.get("score", 0),
+            )
+        if not strengths:
+            strengths = sorted(
+                [c for c in criteria_scores if c.get("score", 0) >= 8],
+                key=lambda c: c.get("score", 0),
+                reverse=True,
+            )
+
+        candidates = []
+        if vulnerabilities:
+            candidates.append((vulnerabilities[0], "vulnerability"))
         if strengths:
-            best = max(strengths, key=lambda c: c.get("score", 0))
-            evidence_text = best.get("evidence") or best.get("observations") or ""
-            text = (
-                evidence_text.strip()[:140]
-                if evidence_text
-                else f"{best.get('criterion_name', 'Strength')}: {best.get('score', 0):.1f}/10"
-            )
-            items.append({"icon": "check-circle-2", "icon_class": "success", "text": text})
+            candidates.append((strengths[0], "strength"))
+        if len(vulnerabilities) >= 2:
+            candidates.append((vulnerabilities[1], "vulnerability"))
 
-        if weaknesses:
-            worst = min(weaknesses, key=lambda c: c.get("score", 0))
-            evidence_text = worst.get("evidence") or worst.get("observations") or ""
-            text = (
-                evidence_text.strip()[:140]
-                if evidence_text
-                else f"{worst.get('criterion_name', 'Weakness')}: {worst.get('score', 0):.1f}/10"
-            )
-            items.append({"icon": "alert-circle", "icon_class": "warning", "text": text})
-
-        # Keep card concise and de-duplicate near-identical entries.
-        deduped: List[Dict[str, str]] = []
-        seen_text = set()
-        for item in items:
-            key = item["text"].strip().lower()
-            if not key or key in seen_text:
+        items = []
+        for criterion, status in candidates:
+            text = (criterion.get("evidence") or criterion.get("observations") or "").strip()
+            if not text:
                 continue
-            seen_text.add(key)
-            deduped.append(item)
-            if len(deduped) == 3:
-                break
+            items.append({
+                "criterion_name": criterion.get("criterion_name", ""),
+                "competitive_status": status,
+                "text": text,
+            })
 
-        return deduped
+        return items
 
     def _get_top_criteria(
         self, result: Dict[str, Any], status: str, top: int, ascending: bool
