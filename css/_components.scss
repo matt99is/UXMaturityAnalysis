@@ -168,6 +168,7 @@
   border: 1px solid var(--border);
   border-radius: $border-radius;
   padding: $spacing-lg;
+  margin-top: $spacing-lg;
   margin-bottom: $spacing-lg;
 }
 
@@ -411,6 +412,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: $spacing-lg;
+  margin-top: $spacing-lg;
   margin-bottom: $spacing-lg;
 }
 
