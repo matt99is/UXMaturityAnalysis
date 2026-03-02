@@ -1,6 +1,6 @@
 # Project State: UX Maturity Analysis
 
-**Version:** 1.12.0
+**Version:** 1.13.0
 **Status:** Production Ready
 **Last Updated:** 2026-03-01
 **Context Load Priority:** HIGH (load this file first)
@@ -22,18 +22,6 @@ Items currently in progress. Move to Completed when done.
 
 ## Next Up
 
-### Polish Report Design (Standard for Future Reports)
-
-The current 16-competitor basket page report needs polish to set the standard for all future reports:
-- Review visual hierarchy and spacing
-- Ensure consistent styling across all sections
-- Verify mobile responsiveness
-- Check chart readability with 16+ competitors
-- Standardize competitor card layout
-- Consider pagination or lazy loading for large competitor lists
-
-**Files:** `templates/report.html.jinja2`, `css/_*.scss`
-
 ### Headless auto-capture mode (`--headless` flag)
 
 Interactive mode requires a visible browser, which doesn't work on a headless remote server (VS Code Remote SSH). Add a `--headless` flag that:
@@ -52,6 +40,11 @@ Interactive mode requires a visible browser, which doesn't work on a headless re
 
 Last 10 completed items for context.
 
+- [x] v1.13.0: Competitor card redesign — attributed evidence cards, strengths/vulnerabilities split (html_report_generator.py + _components.scss + report.html.jinja2)
+- [x] v1.13.0: Radar chart — all competitors included, top 3 visible, rest legendonly (html_report_generator.py)
+- [x] v1.13.0: Rankings — uniform score colour, tier badge CSS classes, colour-coded by tier (_sections.scss + _components.scss)
+- [x] v1.13.0: AI trope removal — decorative icons, teal glow shadow, left border on evidence items
+- [x] v1.13.0: Screenshot display fixed — discovery from disk injected at regeneration time
 - [x] v1.12.0: GLM analyzer with OpenAI-compatible API support (glm_analyzer.py)
 - [x] v1.12.0: Added openai>=1.0.0 dependency for alternative LLM providers
 - [x] v1.11.0: Index direct links - cards link directly to reports (not type index)

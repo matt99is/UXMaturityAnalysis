@@ -1,6 +1,6 @@
 # E-commerce UX Maturity Analysis Agent
 
-**Version:** 1.12.0
+**Version:** 1.13.0
 **Status:** Production Ready
 **Python:** 3.9+
 
@@ -602,7 +602,7 @@ Filter count shows: "Showing X of Y competitors"
 All charts update dynamically based on active filters!
 
 **Radar Chart - Competitive UX Comparison**
-- Shows all (or filtered) competitors overlaid on same axes
+- All competitors included; top 3 are visible by default, others hidden but togglable via legend
 - Each axis = one UX criterion
 - Larger area = better overall performance
 - Traces hide/show based on filters
@@ -622,27 +622,13 @@ All charts update dynamically based on active filters!
 
 Each competitor card shows:
 
-**Observation callout (two-pass evidence):**
-- Flagged anomalies from pass 1 (`notable_states`) shown at top of each profile
-- Per-criterion evidence citations surfaced directly below criterion bars
+**Evidence Highlights** (top of each expanded card):
+- Up to 3 attributed evidence cards: worst vulnerability, best strength, second worst vulnerability
+- Each card shows criterion name, full untruncated evidence text, and a Vulnerability / Strength badge
 
-**Competitive Position Tier** (badge at top):
-- 🟢 **Market Leader**: Score significantly above average
-- 🟡 **Strong Contender**: Score at or near average
-- 🔴 **Vulnerable**: Score below average
-
-**Performance by Criteria** table:
-1. **Criterion Name**: The UX element being evaluated
-2. **Status Badge**: Competitive intelligence label
-   - 🟢 **Advantage**: Scores above market average (competitive threat)
-   - 🟡 **Parity**: Scores at market average (table stakes)
-   - 🔴 **Vulnerability**: Scores below market average (exploitable weakness)
-3. **Score**: Numerical score (0-10) with color coding
-
-**Understanding Status Labels:**
-- **Status is relative to the competitive set**, not absolute benchmarks
-- **Advantage** = "better than competitors" (even 7/10 can be advantage if others score 5/10)
-- **Vulnerability** = "worse than competitors" (even 7/10 can be vulnerability if others score 9/10)
+**Strengths & Vulnerabilities split**:
+- Two-column grid showing top 3 strengths (green scores) and top 3 vulnerabilities (red scores)
+- Selected by competitive_status field; falls back to score threshold (≥8 / <6) when no status set
 
 **Screenshots Section**:
 - Desktop and mobile viewport screenshots
@@ -882,6 +868,10 @@ Model selection precedence:
 ## Roadmap
 
 **Recently Completed** ✅
+- [x] 🎨 Competitor card redesign — attributed evidence cards, strengths/vulnerabilities split, improved spacing (v1.13.0)
+- [x] 📊 Radar chart shows all competitors; top 3 visible by default, rest togglable (v1.13.0)
+- [x] 🏅 Tier badges colour-coded; ranking scores uniform colour (v1.13.0)
+- [x] 🤖 GLM analyzer with OpenAI-compatible API support (v1.12.0)
 - [x] 📊 Rich progress bar + live countdown during analysis (v1.10.0)
 - [x] ✉️ Improved error messages distinguishing truncation vs malformed JSON (v1.10.0)
 - [x] 📁 Type-based output structure (`/basket-pages/2026-02-28.html`) + type index pages (v1.9.0)
@@ -915,7 +905,7 @@ This project uses [Semantic Versioning](https://semver.org/):
 - **MINOR** version for added functionality in a backward compatible manner
 - **PATCH** version for backward compatible bug fixes
 
-**Current Version:** 1.11.0
+**Current Version:** 1.13.0
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed release notes and upgrade instructions.
 
@@ -929,7 +919,7 @@ Or programmatically:
 
 ```python
 from src.version import __version__, get_version_info
-print(f"Version: {__version__}")  # 1.12.0
+print(f"Version: {__version__}")  # 1.13.0
 print(f"Version Info: {get_version_info()}")  # (1, 10, 0)
 ```
 

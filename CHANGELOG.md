@@ -5,6 +5,43 @@ All notable changes to the E-commerce UX Maturity Analysis Agent will be documen
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-03-01
+
+### Changed
+
+- **Competitor Card Redesign**: Evidence and criteria sections in expandable competitor profiles completely overhauled
+  - Evidence Highlights: removed 140-character truncation; now shows full text with criterion attribution and competitive status badge (Vulnerability / Strength)
+  - Evidence items selected by relevance (worst vulnerability, best strength, second worst vulnerability) rather than first available
+  - Criteria section replaced with two-column Strengths / Vulnerabilities split showing top 3 of each, colour-coded scores
+
+- **Radar Chart**: All competitors now included in chart. Top 3 are visible by default; all others are toggled off but accessible via legend click for direct comparison
+
+- **Rankings Table**: Score column uses uniform colour across all positions. Tier badges are now colour-coded — Market Leader (green), Strong Contender / Competitive (teal), Needs Improvement (red)
+
+- **Screenshots**: Competitor screenshot panels now render correctly when report is regenerated from per-competitor `analysis.json` files on disk
+
+### Improved
+
+- Spacing above Evidence Highlights and Strengths/Vulnerabilities sections within competitor cards
+
+### Fixed
+
+- Ranking numbers 1/2/3 no longer rendered in amber/silver/bronze — all positions use the same grey
+
+### UI / Design
+
+- Removed AI design tropes: decorative icons from insight cards (crown, alert-triangle, trending-up); teal glow `box-shadow` from screenshot hover; coloured left border from evidence highlight items
+- Evidence highlight items are plain neutral rows — the Vulnerability/Strength badge carries all colour signalling
+
+### Technical
+
+- `_get_top_criteria()` — new helper for top N criteria by competitive_status with score fallback
+- `_prepare_competitor_data()` — adds `top_strengths` and `top_vulnerabilities` per competitor
+- `_build_competitor_evidence_items()` — rewritten: no truncation, adds `criterion_name` and `competitive_status`, selects by worst/best score
+- `_create_radar_chart()` — all competitors included, `visible="legendonly"` for ranks > 3
+- `_get_rankings_data()` — adds `tier_class` field for CSS-driven badge colours
+- CSS: new `.evidence-highlight-*`, `.evidence-highlight-badge--*`, `.criteria-split`, `.criteria-col-*`, `.tier` modifier classes
+
 ## [1.12.0] - 2026-03-01
 
 ### Added
