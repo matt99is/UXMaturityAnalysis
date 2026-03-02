@@ -22,7 +22,100 @@ Items currently in progress. Move to Completed when done.
 
 ## Next Up
 
-### Headless auto-capture mode (`--headless` flag)
+### Web GUI: Human-in-the-Loop Browser Capture
+
+**Goal:** Enable web GUI users to see and interact with browser sessions running on the remote headless server. Critical for bot-protected sites (CAPTCHA solving), login-gated flows, and complex page setup (adding items to basket).
+
+**Research doc:** `docs/research/remote-human-in-the-loop-browser-capture-2026.md`
+
+**Recommended approach:** VNC + noVNC
+- Xvfb provides virtual display (`:99`, `1920x1080x24`)
+- x11vnc exposes display via VNC protocol
+- websockify bridges VNC to WebSockets
+- noVNC (HTML5 client) embedded in web GUI via iframe
+
+**Implementation phases:**
+1. Session pool manager (allocate/release browser sessions)
+2. Display allocator (manage Xvfb display numbers)
+3. Web GUI integration (iframe + "Ready to Capture" flow)
+
+**Effort:** 2-3 days for MVP
+
+---
+
+### Full Automation: Bot-Bypass Screenshot Capture
+
+**Goal:** Run the full capture pipeline unattended on the remote Ubuntu server — no interactive prompts, no manual screenshot upload — while reliably loading real ecom sites that use Cloudflare, DataDome, etc.
+
+**Research doc:** `/home/matt99is/projects/Resources/ux-analysis/bot-detection-ecom-screenshots-2026.md`
+
+#### Why vanilla Playwright + headless won't work
+
+Six layers of bot detection exist on major ecom sites. The critical ones for this project:
+- **IP reputation** — VPS/cloud IPs (Hetzner, DigitalOcean) are flagged before JS even runs
+- **CDP detection** — standard Playwright's `Runtime.enable` command is a known bot signal
+- **Browser fingerprint** — headless Chrome returns SwiftShader WebGL renderer, empty plugin list
+- **Consistency checks** — timezone/locale must match proxy IP, every signal must be internally coherent
+
+`headless=True` is a non-starter for anything above basic Cloudflare. Headed mode via Xvfb is required.
+
+#### Recommended stack (from research)
+
+| Component | Choice |
+|-----------|--------|
+| Browser automation | **Patchright** — drop-in Playwright, patches CDP `Runtime.enable` leak |
+| Browser | **Google Chrome** (via `patchright install chrome`) — better fingerprint than open-source Chromium |
+| Virtual display | **Xvfb** as persistent systemd service — enables headed mode on server |
+| HTTP headers | **BrowserForge** (header generation only) — statistically realistic headers |
+| IP layer | **ISP or residential proxy** — essential if server is a VPS on a datacenter ASN |
+| Session management | **Persistent user data dir** — reuse browser profiles (fresh profile = bot signal) |
+
+#### Implementation steps
+
+1. **Server setup**
+   - Install Xvfb, Chrome dependencies, MS core fonts (`ttf-mscorefonts-installer`)
+   - Create persistent Xvfb systemd service (`DISPLAY=:99`, `1920x1080x24`)
+   - `pip install patchright browserforge && patchright install chrome`
+
+2. **Replace Playwright with Patchright in `screenshot_capture.py`**
+   - `from patchright.async_api import async_playwright`
+   - Use `launch_persistent_context()` with `channel="chrome"`, `headless=False`, `no_viewport=True`
+   - Separate persistent profile dirs for desktop and mobile (`browser_profiles/desktop/`, `browser_profiles/mobile/`)
+   - Set `timezone_id` and `locale` to match proxy exit location
+
+3. **Add proxy support**
+   - Pass `proxy={"server": ..., "username": ..., "password": ...}` to `launch_persistent_context()`
+   - Config via environment variables or `config.py`
+   - ISP proxies (static residential) preferred over rotating residential for session consistency
+
+4. **Add `--auto` mode to `main.py`**
+   - No interactive prompts, no Y/R/S confirmation
+   - Random delay (3–10s) between URL requests — `asyncio.sleep(random.uniform(3, 10))`
+   - Max concurrency: 2–3 URLs, never parallel on same domain
+   - Idempotent: skip URLs where screenshot already exists
+   - Scroll simulation before screenshot (triggers lazy-loaded content)
+
+5. **Validation before going live**
+   - Test against `bot.sannysoft.com` (CDP/webdriver flags)
+   - Test against `pixelscan.net` (fingerprint consistency)
+   - Test against `abrahamjuliot.github.io/creepjs` (target trust score >85%)
+
+#### Realistic success rates by site type
+
+| Site type | Expectation |
+|-----------|-------------|
+| No serious protection (small/mid UK retailers) | ✓ Works easily |
+| Cloudflare normal (Next, M&S, Boots, Currys) | ✓ Works with Patchright + residential IP |
+| Cloudflare Bot Management / DataDome (ASOS, Farfetch) | ~80–90% with correct setup |
+| Kasada (JD Sports) | Occasional failures expected — build retry logic |
+
+#### Interim workaround (current)
+
+`reanalyze_screenshots.py` + manual screenshot upload. Keeps analysis pipeline working while automation is being built.
+
+---
+
+### Headless auto-capture mode (`--headless` flag) — Interim/simpler option
 
 Interactive mode requires a visible browser, which doesn't work on a headless remote server (VS Code Remote SSH). Add a `--headless` flag that:
 - Launches Playwright with `headless=True`
@@ -32,7 +125,7 @@ Interactive mode requires a visible browser, which doesn't work on a headless re
 
 **Files:** `main.py` (add `--headless` CLI arg, branch capture path), `screenshot_capture.py` (no changes needed, already supports headless)
 
-**Note:** For remote workflows, `reanalyze_screenshots.py` + manual screenshot upload is the current workaround.
+**Note:** This is a simpler but weaker option. Fine for unprotected or lightly-protected sites. For full ecom coverage, see the full automation item above.
 
 ---
 
