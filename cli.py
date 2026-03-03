@@ -124,6 +124,52 @@ def discover_audits(audits_dir: Path = None) -> List[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Interactive menus
+# ---------------------------------------------------------------------------
+
+def reanalyse_menu() -> int:
+    """Guided reanalyse flow. Returns exit code."""
+    import questionary
+
+    audits = discover_audits()
+    if not audits:
+        print("No existing audits found in output/audits/")
+        return 1
+
+    choices = [a["label"] for a in audits]
+    selected_label = questionary.select(
+        "Which audit?",
+        choices=choices,
+    ).ask()
+
+    if selected_label is None:
+        return 0  # user pressed Ctrl+C
+
+    selected = next(a for a in audits if a["label"] == selected_label)
+
+    depth = questionary.select(
+        "What to re-run?",
+        choices=[
+            "Report only   (no AI — regenerate HTML from existing scores)",
+            "Re-score      (keep observations, rerun scoring pass only)",
+            "Full          (redo everything — observations + scoring)",
+        ],
+    ).ask()
+
+    if depth is None:
+        return 0
+
+    args = SilentArgs(mode="reanalyze", audit_folder=selected["folder"])
+    if depth.startswith("Re-score"):
+        args.force = True
+    elif depth.startswith("Full"):
+        args.force = True
+        args.force_observe = True
+
+    return run_reanalyze(args)
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
@@ -137,8 +183,28 @@ def main():
         elif silent.mode == "deploy":
             sys.exit(run_deploy(silent))
 
-    # Interactive mode — implemented in Tasks 4-7
-    print("Interactive mode coming soon.")
+    # Interactive mode
+    import questionary
+
+    action = questionary.select(
+        "What do you want to do?",
+        choices=[
+            "Fresh analysis   (capture screenshots → analyse → report)",
+            "Reanalyse        (work with existing screenshots)",
+            "Deploy",
+        ],
+    ).ask()
+
+    if action is None:
+        sys.exit(0)
+
+    if action.startswith("Reanalyse"):
+        sys.exit(reanalyse_menu())
+    elif action.startswith("Deploy"):
+        sys.exit(run_deploy(SilentArgs(mode="deploy")))
+    elif action.startswith("Fresh"):
+        print("Fresh analysis menu coming in next task.")
+        sys.exit(0)
 
 
 if __name__ == "__main__":
