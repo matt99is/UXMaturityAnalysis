@@ -204,6 +204,123 @@ def validate_and_correct_urls(
 # Interactive menus
 # ---------------------------------------------------------------------------
 
+def fresh_analysis_menu() -> int:
+    """Guided fresh analysis flow. Returns exit code."""
+    import questionary
+    import tempfile
+    import json
+    from src.competitor_config import list_competitor_sets, load_competitor_set, get_page_type_urls
+    from src.config_loader import AnalysisConfig
+    from rich.console import Console
+    console = Console()
+
+    # Page type — read available types from criteria_config/
+    config = AnalysisConfig()
+    available_types = config.list_available_analysis_types()
+    page_type = questionary.select(
+        "Which page type?",
+        choices=available_types,
+    ).ask()
+    if page_type is None:
+        return 0
+
+    # Competitor set
+    sets = list_competitor_sets()
+    if not sets:
+        console.print("[red]No competitor sets found in competitors/[/red]")
+        return 1
+    set_choices = [f"{display}  ({slug})" for slug, display in sets]
+    selected_set_label = questionary.select(
+        "Which competitor set?",
+        choices=set_choices,
+    ).ask()
+    if selected_set_label is None:
+        return 0
+    selected_slug = sets[set_choices.index(selected_set_label)][0]
+
+    # Capture mode
+    capture_mode = questionary.select(
+        "Capture mode?",
+        choices=[
+            "Supervised   (watch browser via noVNC URL — for basket setup, CAPTCHAs)",
+            "Automated    (fully unattended — Playwright + bot evasion)",
+        ],
+    ).ask()
+    if capture_mode is None:
+        return 0
+    is_supervised = capture_mode.startswith("Supervised")
+
+    # Load competitors and validate URLs
+    competitor_set = load_competitor_set(selected_slug)
+    competitors = get_page_type_urls(competitor_set, page_type)
+
+    if not competitors:
+        console.print(f"[red]No URLs configured for page type '{page_type}' in {selected_slug}[/red]")
+        return 1
+
+    console.print(f"\n[cyan]Validating {len(competitors)} URLs...[/cyan]")
+    yaml_path = PROJECT_ROOT / "competitors" / f"{selected_slug}.yaml"
+    valid_competitors, _corrections = validate_and_correct_urls(
+        competitors,
+        interactive=True,
+        yaml_path=yaml_path,
+        page_type=page_type,
+    )
+
+    if not valid_competitors:
+        console.print("[red]No valid URLs remaining after validation.[/red]")
+        return 1
+
+    # Write temp config for main.py (expects {"competitors": [{"name": ..., "url": ...}]})
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump({"competitors": valid_competitors}, f)
+        temp_config = f.name
+
+    # Build main.py command
+    cmd = [
+        str(VENV_PYTHON), "main.py",
+        "--config", temp_config,
+        "--analysis-type", page_type,
+        "--no-deploy",  # we handle deploy ourselves below
+    ]
+    if is_supervised:
+        cmd.append("--manual-mode")
+
+    console.print(f"\n[bold cyan]Starting analysis — {len(valid_competitors)} competitors[/bold cyan]\n")
+    result = subprocess.run(cmd, cwd=PROJECT_ROOT)
+
+    # Post-run deploy
+    skipped = len(competitors) - len(valid_competitors)
+    return _post_run_deploy(result.returncode, skipped)
+
+
+def _post_run_deploy(run_exit_code: int, skipped_count: int) -> int:
+    """Auto-deploy on clean run; ask if any competitors were skipped."""
+    import questionary
+    from rich.console import Console
+    console = Console()
+
+    if run_exit_code != 0:
+        console.print("\n[yellow]Analysis exited with errors — skipping deploy.[/yellow]")
+        return run_exit_code
+
+    if skipped_count == 0:
+        console.print("\n[cyan]Deploying to Netlify...[/cyan]")
+        return run_deploy(SilentArgs(mode="deploy"))
+
+    noun = "competitor" if skipped_count == 1 else "competitors"
+    deploy = questionary.confirm(
+        f"⚠ {skipped_count} {noun} were skipped. Deploy partial report anyway?",
+        default=False,
+    ).ask()
+
+    if deploy:
+        return run_deploy(SilentArgs(mode="deploy"))
+
+    console.print("[dim]Deploy skipped.[/dim]")
+    return 0
+
+
 def reanalyse_menu() -> int:
     """Guided reanalyse flow. Returns exit code."""
     import questionary
@@ -280,8 +397,7 @@ def main():
     elif action.startswith("Deploy"):
         sys.exit(run_deploy(SilentArgs(mode="deploy")))
     elif action.startswith("Fresh"):
-        print("Fresh analysis menu coming in next task.")
-        sys.exit(0)
+        sys.exit(fresh_analysis_menu())
 
 
 if __name__ == "__main__":
