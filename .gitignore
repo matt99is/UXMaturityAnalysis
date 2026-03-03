@@ -63,3 +63,9 @@ Thumbs.db
 
 # Git worktrees
 .worktrees/
+
+# Legacy backup (old report data, not needed in repo)
+_archived_legacy_backup/
+
+# Browser profiles (Patchright persistent Chrome sessions — contain cookies/login state)
+browser_profiles/
