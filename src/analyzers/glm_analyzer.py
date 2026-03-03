@@ -60,6 +60,11 @@ class GLMUXAnalyzer:
             criteria_text += f"\n   Benchmarks:\n"
             for benchmark in criterion["benchmarks"]:
                 criteria_text += f"   - {benchmark}\n"
+            rubric = criterion.get("scoring_rubric")
+            if rubric:
+                criteria_text += "\n   Scoring Rubric:\n"
+                for band, description in rubric.items():
+                    criteria_text += f"   - {band}: {description}\n"
             criteria_text += "\n"
 
         context_section = ""
@@ -74,8 +79,10 @@ class GLMUXAnalyzer:
 **VISUAL EVIDENCE (from observation pass)**
 
 The following structured observation was made from the screenshots before scoring.
-Use ONLY this evidence to support your scores. Do not infer what is not documented here.
-If an observation is marked unclear or not visible, reflect that uncertainty in your score.
+Base your scores primarily on this documented evidence, quoting it directly for each score.
+Where a criterion has gaps in the observation, apply informed professional judgement —
+note it explicitly in the evidence field as "Not documented in observation - scored on
+basis of [your reasoning]". Absence of documentation is not the same as absence of the feature.
 
 Notable states flagged during observation:
 {notable_text}
@@ -404,7 +411,7 @@ IMPORTANT JSON FORMATTING RULES:
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": content}],
-                max_tokens=3000,
+                max_tokens=8000,
             )
 
             response_text = response.choices[0].message.content
@@ -464,7 +471,7 @@ IMPORTANT JSON FORMATTING RULES:
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": content}],
-                max_tokens=6000,
+                max_tokens=12000,
             )
 
             response_text = response.choices[0].message.content

@@ -22,6 +22,7 @@ class EvaluationCriterion(BaseModel):
     description: str
     evaluation_points: List[str]
     benchmarks: List[str]
+    scoring_rubric: Optional[Dict[str, str]] = None
 
 
 class ScreenshotViewport(BaseModel):

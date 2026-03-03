@@ -21,6 +21,7 @@ import asyncio
 import argparse
 import json
 import os
+import signal
 import sys
 import time
 import subprocess
@@ -588,7 +589,8 @@ class UXAnalysisOrchestrator:
                     "weight": c.weight,
                     "description": c.description,
                     "evaluation_points": c.evaluation_points,
-                    "benchmarks": c.benchmarks
+                    "benchmarks": c.benchmarks,
+                    "scoring_rubric": c.scoring_rubric,
                 }
                 for c in self.analysis_type_config.criteria
             ]
@@ -731,9 +733,8 @@ class UXAnalysisOrchestrator:
             successful_captures = [d for d in captured_data if d.get("success")]
             failed_captures = [d for d in captured_data if not d.get("success")]
 
-            # Delay between analyses to respect 8,000 output tokens/min rate limit
-            # With max_tokens=6000, we need 1 per minute minimum (60s delay)
-            ANALYSIS_DELAY = 90  # Two-pass: ~9000 output tokens per competitor, 8000/min limit
+            # Delay between analyses to respect conservative provider throughput limits.
+            ANALYSIS_DELAY = 90  # Two-pass pipeline can emit high output volume per competitor.
 
             self.console.print(f"[bold]Analyzing {len(successful_captures)} competitors sequentially...[/bold]")
             self.console.print(f"[dim]Rate limit protection: {ANALYSIS_DELAY}s delay between analyses[/dim]\n")
@@ -751,6 +752,9 @@ class UXAnalysisOrchestrator:
                         TimeElapsedColumn(),
                         console=self.console,
                     ) as progress:
+                        _loop = asyncio.get_event_loop()
+                        if hasattr(signal, 'SIGWINCH'):
+                            _loop.add_signal_handler(signal.SIGWINCH, progress.refresh)
                         task_id = progress.add_task("", total=len(successful_captures))
 
                         for idx, capture_data in enumerate(successful_captures, 1):

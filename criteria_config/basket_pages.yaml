@@ -29,13 +29,22 @@ viewports:
     height: 812
 
 observation_focus:
-  - "Cart contents — all items, quantities, individual prices, subtotals"
-  - "Order summary breakdown (subtotal, shipping cost, discounts applied, total)"
-  - "Free delivery threshold — current status and how close the user is"
-  - "Upsell or cross-sell placements — location and content"
-  - "Coupon or promo code input — visibility and state"
-  - "Quantity adjustment controls — +/- buttons or dropdown state"
-  - "Item removal option — visibility and placement"
+  # Existing items - refined
+  - "Cart contents - all items, quantities, individual prices, subtotals; product images (size and clarity), pack size/weight prominence, variant details (flavour, life stage)"
+  - "Order summary breakdown - subtotal, shipping cost, discounts applied, and grand total; are all components itemised and labelled?"
+  - "Free delivery threshold - exact messaging visible (e.g. 'Add GBP5.00 for free delivery'), progress bar or indicator present, current gap to threshold"
+  - "Cross-sell or recommendation section - document TWO things separately: (1) what is in the basket (specific products, brand, species/category, life stage if visible); (2) what is being recommended (product name, type, brand). Both must be documented for Pass 2 to assess contextual relevance."
+  - "Coupon or promo code input - visibility, placement, current state"
+  - "Quantity adjustment controls - +/- buttons or dropdown; is there an 'Update basket' or 'Update' button/link present? If so, price likely requires manual trigger to recalculate rather than updating automatically"
+  - "Item removal option - visibility and placement per item"
+  # New criterion-aligned additions
+  - "Express checkout buttons (PayPal, Google Pay, Apple Pay, Shop Pay) - exact position relative to the main checkout CTA (above or below?), present on desktop and mobile separately, any value proposition text visible (e.g. 'Skip the forms')"
+  - "Delivery date or window shown in basket - specific date (e.g. 'Arrives Tuesday 5th March') vs vague range (e.g. '3-5 days'), order cutoff time if visible, any urgency messaging"
+  - "Subscription or auto-delivery indicator in basket - is the subscription nature of any items clearly communicated? Delivery frequency shown, savings percentage visible, option to modify or cancel accessible. NOTE: do NOT attempt to assess whether auto-delivery was pre-selected as default - basket state is set by the user at PDP stage and cannot be evaluated here."
+  - "Mobile layout - overall design for mobile viewport: text readability, touch target sizes, ease of quantity editing, accessibility of basket summary and checkout action without excessive scrolling"
+  - "Primary checkout CTA - button text, colour, and visual prominence on both desktop and mobile; any competing CTAs of similar visual weight; sticky/fixed behaviour on mobile if present"
+  - "Payment method icons and trust/security badges - location relative to checkout CTA; return policy link visibility; customer service contact visible"
+  - "Dark patterns - pre-checked opt-in boxes for add-ons or marketing, hidden opt-outs, misleading button text or UI hierarchy, urgency/scarcity messaging (countdown timers, low stock warnings). NOTE: auto-delivery pre-selection cannot be assessed on basket pages - that state is set by the user at PDP stage. Flag it there, not here."
 
 # UX Analysis Criteria - optimized for UK retail basket pages
 # Total weight: 92 points across 11 criteria
@@ -48,7 +57,7 @@ criteria:
     description: "Visibility of delivery costs and free shipping thresholds on basket page"
     evaluation_points:
       - "Are delivery costs displayed on basket page (not hidden until checkout)?"
-      - "Is free shipping threshold clearly shown (e.g., 'Add £5 for free delivery')?"
+      - "Is free shipping threshold clearly shown (e.g., 'Add GBP5 for free delivery')?"
       - "Can users see different delivery options and their costs?"
       - "Is the delivery cost vs order value relationship clear?"
       - "Are there visual indicators of progress toward free shipping (e.g., progress bar)?"
@@ -59,6 +68,13 @@ criteria:
         finding: "Heavy products make shipping cost critical concern"
       - source: "Best Practice"
         finding: "Show free shipping bar/progress indicator prominently"
+    # NOTE: progress bars and multiple delivery options are enhancements, not requirements.
+    # A site showing delivery cost clearly + a specific free threshold message scores 8-10.
+    scoring_rubric:
+      "8-10": "Delivery cost shown in basket and free delivery threshold clearly communicated with a specific amount (e.g. 'Add GBP5.00 for free delivery'); user is not surprised by cost at checkout"
+      "5-7": "Delivery cost visible but free threshold absent or vague; or threshold shown but delivery cost not visible until checkout"
+      "2-4": "Delivery cost hidden until checkout and/or no threshold information on basket page"
+      "0-1": "No delivery cost or threshold information visible on basket page"
 
   - id: "subscription_auto_delivery"
     name: "Subscription & Auto-Delivery Options"
@@ -76,6 +92,14 @@ criteria:
         finding: "Pet food consumers highly receptive to subscriptions (convenience + savings)"
       - source: "Best Practice"
         finding: "Highlight savings percentage, emphasize flexibility and control"
+    # NOTE: dark pattern detection (pre-selected default) is NOT applicable on basket pages.
+    # Basket state is set by the user at PDP stage. Score purely on how clearly the
+    # subscription is communicated and how easy it is to manage from the basket.
+    scoring_rubric:
+      "8-10": "Subscription status clearly communicated in basket (frequency, savings percentage shown), easy access to modify frequency or switch to one-time, cancellation terms visible"
+      "5-7": "Subscription nature of order shown but savings, frequency, or flexibility terms are unclear or hard to find"
+      "2-4": "Subscription items in basket not clearly flagged as recurring, or modification options absent/buried"
+      "0-1": "No subscription offering on site; or subscription items present in basket but with no subscription information visible"
 
   - id: "basket_summary"
     name: "Basket Summary & Total Clarity"
@@ -92,6 +116,11 @@ criteria:
         finding: "Hidden costs are #2 abandonment reason after shipping"
       - source: "Best Practice"
         finding: "Large, bold total with clear breakdown above, real-time updates"
+    scoring_rubric:
+      "8-10": "Itemised breakdown of subtotal, delivery, discounts, and total; large prominent total; real-time updates on quantity change"
+      "5-7": "Total clearly visible but breakdown is incomplete or not all cost components are labelled"
+      "2-4": "Total shown without breakdown, or breakdown is confusing and costs are hard to reconcile"
+      "0-1": "No clear order total visible on basket page"
 
   - id: "product_information_cart"
     name: "Product Details in Cart"
@@ -111,6 +140,11 @@ criteria:
         finding: "27% abandon when unable to see/verify order details clearly"
       - source: "Best Practice"
         finding: "Show product images + pack size/weight prominently, inline editing"
+    scoring_rubric:
+      "8-10": "Clear product image, pack size/weight prominent, unit price visible, variants shown (flavour/life stage), inline quantity editing available"
+      "5-7": "Product identifiable and images present but pack size/weight unclear or variants not shown"
+      "2-4": "Products listed by name only; no image, weight, or variant detail visible in cart view"
+      "0-1": "Cart contents unclear or individual products not identifiable"
 
   - id: "mobile_layout_usability"
     name: "Mobile Layout & Touch Usability"
@@ -130,6 +164,11 @@ criteria:
         finding: "61% of users won't return after bad mobile experience"
       - source: "Best Practice"
         finding: "Sticky CTA, large touch targets (44x44px min), readable text (16px+)"
+    scoring_rubric:
+      "8-10": "Layout clearly designed for mobile - readable text, appropriately sized touch targets, easy quantity editing, basket summary accessible without excessive scrolling, no horizontal scroll"
+      "5-7": "Functional on mobile but usability compromised - small touch targets, text requires zooming, or key basket elements require significant scrolling to reach"
+      "2-4": "Mobile experience poor - elements misaligned, overlapping, or inaccessible; layout clearly adapted from desktop with no mobile-specific consideration"
+      "0-1": "Desktop-only layout served on mobile viewport - no responsive adaptation"
 
   - id: "delivery_estimates"
     name: "Delivery Timing & Urgency"
@@ -146,6 +185,11 @@ criteria:
         finding: "Delivery certainty early in flow reduces anxiety and abandonment"
       - source: "Best Practice"
         finding: "Show specific dates, not vague ranges; highlight urgency where applicable"
+    scoring_rubric:
+      "8-10": "Specific delivery date shown in basket (e.g. 'Arrives Tuesday 5th March') AND order cutoff time displayed (e.g. 'Order within 2hrs for next-day delivery'); urgency messaging where relevant"
+      "5-7": "Specific delivery date shown but no cutoff time; or delivery window with cutoff time but no specific date"
+      "2-4": "Vague delivery messaging only (e.g. 'standard delivery', '3-5 working days') - no specific date or cutoff"
+      "0-1": "No delivery timing information visible on basket page"
 
   - id: "express_checkout"
     name: "Express Checkout Options"
@@ -164,6 +208,11 @@ criteria:
         finding: "Express checkout reduces friction by 30-50%, significantly boosting conversion"
       - source: "Best Practice"
         finding: "Multiple options (Apple Pay, Google Pay, PayPal), positioned prominently"
+    scoring_rubric:
+      "8-10": "Two or more express options (PayPal, Google Pay, Apple Pay, Shop Pay) visible and prominent, positioned above the main checkout CTA, present on both desktop and mobile"
+      "5-7": "At least one express option present and reasonably prominent; positioning relative to CTA or mobile presence not fully confirmed in observation"
+      "2-4": "Express option documented but positioned below main CTA, footer-only, or only on one viewport"
+      "0-1": "No express checkout options documented in observation"
 
   # TIER 2: Important Supporting Elements (Weight: 6-7)
 
@@ -182,6 +231,11 @@ criteria:
         finding: "Friction in quantity changes leads to abandonment and frustration"
       - source: "Best Practice"
         finding: "+/- buttons with immediate price update, clear remove option"
+    scoring_rubric:
+      "8-10": "Per-item +/- buttons with immediate price update; clear remove option; quantity editable without page reload"
+      "5-7": "Quantity changeable but via dropdown or text field rather than +/- buttons; or an 'Update' button is present indicating price does not recalculate automatically"
+      "2-4": "Quantity editing is difficult, unclear, or requires navigating away from the basket"
+      "0-1": "No visible way to change item quantities in basket"
 
   - id: "cta_buttons"
     name: "Checkout CTA Clarity"
@@ -198,6 +252,11 @@ criteria:
         finding: "Primary CTA should be unmissable, visually dominant element"
       - source: "Best Practice"
         finding: "High contrast color, large size, sticky on mobile, action-oriented copy"
+    scoring_rubric:
+      "8-10": "Primary CTA large, high-contrast colour, action-oriented copy (e.g. 'Proceed to Checkout'), no competing CTAs of equal visual weight; sticky on mobile where present is a positive differentiator"
+      "5-7": "CTA clearly visible and labelled but copy is generic ('Next', 'Continue'), or secondary buttons compete for attention"
+      "2-4": "CTA present but low-contrast, small, or visually competes with equally prominent secondary buttons"
+      "0-1": "No clear primary checkout CTA visible on basket page"
 
   - id: "cross_sell_recommendations"
     name: "Cross-Sell & Related Products"
@@ -214,6 +273,15 @@ criteria:
         finding: "35% of revenue attributed to product recommendations"
       - source: "Best Practice"
         finding: "Contextual recommendations, easy add-to-cart, not overwhelming"
+    # NOTE: "Contextual" means observable signals: same species, same brand, complementary type
+    # (treats + food, accessories + a specific item). Deep algorithmic relevance is not assessable.
+    # The observation_focus item explicitly asks Pass 1 to document BOTH basket contents AND
+    # cross-sell contents. If a gap occurs despite this, re-run the analysis - do not score blind.
+    scoring_rubric:
+      "8-10": "Pass 1 documented basket contents and cross-sells; recommended products show clear observable relevance (same brand, same species, complementary type - e.g. treats alongside food); inline add-to-cart without leaving basket"
+      "5-7": "Recommendations present and species/category appropriate but specific relevance to basket contents is unclear; or add-to-cart requires navigating away"
+      "2-4": "Recommendations appear entirely generic (species mismatch, irrelevant categories) or are so numerous they distract from the checkout flow"
+      "0-1": "No cross-sell section visible on basket page"
 
   - id: "payment_and_trust"
     name: "Payment Options & Trust Signals"
@@ -230,3 +298,8 @@ criteria:
         finding: "18% abandon due to trust and security concerns"
       - source: "Best Practice"
         finding: "Show payment icons, trust badges near CTA, accessible return policy"
+    scoring_rubric:
+      "8-10": "Payment method icons displayed near CTA, trust/security badge visible, return policy clearly linked, customer service contact accessible"
+      "5-7": "Some trust signals present (icons or badge) but return policy hard to find or no customer service contact"
+      "2-4": "Minimal trust signals - no payment icons, no security badge, return policy absent or buried in footer"
+      "0-1": "No trust signals of any kind visible on basket page"

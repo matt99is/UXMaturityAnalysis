@@ -2,6 +2,12 @@
 
 Historical design and implementation documents. These are retained for reference but are not active.
 
+## 2026-03
+
+| File | Type | Description |
+|------|------|-------------|
+| `../plans/2026-03-02-scoring-reliability-overhaul.md` | Implementation | Scoring reliability overhaul - token limits, rubrics, observation alignment |
+
 ## 2026-02
 
 | File | Type | Description |

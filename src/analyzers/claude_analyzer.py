@@ -60,6 +60,11 @@ class ClaudeUXAnalyzer:
             criteria_text += f"\n   Benchmarks:\n"
             for benchmark in criterion["benchmarks"]:
                 criteria_text += f"   - {benchmark}\n"
+            rubric = criterion.get("scoring_rubric")
+            if rubric:
+                criteria_text += "\n   Scoring Rubric:\n"
+                for band, description in rubric.items():
+                    criteria_text += f"   - {band}: {description}\n"
             criteria_text += "\n"
 
         # Build context section dynamically
@@ -76,8 +81,10 @@ class ClaudeUXAnalyzer:
 **VISUAL EVIDENCE (from observation pass)**
 
 The following structured observation was made from the screenshots before scoring.
-Use ONLY this evidence to support your scores. Do not infer what is not documented here.
-If an observation is marked unclear or not visible, reflect that uncertainty in your score.
+Base your scores primarily on this documented evidence, quoting it directly for each score.
+Where a criterion has gaps in the observation, apply informed professional judgement —
+note it explicitly in the evidence field as "Not documented in observation - scored on
+basis of [your reasoning]". Absence of documentation is not the same as absence of the feature.
 
 Notable states flagged during observation:
 {notable_text}
@@ -374,7 +381,7 @@ IMPORTANT JSON FORMATTING RULES:
         try:
             response = await self.client.messages.create(
                 model=self.model,
-                max_tokens=8000,
+                max_tokens=16000,
                 messages=[{"role": "user", "content": content}],
             )
 
@@ -389,7 +396,7 @@ IMPORTANT JSON FORMATTING RULES:
         except json.JSONDecodeError as e:
             truncated = response is not None and response.stop_reason == "max_tokens"
             error_msg = (
-                "Pass 1 truncated — response hit 8000 token limit."
+                "Pass 1 truncated — response hit 16000 token limit."
                 if truncated
                 else f"Pass 1 malformed JSON (char {e.pos})."
             )

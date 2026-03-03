@@ -12,6 +12,7 @@ Example:
 """
 
 import asyncio
+import signal
 import sys
 import os
 import json
@@ -214,6 +215,9 @@ async def reanalyze_audit(
             TimeElapsedColumn(),
             console=console,
         ) as progress:
+            _loop = asyncio.get_event_loop()
+            if hasattr(signal, 'SIGWINCH'):
+                _loop.add_signal_handler(signal.SIGWINCH, progress.refresh)
             task_id = progress.add_task("", total=len(needs_analysis))
 
             for idx, comp_data in enumerate(needs_analysis, 1):

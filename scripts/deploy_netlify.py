@@ -83,17 +83,18 @@ def deploy_to_netlify(draft=False):
         link_check = subprocess.run(
             ['netlify', 'status'],
             capture_output=True,
-            cwd=str(project_root / 'output')
+            cwd=str(project_root)
         )
 
         if link_check.returncode != 0:
             print("\n⚠️  Site not linked yet. Linking now...")
             print("  Follow the prompts to create/link a Netlify site\n")
 
-        # Deploy
+        # Deploy from project root so netlify.toml is found correctly
+        deploy_cmd += ['--dir', 'output']
         result = subprocess.run(
             deploy_cmd,
-            cwd=str(project_root / 'output'),
+            cwd=str(project_root),
             text=True
         )
 

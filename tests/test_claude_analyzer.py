@@ -82,6 +82,116 @@ def test_build_analysis_prompt_with_observation_cites_evidence(
     assert "cite" in prompt.lower() or "quote" in prompt.lower()
 
 
+def test_criteria_dict_includes_scoring_rubric(analyzer: ClaudeUXAnalyzer) -> None:
+    """Prompt builder accepts criteria dictionaries containing scoring_rubric."""
+    criteria_with_rubric = [
+        {
+            "id": "express_checkout",
+            "name": "Express Checkout",
+            "weight": 8,
+            "description": "Express checkout options",
+            "evaluation_points": ["Are express buttons visible?"],
+            "benchmarks": ["Baymard: reduces friction"],
+            "scoring_rubric": {
+                "8-10": "Multiple options above CTA",
+                "0-1": "Not present",
+            },
+        }
+    ]
+    observation = {"notable_states": [], "desktop": {}, "mobile": {}}
+    prompt = analyzer._build_analysis_prompt(
+        criteria=criteria_with_rubric,
+        analysis_name="Basket Page",
+        site_name="example.com",
+        url="https://example.com/basket",
+        observation=observation,
+    )
+    assert isinstance(prompt, str)
+
+
+def test_build_analysis_prompt_renders_scoring_rubric(analyzer: ClaudeUXAnalyzer) -> None:
+    """Rubric bands are included in the Pass 2 prompt when criterion has one."""
+    criteria = [
+        {
+            "id": "express_checkout",
+            "name": "Express Checkout",
+            "weight": 8,
+            "description": "Express checkout options",
+            "evaluation_points": ["Are express buttons visible?"],
+            "benchmarks": ["Baymard: reduces friction"],
+            "scoring_rubric": {
+                "8-10": "Multiple options above CTA on both viewports",
+                "5-7": "One option present, positioning unclear",
+                "2-4": "Present but poorly positioned",
+                "0-1": "Not present",
+            },
+        }
+    ]
+    observation = {"notable_states": [], "desktop": {}, "mobile": {}}
+    prompt = analyzer._build_analysis_prompt(
+        criteria=criteria,
+        analysis_name="Basket Page",
+        site_name="example.com",
+        url="https://example.com/basket",
+        observation=observation,
+    )
+    assert "Scoring Rubric" in prompt
+    assert "Multiple options above CTA on both viewports" in prompt
+    assert "8-10" in prompt
+
+
+def test_build_analysis_prompt_no_rubric_omits_rubric_section(analyzer: ClaudeUXAnalyzer) -> None:
+    """When scoring_rubric is None, no Scoring Rubric section is rendered."""
+    criteria = [
+        {
+            "id": "test",
+            "name": "Test",
+            "weight": 5,
+            "description": "Test",
+            "evaluation_points": [],
+            "benchmarks": [],
+            "scoring_rubric": None,
+        }
+    ]
+    observation = {"notable_states": [], "desktop": {}, "mobile": {}}
+    prompt = analyzer._build_analysis_prompt(
+        criteria=criteria,
+        analysis_name="Test",
+        site_name="example.com",
+        url="https://example.com",
+        observation=observation,
+    )
+    assert "Scoring Rubric" not in prompt
+
+
+def test_build_analysis_prompt_softened_evidence_instruction(
+    analyzer: ClaudeUXAnalyzer,
+) -> None:
+    """Pass 2 prompt must not force strict-only evidence language."""
+    criteria = [
+        {
+            "id": "t",
+            "name": "T",
+            "weight": 1,
+            "description": "T",
+            "evaluation_points": [],
+            "benchmarks": [],
+            "scoring_rubric": None,
+        }
+    ]
+    observation = {"notable_states": [], "desktop": {}, "mobile": {}}
+    prompt = analyzer._build_analysis_prompt(
+        criteria=criteria,
+        analysis_name="Test",
+        site_name="example.com",
+        url="https://example.com",
+        observation=observation,
+    )
+    assert "ONLY this evidence" not in prompt
+    assert "cite" in prompt.lower() or "quote" in prompt.lower()
+    assert "professional" in prompt.lower()
+
+
 def test_build_analysis_prompt_without_observation_unchanged(
     analyzer: ClaudeUXAnalyzer,
 ) -> None:
@@ -149,6 +259,46 @@ async def test_observe_screenshots_returns_observation_on_success(
     ]
     assert result["observation"]["screenshots_analyzed"] == [str(screenshot)]
     assert result["observation"]["model_used"] == analyzer.model
+
+
+@pytest.mark.asyncio
+async def test_observe_screenshots_uses_16000_token_budget(
+    analyzer: ClaudeUXAnalyzer,
+    tmp_path,
+) -> None:
+    """Pass 1 must request 16000 output tokens."""
+    from PIL import Image
+
+    img = Image.new("RGB", (10, 10))
+    screenshot = tmp_path / "desktop.png"
+    img.save(screenshot)
+
+    captured = []
+    mock_obs = {
+        "site_name": "x",
+        "url": "u",
+        "analysis_name": "n",
+        "desktop": {},
+        "mobile": {},
+        "notable_states": [],
+    }
+
+    async def mock_create(**kwargs):
+        captured.append(kwargs)
+        response = MagicMock()
+        response.content = [MagicMock(text=json.dumps(mock_obs))]
+        return response
+
+    with patch.object(analyzer.client.messages, "create", new=mock_create):
+        await analyzer._observe_screenshots(
+            screenshot_paths=[str(screenshot)],
+            analysis_name="Test",
+            observation_focus=[],
+            site_name="x",
+            url="u",
+        )
+
+    assert captured[0]["max_tokens"] == 16000
 
 
 @pytest.mark.asyncio
