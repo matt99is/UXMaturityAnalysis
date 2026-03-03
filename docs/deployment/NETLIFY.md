@@ -19,7 +19,7 @@ Deploy your UX maturity reports to Netlify for easy sharing via URL.
 
 1. Generate reports (index is auto-generated at `output/index.html`):
    ```bash
-   python3 main.py --config competitors.json --analysis-type product_pages
+   ./run.sh    # choose "Fresh analysis"
    ```
 
 2. Go to **https://app.netlify.com/drop**
@@ -63,7 +63,7 @@ Deploy your UX maturity reports to Netlify for easy sharing via URL.
 
 4. Deploy:
    ```bash
-   python3 scripts/deploy_netlify.py
+   ./run.sh --deploy
    ```
 
 #### Future Deployments (10 seconds)
@@ -71,7 +71,7 @@ Deploy your UX maturity reports to Netlify for easy sharing via URL.
 After initial setup, just run:
 
 ```bash
-python3 scripts/deploy_netlify.py
+./run.sh --deploy
 ```
 
 The script will:
@@ -101,11 +101,11 @@ After one-time setup, deployment happens automatically after each analysis.
 After setup, every analysis automatically deploys:
 
 ```bash
-# Runs analysis AND auto-deploys
-python3 main.py --urls https://example.com --config competitors.json
+# Runs analysis AND auto-deploys (prompts if any competitors were skipped)
+./run.sh    # choose "Fresh analysis"
 
-# Skip deployment when needed
-python3 main.py --urls https://example.com --config competitors.json --no-deploy
+# Deploy independently
+./run.sh --deploy
 ```
 
 The analysis pipeline now:
@@ -221,23 +221,11 @@ https://your-site.netlify.app/
 ### After running a new analysis:
 
 ```bash
-# 1. Generate new report
-python main.py --urls ...
+# 1. Run analysis (auto-deploys on clean run)
+./run.sh    # choose "Fresh analysis"
 
-# 2. Deploy (choose one):
-
-# Option A: Drag & drop (manual)
-# - Go to https://app.netlify.com/drop
-# - Drag output folder
-
-# Option B: CLI (automated)
-python3 scripts/deploy_netlify.py
-
-# Option C: Git (auto-deploy)
-cd output
-git add .
-git commit -m "New analysis"
-git push  # Auto-deploys!
+# Or deploy manually after a reanalyse:
+./run.sh --deploy
 ```
 
 ---
@@ -326,8 +314,7 @@ Run `tree output -L 4` to verify structure.
 
 1. **Test locally** (optional):
    ```bash
-   cd output
-   python3 -m http.server 8000
+   python3 -m http.server 8000 --directory output
    # Visit: http://localhost:8000
    ```
 

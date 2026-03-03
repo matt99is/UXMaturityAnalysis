@@ -1,12 +1,18 @@
 # Architecture & Extensibility Guide
 
-This document describes the current (v1.9.0) architecture for UX Maturity Analysis Agent.
+This document describes the current (v1.13.0) architecture for UX Maturity Analysis Agent.
 
 ## System Overview
-\`\`\`
+```
+cli.py (unified entry point)
+├─ parse_silent_args() → subprocess to scripts directly (automation/bot)
+└─ interactive menus → subprocess to main.py (guided user flow)
+
 main.py (orchestrator)
 ├─ config_loader.py
 │  └─ criteria_config/*.yaml
+├─ competitor_config.py
+│  └─ competitors/*.yaml
 ├─ screenshot_capture.py
 │  ├─ Playwright capture (desktop/mobile)
 │  └─ claude_analyzer.py
@@ -16,6 +22,8 @@ main.py (orchestrator)
    ├─ report_generator.py (markdown + summary json)
    ├─ html_report_generator.py (interactive html)
    └─ audit_organizer.py (output layout + index generation)
+
+run.sh (tmux layer only — forwards all args to cli.py)
 ```
 
 ## Pipeline Flow
@@ -44,6 +52,8 @@ main.py (orchestrator)
 
 ## Configuration Model
 Configuration is sourced from \`criteria_config/*.yaml\` (not from a monolithic runtime \`config.yaml\`).
+
+Competitor lists are sourced from `competitors/*.yaml`. Each file defines a named set of competitors with per-page-type URLs. `competitor_config.py` handles loading, URL extraction, and inline URL correction.
 
 Each analysis YAML typically includes:
 - \`name\`

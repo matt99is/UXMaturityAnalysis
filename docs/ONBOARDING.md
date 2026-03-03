@@ -1,7 +1,7 @@
 # Developer Onboarding Guide
 
-**Last Updated:** 2026-02-28
-**Project:** UX Maturity Analysis Agent v1.10.0
+**Last Updated:** 2026-03-03
+**Project:** UX Maturity Analysis Agent v1.13.0
 
 ---
 
@@ -27,7 +27,6 @@
 
 4. **Verify setup:**
    ```bash
-   python3 main.py --version
    python3 tests/verify_setup.py
    ```
 
@@ -37,8 +36,12 @@
 
 ```
 UXMaturityAnalysis/
-├── main.py                    # Main entry point
+├── cli.py                     # Unified entry point (menus + silent flags)
+├── run.sh                     # tmux launcher — always use this
+├── main.py                    # Analysis orchestrator (called by cli.py)
 ├── requirements.txt             # Python dependencies
+├── competitors/               # Competitor sets (YAML)
+│   └── petfood.yaml           # UK pet food retail competitors
 ├── css/                       # SCSS stylesheets (8 partials)
 │   ├── main.scss              # Main entry (imports partials)
 │   ├── _variables.scss         # Design tokens
@@ -50,6 +53,7 @@ UXMaturityAnalysis/
 │   └── _mobile.scss            # Mobile responsive overrides
 ├── src/                       # Core library
 │   ├── config_loader.py        # Load YAML configs
+│   ├── competitor_config.py    # Load competitors/*.yaml
 │   ├── analyzers/             # Analysis logic
 │   └── utils/                 # Utilities
 │       ├── html_report_generator.py   # HTML report generation
@@ -71,29 +75,13 @@ UXMaturityAnalysis/
 
 ## How to Run Analysis
 
-### Interactive Mode (Default)
+Always use `./run.sh` — it wraps the analysis in a tmux session so the run survives VS Code disconnects and SSH drops.
+
 ```bash
-python3 main.py --config competitors.json
+./run.sh     # launches interactive menu: Fresh analysis / Reanalyse / Deploy
 ```
 
-You'll be prompted to:
-1. Select analysis type (homepage, product, basket, checkout)
-2. Browser opens for each competitor
-3. Navigate, close popups, press Enter to capture
-
-### Specify Analysis Type (Skip Prompt)
-```bash
-python3 main.py --config competitors.json --analysis-type basket_pages
-```
-
-### Manual Mode (For Bot-Protected Sites)
-```bash
-# Step 1: Capture screenshots manually
-# Save as: competitor_desktop.png, competitor_mobile.png
-
-# Step 2: Analyze
-python3 main.py --manual-mode --screenshots-dir ./my-screenshots --config competitors.json
-```
+See [Common Tasks](COMMON_TASKS.md) for the full command reference.
 
 ---
 
@@ -113,7 +101,7 @@ python3 main.py --manual-mode --screenshots-dir ./my-screenshots --config compet
 
 3. Run analysis:
    ```bash
-   python3 main.py --config competitors.json --analysis-type landing_pages
+   ./run.sh    # choose "Fresh analysis" → select your new page type
    ```
 
 No code changes needed - the system automatically loads your new config!
@@ -232,7 +220,7 @@ python3 scripts/build_css.py
 
 **Reanalyze from existing:**
 ```bash
-python3 scripts/reanalyze_screenshots.py output/audits/{folder}
+./run.sh --reanalyze output/audits/{folder}
 ```
 
 ---
@@ -241,7 +229,7 @@ python3 scripts/reanalyze_screenshots.py output/audits/{folder}
 
 ### Run All Tests
 ```bash
-pytest tests/
+PYTHONPATH=. .venv/bin/pytest tests/
 ```
 
 ### Verify Setup
@@ -269,7 +257,7 @@ python3 -m http.server 8000 --directory output
 
 ### Deploy to Netlify
 ```bash
-python3 scripts/deploy_netlify.py
+./run.sh --deploy
 ```
 
 ---
