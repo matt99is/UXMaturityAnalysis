@@ -60,3 +60,6 @@ Thumbs.db
 
 # Local Netlify folder
 .netlify
+
+# Git worktrees
+.worktrees/
