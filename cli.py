@@ -124,6 +124,83 @@ def discover_audits(audits_dir: Path = None) -> List[dict]:
 
 
 # ---------------------------------------------------------------------------
+# URL validation
+# ---------------------------------------------------------------------------
+
+import urllib.request
+import urllib.error
+
+
+def _head_check(url: str, timeout: int = 5) -> bool:
+    """
+    Returns True if URL responds with a non-4xx status.
+    Treats redirects as valid (sites often redirect /basket to /cart etc.).
+    """
+    try:
+        req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status < 400
+    except (urllib.error.HTTPError, urllib.error.URLError, Exception):
+        return False
+
+
+def validate_and_correct_urls(
+    competitors: List[dict],
+    interactive: bool = True,
+    yaml_path: Path = None,
+    page_type: str = "",
+) -> tuple:
+    """
+    HEAD-check all competitor URLs.
+
+    Returns (valid_competitors, corrections) where:
+    - valid_competitors: list of {name, url} that passed or were corrected
+    - corrections: dict of {competitor_name: new_url} for any corrections made
+
+    In interactive mode, prompts for replacement URL on failure.
+    In non-interactive mode, silently drops failed URLs.
+    """
+    from rich.console import Console
+    console = Console()
+
+    valid = []
+    corrections = {}
+
+    for comp in competitors:
+        name = comp["name"]
+        url = comp["url"]
+
+        if _head_check(url):
+            valid.append(comp)
+            continue
+
+        console.print(f"\n[yellow]⚠ {name} URL returned 404 or failed[/yellow]")
+        console.print(f"  Current: {url}")
+
+        if not interactive:
+            console.print(f"  [dim]Skipping {name} (non-interactive mode)[/dim]")
+            continue
+
+        import questionary
+        new_url = questionary.text(
+            f"New URL for {name} (or Enter to skip):",
+        ).ask()
+
+        if new_url and new_url.strip():
+            new_url = new_url.strip()
+            valid.append({"name": name, "url": new_url})
+            corrections[name] = new_url
+            if yaml_path and page_type:
+                from src.competitor_config import save_url_correction
+                save_url_correction(yaml_path, name, page_type, new_url)
+                console.print(f"  [green]✓ Saved correction to config[/green]")
+        else:
+            console.print(f"  [dim]Skipping {name}[/dim]")
+
+    return valid, corrections
+
+
+# ---------------------------------------------------------------------------
 # Interactive menus
 # ---------------------------------------------------------------------------
 

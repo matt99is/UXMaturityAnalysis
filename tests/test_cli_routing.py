@@ -71,3 +71,31 @@ def test_discover_audits(tmp_path):
 
 def test_discover_audits_empty(tmp_path):
     assert discover_audits(tmp_path) == []
+
+
+from unittest.mock import patch
+from cli import validate_and_correct_urls
+
+
+def test_validate_and_correct_urls_all_valid():
+    competitors = [
+        {"name": "shopA", "url": "https://shopA.com/cart"},
+        {"name": "shopB", "url": "https://shopB.com/basket"},
+    ]
+    # Mock urllib to return 200 for all
+    with patch("cli._head_check", return_value=True):
+        valid, corrections = validate_and_correct_urls(competitors, interactive=False)
+    assert valid == competitors
+    assert corrections == {}
+
+
+def test_validate_and_correct_urls_skips_invalid_when_non_interactive():
+    competitors = [
+        {"name": "shopA", "url": "https://shopA.com/cart"},
+        {"name": "shopB", "url": "https://shopB.com/bad"},
+    ]
+    with patch("cli._head_check", side_effect=[True, False]):
+        valid, corrections = validate_and_correct_urls(competitors, interactive=False)
+    assert len(valid) == 1
+    assert valid[0]["name"] == "shopA"
+    assert corrections == {}
