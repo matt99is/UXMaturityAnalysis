@@ -1,0 +1,50 @@
+name: "UK Pet Food Retail"
+competitors:
+  - name: zooplus
+    pages:
+      basket: https://www.zooplus.co.uk/shop/cart
+  - name: jollyes
+    pages:
+      basket: https://www.jollyes.co.uk/basket
+  - name: chewy
+    pages:
+      basket: https://www.chewy.com/cart
+  - name: pet supermarket
+    pages:
+      basket: https://pet-supermarket.co.uk/basket
+  - name: petshop.co.uk
+    pages:
+      basket: https://www.petshop.co.uk/basket
+  - name: pet drugs online
+    pages:
+      basket: https://www.petdrugsonline.co.uk/basket
+  - name: animed
+    pages:
+      basket: https://www.animed.co.uk/basket
+  - name: tesco
+    pages:
+      basket: https://www.tesco.com/groceries/en-GB/trolley
+  - name: sainsburys
+    pages:
+      basket: https://www.sainsburys.co.uk/webapp/wcs/stores/servlet/gb/groceries/trolley
+  - name: morrisons
+    pages:
+      basket: https://groceries.morrisons.com/checkout/trolley
+  - name: amazon
+    pages:
+      basket: https://www.amazon.co.uk/gp/cart/view.html
+  - name: lords and labradors
+    pages:
+      basket: https://www.lordsandlabradors.co.uk/basket
+  - name: pooch and mutt
+    pages:
+      basket: https://www.poochandmutt.co.uk/cart
+  - name: pet planet
+    pages:
+      basket: https://petplanet.co.uk/basket
+  - name: viovet
+    pages:
+      basket: https://www.viovet.co.uk/basket
+  - name: pets corner
+    pages:
+      basket: https://www.petscorner.co.uk/basket
