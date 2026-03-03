@@ -11,16 +11,33 @@
 
 Items currently in progress. Move to Completed when done.
 
-### [None Currently Active]
+### Scoring Reliability Overhaul (Phase 1)
 
-> When starting work, add item here with:
-> - What you're doing
-> - Key files involved
-> - Any blockers
+Uncommitted changes present on `main` across: `main.py`, `claude_analyzer.py`, `glm_analyzer.py`, `config_loader.py`, `tests/test_claude_analyzer.py`, `tests/test_config_loader.py`, `criteria_config/basket_pages.yaml`.
+
+**Plan:** `docs/plans/2026-03-02-scoring-reliability-overhaul.md`
+
+Pick up from the plan — verify which tasks are already done by reading the uncommitted diffs, then continue.
 
 ---
 
 ## Next Up
+
+### Scoring Reliability Overhaul
+
+**Goal:** Fix systematic scoring inconsistency in the two-pass pipeline — token truncation causing hard failures, Pass 1 evidence not aligned to Pass 2 criteria, no scoring anchors causing per-run drift.
+
+**Plan doc:** `docs/plans/2026-03-02-scoring-reliability-overhaul.md`
+
+**Phases:**
+1. Token limits — raise Pass 1 from 8000→16000 (claude_analyzer), 3000→8000 (glm_analyzer)
+2. Infrastructure — `scoring_rubric` field on `EvaluationCriterion`, prompt changes in both analyzers (render rubrics, soften "ONLY this evidence")
+3. basket_pages.yaml — 13 criterion-aligned observation_focus items, rubrics on all 11 criteria
+4. Authoring guide — `docs/criteria-authoring-guide.md` for replication to other page types
+
+**Files:** `src/config_loader.py`, `src/analyzers/claude_analyzer.py`, `src/analyzers/glm_analyzer.py`, `main.py`, `criteria_config/basket_pages.yaml`
+
+---
 
 ### Web GUI: Human-in-the-Loop Browser Capture
 
@@ -269,17 +286,17 @@ output/
 ## Quick Reference
 
 ```bash
-# Run analysis (auto-deploys to Netlify)
-python3 main.py --config competitors.json --analysis-type basket_pages
+# Interactive menu (fresh analysis / reanalyse / deploy)
+./run.sh
 
-# Run analysis without deploying
-python3 main.py --config competitors.json --no-deploy
+# Silent modes (for automation / Telegram bot)
+./run.sh --reanalyze output/audits/<folder>
+./run.sh --reanalyze output/audits/<folder> --force
+./run.sh --reanalyze output/audits/<folder> --force-observe --force
+./run.sh --deploy
 
-# Regenerate reports from existing screenshots
-python3 scripts/reanalyze_screenshots.py output/audits/2026-02-24_basket_pages
-
-# Manual deploy
-netlify deploy --prod --dir=output
+# Run tests
+PYTHONPATH=. .venv/bin/pytest tests/
 
 # Run linters
 pre-commit run --all-files
@@ -310,10 +327,15 @@ python3 -m http.server 8000 --directory output
 
 | File | Purpose |
 |------|---------|
-| `README.md` | Full project documentation |
+| `PROJECT_STATE.md` | **This file — LLM context entry point. Load first.** |
+| `docs/ROADMAP.md` | Phases, goals, and current direction |
+| `docs/COMMON_TASKS.md` | Command reference — the operational cheat sheet |
+| `docs/ARCHITECTURE.md` | System design and pipeline |
+| `docs/criteria-authoring-guide.md` | How to write criteria YAML files |
+| `docs/ONBOARDING.md` | Setup from scratch (new developer) |
+| `README.md` | Public-facing overview (GitHub) |
 | `CHANGELOG.md` | Version history |
-| `docs/ARCHITECTURE.md` | Technical architecture |
-| `docs/ONBOARDING.md` | Developer onboarding guide |
-| `docs/COMMON_TASKS.md` | Quick reference for frequent tasks |
-| `docs/deployment/` | Netlify deployment guides |
-| `docs/archive/` | Historical design docs (see INDEX.md) |
+| `docs/deployment/` | Netlify deployment setup |
+| `docs/research/` | Research papers (bot detection, VNC streaming) |
+| `docs/plans/` | Detailed implementation plans |
+| `docs/archive/` | Historical design docs |
