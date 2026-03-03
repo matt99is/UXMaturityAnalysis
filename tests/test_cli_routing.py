@@ -48,3 +48,26 @@ def test_no_silent_flags_returns_none():
 def test_no_silent_flags_with_other_args_returns_none():
     args = parse_silent_args(["--help"])
     assert args is None
+
+
+from cli import discover_audits
+
+
+def test_discover_audits(tmp_path):
+    # Create fake audit structure
+    (tmp_path / "2026-03-02_basket_pages" / "amazon").mkdir(parents=True)
+    (tmp_path / "2026-03-02_basket_pages" / "zooplus").mkdir(parents=True)
+    (tmp_path / "2026-03-02_basket_pages" / "css").mkdir(parents=True)  # non-competitor dir
+    (tmp_path / "2026-02-24_basket_pages" / "amazon").mkdir(parents=True)
+
+    audits = discover_audits(tmp_path)
+
+    assert len(audits) == 2
+    # Newest first
+    assert audits[0]["folder"] == str(tmp_path / "2026-03-02_basket_pages")
+    assert audits[0]["label"] == "2026-03-02  basket_pages  (2 competitors)"
+    assert audits[1]["label"] == "2026-02-24  basket_pages  (1 competitor)"
+
+
+def test_discover_audits_empty(tmp_path):
+    assert discover_audits(tmp_path) == []

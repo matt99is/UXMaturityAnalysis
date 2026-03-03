@@ -85,6 +85,45 @@ def run_deploy(args: SilentArgs) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Audit discovery
+# ---------------------------------------------------------------------------
+
+_SKIP_DIRS = {"css", "index.html", "_audit_summary.json", "_comparison_report.md"}
+
+
+def discover_audits(audits_dir: Path = None) -> List[dict]:
+    """
+    Scan output/audits/ and return audit metadata sorted newest-first.
+
+    Each entry: {"folder": str, "label": str, "name": str}
+    """
+    d = audits_dir or (PROJECT_ROOT / "output" / "audits")
+    if not d.exists():
+        return []
+
+    results = []
+    for audit_dir in sorted(d.iterdir(), reverse=True):
+        if not audit_dir.is_dir():
+            continue
+        # Count competitor dirs (skip utility dirs)
+        competitors = [
+            p for p in audit_dir.iterdir()
+            if p.is_dir() and p.name not in _SKIP_DIRS and not p.name.startswith("_")
+        ]
+        count = len(competitors)
+        noun = "competitor" if count == 1 else "competitors"
+        # "2026-03-02_basket_pages" → "2026-03-02  basket_pages"
+        display_name = audit_dir.name.replace("_", "  ", 1)
+        label = f"{display_name}  ({count} {noun})"
+        results.append({
+            "folder": str(audit_dir),
+            "label": label,
+            "name": audit_dir.name,
+        })
+    return results
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
