@@ -4,6 +4,20 @@ Quick reference for frequently performed tasks in this project.
 
 ---
 
+## Running the tool
+
+Always use `./run.sh`. It handles tmux session protection automatically.
+
+| What you want | Command |
+|---|---|
+| Full interactive menu | `./run.sh` |
+| Reanalyse existing audit | `./run.sh --reanalyze output/audits/<folder>` |
+| Reanalyse, re-run scoring | `./run.sh --reanalyze output/audits/<folder> --force` |
+| Reanalyse, redo everything | `./run.sh --reanalyze output/audits/<folder> --force-observe --force` |
+| Deploy to Netlify | `./run.sh --deploy` |
+
+---
+
 ## Add a New Analysis Type (Page Type)
 
 **When:** You want to analyze a new type of page (e.g., search results, product listing, account page)
@@ -39,7 +53,7 @@ Quick reference for frequently performed tasks in this project.
 
 3. Run analysis:
    ```bash
-   python3 main.py --config competitors.json --analysis-type your_new_page_type
+   ./run.sh   # then choose "Fresh analysis" → your new page type
    ```
 
 **No code changes needed** - the system automatically loads and uses your new YAML config.
@@ -210,11 +224,7 @@ python3 -m http.server 8000 --directory output
 
 ### Deploy to Netlify
 ```bash
-# Deploy all output to Netlify
-python3 scripts/deploy_netlify.py
-
-# Deploy specific folder
-# Edit scripts/deploy_netlify.py to change the path
+./run.sh --deploy
 ```
 
 ---
@@ -271,8 +281,14 @@ python3 scripts/regenerate_example_report.py
 
 ### Key Commands
 ```bash
-# Run analysis
-python3 main.py --config competitors.json
+# Run analysis (interactive)
+./run.sh
+
+# Deploy
+./run.sh --deploy
+
+# Reanalyse existing audit
+./run.sh --reanalyze output/audits/<folder>
 
 # Rebuild CSS
 python3 scripts/build_css.py
@@ -282,9 +298,6 @@ python3 scripts/regenerate_example_report.py
 
 # Test locally
 python3 -m http.server 8000 --directory output
-
-# Deploy
-python3 scripts/deploy_netlify.py
 ```
 
 ---
