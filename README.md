@@ -19,6 +19,7 @@ UX Maturity Analysis is a Python tool that captures competitor e-commerce pages,
 - Scoring reliability overhaul is complete on `main` (commit `85baa40`, 2026-03-03).
 - Browser-capture infrastructure (Patchright/Xvfb/noVNC) is still planned, not fully implemented.
 - `Supervised` mode is now wired to interactive capture (`main.py --interactive`) and can show noVNC URL guidance.
+- `Supervised` mode now runs fail-fast noVNC preflight and uses timeout/heartbeat while waiting for operator readiness.
 - `Automated` remains unavailable in the unified CLI until Patchright/Xvfb flow is implemented.
 
 ## Quick Start

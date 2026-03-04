@@ -25,10 +25,32 @@ If a URL is corrected in interactive mode, the new value is saved back into that
 Current status: `Supervised` is wired to interactive capture.
 `Automated` still shows "not available yet" until browser-capture wiring is complete.
 
+Supervised preflight now fails fast if noVNC is not configured/reachable.
+Required env: `NOVNC_URL` (or `NOVNC_HOST` + optional `NOVNC_PORT`).
+Optional env:
+- `SUPERVISED_READY_TIMEOUT_SEC` (default `900`)
+- `SUPERVISED_HEARTBEAT_SEC` (default `30`)
+
 For capture rollout, use this order:
 1. `petfood-smoke` (1 competitor) for smoke tests.
 2. `petfood-test` (3 competitors) for canary validation.
 3. `petfood` (16 competitors) only after both pass.
+
+### Supervised smoke canary
+
+Use this before any wider capture run:
+
+```bash
+curl -sS -I "${NOVNC_URL:-http://localhost:6080/vnc.html}" | head -n 1
+./run.sh
+# choose: Fresh analysis -> basket_pages -> petfood-smoke -> Supervised
+```
+
+Expected behavior:
+- CLI prints `✓ Supervised preflight checks passed`
+- Browser guidance URL is shown
+- Terminal prints heartbeat while waiting for Enter
+- If no Enter is received before timeout, the competitor fails with a clear timeout message
 
 ---
 

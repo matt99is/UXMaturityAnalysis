@@ -18,6 +18,7 @@ Scoring reliability overhaul is complete on `main` (commit `85baa40`, 2026-03-03
 Smoke competitor set is available at `competitors/petfood-smoke.yaml` (1 competitor) for fast checks.
 Canary competitor set is available at `competitors/petfood-test.yaml` (3 competitors) for vertical-slice validation.
 CLI status: `Supervised` routes to interactive capture; `Automated` remains gated with explicit "not available yet" messaging.
+Supervised hardening: startup preflight now validates noVNC URL/reachability, and Enter-wait uses timeout + heartbeat (`SUPERVISED_READY_TIMEOUT_SEC`, `SUPERVISED_HEARTBEAT_SEC`).
 
 ---
 

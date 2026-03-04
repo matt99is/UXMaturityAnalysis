@@ -21,13 +21,17 @@ import asyncio
 import argparse
 import json
 import os
+import select
 import signal
 import sys
 import time
 import subprocess
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
@@ -227,6 +231,112 @@ class UXAnalysisOrchestrator:
             from src.browser_session import BrowserSessionPool
             self.session_pool = BrowserSessionPool(max_sessions=1, novnc_url=self.novnc_url)
 
+    @staticmethod
+    def _get_env_int(name: str, default: int, minimum: int) -> int:
+        """Read int env var with safe fallback and lower bound."""
+        raw = os.getenv(name)
+        if raw is None:
+            return default
+
+        try:
+            value = int(raw)
+        except ValueError:
+            return default
+        return max(value, minimum)
+
+    @staticmethod
+    def _probe_novnc_url(url: str, timeout: float = 5.0) -> Tuple[bool, str]:
+        """
+        Check whether noVNC URL is reachable.
+
+        Returns:
+            (is_reachable, reason)
+        """
+        request = Request(url, method="GET")
+        try:
+            with urlopen(request, timeout=timeout) as response:
+                status = getattr(response, "status", 200)
+                if status >= 400:
+                    return False, f"HTTP {status}"
+            return True, "ok"
+        except HTTPError as exc:
+            return False, f"HTTP {exc.code}"
+        except URLError as exc:
+            reason = exc.reason if getattr(exc, "reason", None) else str(exc)
+            return False, str(reason)
+        except Exception as exc:
+            return False, str(exc)
+
+    def _run_supervised_preflight(self) -> Tuple[bool, str]:
+        """
+        Validate supervised-capture prerequisites before capture starts.
+        """
+        if not self.interactive_mode or self.manual_mode:
+            return True, "not-applicable"
+
+        if not self.session_pool:
+            return False, "Supervised session pool is not initialized."
+
+        if not self.novnc_url:
+            return (
+                False,
+                "noVNC URL is not configured. Set NOVNC_URL or NOVNC_HOST (optional NOVNC_PORT).",
+            )
+
+        parsed = urlparse(self.novnc_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            return False, f"Invalid noVNC URL '{self.novnc_url}'. Use http(s)://host:port/vnc.html"
+
+        reachable, reason = self._probe_novnc_url(self.novnc_url)
+        if not reachable:
+            return False, f"Cannot reach noVNC at {self.novnc_url} ({reason})"
+
+        return True, "ok"
+
+    def _wait_for_supervised_confirmation(
+        self,
+        timeout_seconds: int,
+        heartbeat_seconds: int,
+    ) -> str:
+        """
+        Wait for operator Enter press with timeout and heartbeat logging.
+
+        Returns one of: "ready", "timeout", "cancelled", "no_tty"
+        """
+        if not getattr(sys.stdin, "isatty", lambda: False)():
+            return "no_tty"
+
+        self.console.print(
+            f"  [dim]Press Enter here when ready to capture "
+            f"(timeout: {timeout_seconds}s, heartbeat: {heartbeat_seconds}s).[/dim]"
+        )
+
+        deadline = time.monotonic() + timeout_seconds
+        while True:
+            remaining = int(deadline - time.monotonic())
+            if remaining <= 0:
+                return "timeout"
+
+            wait_for = min(heartbeat_seconds, remaining)
+            try:
+                ready, _, _ = select.select([sys.stdin], [], [], wait_for)
+            except (OSError, ValueError):
+                # Fallback if select is unavailable for stdin in this environment.
+                try:
+                    line = sys.stdin.readline()
+                except (EOFError, KeyboardInterrupt):
+                    return "cancelled"
+                return "ready" if line != "" else "cancelled"
+
+            if ready:
+                try:
+                    line = sys.stdin.readline()
+                except (EOFError, KeyboardInterrupt):
+                    return "cancelled"
+                return "ready" if line != "" else "cancelled"
+
+            self.console.print(f"  [dim]Waiting for operator input... {remaining}s remaining[/dim]")
+
     async def _capture_with_supervised_session(
         self,
         url: str,
@@ -251,14 +361,22 @@ class UXAnalysisOrchestrator:
 
             self.console.print(f"  [green]→ View/interact at:[/green] {session.get_vnc_url()}")
             self.console.print("  [yellow]Solve CAPTCHAs/logins or prepare basket state, then continue.[/yellow]")
-
-            try:
-                input("  [Press Enter when ready to capture screenshots...] ")
-            except (EOFError, KeyboardInterrupt):
+            ready_timeout = self._get_env_int("SUPERVISED_READY_TIMEOUT_SEC", default=900, minimum=30)
+            heartbeat = self._get_env_int("SUPERVISED_HEARTBEAT_SEC", default=30, minimum=5)
+            status = self._wait_for_supervised_confirmation(
+                timeout_seconds=ready_timeout,
+                heartbeat_seconds=heartbeat,
+            )
+            if status != "ready":
+                error_map = {
+                    "timeout": f"Timed out waiting for operator readiness ({ready_timeout}s)",
+                    "cancelled": "User cancelled",
+                    "no_tty": "Supervised mode requires an interactive terminal (TTY)",
+                }
                 return [
                     {
                         "success": False,
-                        "error": "User cancelled",
+                        "error": error_map.get(status, "User cancelled"),
                         "url": url,
                         "interactive_mode": True,
                     }
@@ -802,8 +920,23 @@ class UXAnalysisOrchestrator:
         EXTENSIBILITY NOTE: This could be extended to analyze competitors
         in parallel for faster execution, or to implement rate limiting.
         """
-        # Initialize browser in visible mode for interactive capture
-        # Skip browser initialization if in manual mode
+        if self.interactive_mode and not self.manual_mode:
+            preflight_ok, preflight_reason = self._run_supervised_preflight()
+            if not preflight_ok:
+                self.console.print(f"[bold red]Supervised preflight failed:[/bold red] {preflight_reason}")
+                return [
+                    {
+                        "success": False,
+                        "site_name": competitor["name"],
+                        "url": competitor["url"],
+                        "error": f"Supervised preflight failed: {preflight_reason}",
+                    }
+                    for competitor in competitors
+                ]
+            self.console.print("[green]✓ Supervised preflight checks passed[/green]")
+
+        # Initialize browser in visible mode for interactive capture.
+        # Skip browser initialization in manual and supervised modes.
         if not self.manual_mode and not self.interactive_mode:
             await self.screenshot_capturer.initialize_browser(headless=False)
 
