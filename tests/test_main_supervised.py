@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -112,3 +113,44 @@ async def test_analyze_competitors_routes_supervised_capture_branch():
     orchestrator._capture_with_supervised_session.assert_awaited()
     assert not orchestrator.screenshot_capturer.initialize_browser.called
     assert not orchestrator.screenshot_capturer.close_browser.called
+
+
+def test_generate_reports_uses_dated_new_structure_html_path(tmp_path):
+    main = _import_main_with_stubs(_MockSessionPool)
+    orchestrator = main.UXAnalysisOrchestrator(
+        api_key="test",
+        analysis_type="basket_pages",
+    )
+
+    audit_root = tmp_path / "basket-pages"
+    audit_root.mkdir(parents=True, exist_ok=True)
+
+    orchestrator.report_generator.generate_markdown_report = MagicMock(
+        return_value=str(audit_root / "_comparison_report.md")
+    )
+    orchestrator.report_generator.save_audit_summary = MagicMock(
+        return_value=str(audit_root / "_audit_summary.json")
+    )
+    orchestrator.html_report_generator.generate_report_page = MagicMock(
+        return_value=str(audit_root / "2026-03-04.html")
+    )
+    orchestrator.html_report_generator.generate_index_page = MagicMock(
+        return_value=str(tmp_path / "index.html")
+    )
+
+    with patch.object(main, "build_frontend_report_cards", return_value=[]):
+        report_paths = orchestrator.generate_reports(
+            results=[{"success": True, "overall_score": 7.3, "site_name": "zooplus"}],
+            audit_structure={
+                "audit_root": audit_root,
+                "audit_date": "2026-03-04",
+                "competitors": {},
+            },
+            audit_summary={"analysis_type": "basket_pages"},
+        )
+
+    kwargs = orchestrator.html_report_generator.generate_report_page.call_args.kwargs
+    assert kwargs["analysis_type"] == "basket_pages"
+    assert kwargs["audit_date"] == "2026-03-04"
+    assert kwargs["output_filename"] == "2026-03-04.html"
+    assert Path(report_paths["html"]) == audit_root / "2026-03-04.html"

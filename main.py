@@ -1118,20 +1118,20 @@ class UXAnalysisOrchestrator:
 
             # Generate interactive HTML report
             try:
-                html_filename = f"{audit_root.name}_report.html"
-
-                # Temporarily override output_dir to write to audit_root
-                original_output_dir = self.html_report_generator.output_dir
-                self.html_report_generator.output_dir = audit_root
-
-                html_path = self.html_report_generator.generate_html_report(
-                    results=results,
-                    analysis_type=self.analysis_type_config.name,
-                    output_filename=html_filename
+                audit_date = audit_structure.get("audit_date")
+                analysis_type_key = (
+                    (audit_summary or {}).get("analysis_type")
+                    or audit_root.name.replace("-", "_")
                 )
-
-                # Restore original output_dir
-                self.html_report_generator.output_dir = original_output_dir
+                html_path = self.html_report_generator.generate_report_page(
+                    results=results,
+                    report_title=self.analysis_type_config.name,
+                    report_short_title=get_page_type_display_name(analysis_type_key),
+                    category="Competitive Analysis",
+                    output_filename=f"{audit_date}.html" if audit_date else f"{audit_root.name}_report.html",
+                    analysis_type=analysis_type_key,
+                    audit_date=audit_date,
+                )
 
                 self.console.print(f"[green]📊 Interactive HTML report:[/green] {html_path}")
             except Exception as e:

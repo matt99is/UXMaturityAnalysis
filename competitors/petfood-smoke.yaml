@@ -1,5 +1,5 @@
-name: "UK Pet Food Retail (Smoke — 1 competitor)"
 competitors:
-  - name: zooplus
-    pages:
-      basket: https://www.zooplus.co.uk/shop/cart
+- name: zooplus
+  pages:
+    basket: https://www.zooplus.co.uk/checkout/cart
+name: UK Pet Food Retail (Smoke — 1 competitor)
