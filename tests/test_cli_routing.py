@@ -74,7 +74,7 @@ def test_discover_audits_empty(tmp_path):
 
 
 from unittest.mock import patch
-from cli import validate_and_correct_urls
+from cli import validate_and_correct_urls, _capture_mode_unavailable_message
 
 
 def test_validate_and_correct_urls_all_valid():
@@ -99,3 +99,20 @@ def test_validate_and_correct_urls_skips_invalid_when_non_interactive():
     assert len(valid) == 1
     assert valid[0]["name"] == "shopA"
     assert corrections == {}
+
+
+def test_capture_mode_unavailable_message_supervised():
+    message = _capture_mode_unavailable_message("Supervised   (watch browser via noVNC URL)")
+    assert message is not None
+    assert "not available yet" in message
+
+
+def test_capture_mode_unavailable_message_automated():
+    message = _capture_mode_unavailable_message("Automated    (fully unattended)")
+    assert message is not None
+    assert "not available yet" in message
+
+
+def test_capture_mode_unavailable_message_for_unknown_mode():
+    message = _capture_mode_unavailable_message("Legacy Interactive")
+    assert message is None

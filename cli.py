@@ -200,6 +200,23 @@ def validate_and_correct_urls(
     return valid, corrections
 
 
+def _capture_mode_unavailable_message(capture_mode: str) -> Optional[str]:
+    """
+    Return user-facing message when a selected capture mode is not available yet.
+    """
+    if capture_mode.startswith("Supervised"):
+        return (
+            "Supervised capture is not available yet in the unified CLI. "
+            "Browser-capture wiring is still in progress."
+        )
+    if capture_mode.startswith("Automated"):
+        return (
+            "Automated capture is not available yet in the unified CLI. "
+            "Patchright/Xvfb capture flow is still in progress."
+        )
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Interactive menus
 # ---------------------------------------------------------------------------
@@ -248,7 +265,14 @@ def fresh_analysis_menu() -> int:
     ).ask()
     if capture_mode is None:
         return 0
-    is_supervised = capture_mode.startswith("Supervised")
+
+    unavailable_message = _capture_mode_unavailable_message(capture_mode)
+    if unavailable_message:
+        console.print(f"\n[yellow]⚠ {unavailable_message}[/yellow]")
+        console.print(
+            "[dim]Coming soon: select this mode again once browser-capture infrastructure is wired.[/dim]"
+        )
+        return 0
 
     # Load competitors and validate URLs
     competitor_set = load_competitor_set(selected_slug)
@@ -283,8 +307,6 @@ def fresh_analysis_menu() -> int:
         "--analysis-type", page_type,
         "--no-deploy",  # we handle deploy ourselves below
     ]
-    if is_supervised:
-        cmd.append("--manual-mode")
 
     console.print(f"\n[bold cyan]Starting analysis — {len(valid_competitors)} competitors[/bold cyan]\n")
     result = subprocess.run(cmd, cwd=PROJECT_ROOT)

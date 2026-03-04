@@ -19,6 +19,7 @@ UX Maturity Analysis is a Python tool that captures competitor e-commerce pages,
 - Scoring reliability overhaul is complete on `main` (commit `85baa40`, 2026-03-03).
 - Browser-capture infrastructure (Patchright/Xvfb/noVNC) is still planned, not fully implemented.
 - Fresh-analysis menu labels for `Supervised` / `Automated` are transitional while browser-capture work is pending.
+- Selecting `Supervised` or `Automated` currently shows a clear "not available yet" message and exits cleanly.
 
 ## Quick Start
 
