@@ -40,6 +40,11 @@ def test_parse_deploy_draft():
     assert args.draft is True
 
 
+def test_parse_deploy_verbose():
+    args = parse_silent_args(["--deploy", "--verbose"])
+    assert args.verbose is True
+
+
 def test_no_silent_flags_returns_none():
     args = parse_silent_args([])
     assert args is None

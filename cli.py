@@ -12,6 +12,7 @@ Usage:
     ./run.sh --reanalyze output/audits/<folder> --force-observe
     ./run.sh --deploy                                     # silent
     ./run.sh --deploy --draft                             # silent, draft deploy
+    ./run.sh --deploy --verbose                           # silent, verbose deploy logs
 """
 
 import sys
@@ -35,6 +36,7 @@ class SilentArgs:
     force: bool = False
     force_observe: bool = False
     draft: bool = False
+    verbose: bool = False
 
 
 def parse_silent_args(argv: List[str]) -> Optional[SilentArgs]:
@@ -57,6 +59,7 @@ def parse_silent_args(argv: List[str]) -> Optional[SilentArgs]:
         return SilentArgs(
             mode="deploy",
             draft="--draft" in argv,
+            verbose="--verbose" in argv,
         )
 
     return None
@@ -80,6 +83,8 @@ def run_deploy(args: SilentArgs) -> int:
     cmd = [str(VENV_PYTHON), "scripts/deploy_netlify.py"]
     if args.draft:
         cmd.append("--draft")
+    if args.verbose:
+        cmd.append("--verbose")
     result = subprocess.run(cmd, cwd=PROJECT_ROOT)
     return result.returncode
 

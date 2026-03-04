@@ -12,6 +12,7 @@
 #   ./run.sh --reanalyze <audit_folder> --force-observe
 #   ./run.sh --deploy                           # non-interactive deploy
 #   ./run.sh --deploy --draft
+#   ./run.sh --deploy --verbose                 # non-interactive deploy with full logs
 
 set -euo pipefail
 

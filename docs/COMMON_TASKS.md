@@ -15,6 +15,11 @@ Always use `./run.sh`. It handles tmux session protection automatically.
 | Reanalyse, re-run scoring | `./run.sh --reanalyze output/audits/<folder> --force` |
 | Reanalyse, redo everything | `./run.sh --reanalyze output/audits/<folder> --force-observe --force` |
 | Deploy to Netlify | `./run.sh --deploy` |
+| Deploy to Netlify (verbose logs) | `./run.sh --deploy --verbose` |
+
+Deploy output behavior:
+- Default deploy output is concise (success/failure summary).
+- Use `--verbose` to show full Netlify CLI logs.
 
 ---
 

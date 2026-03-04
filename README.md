@@ -67,6 +67,7 @@ Always use `./run.sh` for normal operation.
 
 # Deploy reports
 ./run.sh --deploy
+./run.sh --deploy --verbose  # full Netlify CLI logs
 ```
 
 ## Fresh Analysis Flow
