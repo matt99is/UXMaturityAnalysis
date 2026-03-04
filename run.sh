@@ -19,6 +19,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_PYTHON="$SCRIPT_DIR/.venv/bin/python3"
 SESSION_NAME="analysis"
+LOG_DIR="$SCRIPT_DIR/output/logs"
 
 if [ ! -f "$VENV_PYTHON" ]; then
     echo "Error: virtual environment not found at $SCRIPT_DIR/.venv"
@@ -27,6 +28,7 @@ if [ ! -f "$VENV_PYTHON" ]; then
 fi
 
 CMD="$VENV_PYTHON '$SCRIPT_DIR/cli.py' $*"
+LOG_FILE="$LOG_DIR/${SESSION_NAME}_$(date +%Y%m%d_%H%M%S).log"
 
 # If already in tmux or screen, run directly
 if [ -n "${TMUX:-}" ] || [ -n "${STY:-}" ]; then
@@ -38,7 +40,10 @@ echo ""
 echo "  Starting inside tmux session \"$SESSION_NAME\" so the run survives"
 echo "  any connection drop. Detach with: Ctrl+B then D"
 echo "  Reattach with: tmux attach -t $SESSION_NAME"
+echo "  Logs will be written to: $LOG_FILE"
 echo ""
+
+mkdir -p "$LOG_DIR"
 
 if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
     PANE_PID=$(tmux list-panes -t "$SESSION_NAME" -F "#{pane_pid}" 2>/dev/null | head -1)
@@ -50,9 +55,16 @@ if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
         tmux attach -t "$SESSION_NAME"
         exit 0
     fi
+    tmux set-option -t "$SESSION_NAME" mouse on >/dev/null 2>&1 || true
+    tmux set-window-option -t "$SESSION_NAME" history-limit 200000 >/dev/null 2>&1 || true
+    tmux pipe-pane -t "$SESSION_NAME" >/dev/null 2>&1 || true
+    tmux pipe-pane -t "$SESSION_NAME" "cat >> '$LOG_FILE'"
     tmux send-keys -t "$SESSION_NAME" "$CMD" Enter
 else
     tmux new-session -d -s "$SESSION_NAME" -x 220 -y 50
+    tmux set-option -t "$SESSION_NAME" mouse on >/dev/null 2>&1 || true
+    tmux set-window-option -t "$SESSION_NAME" history-limit 200000 >/dev/null 2>&1 || true
+    tmux pipe-pane -t "$SESSION_NAME" "cat >> '$LOG_FILE'"
     tmux send-keys -t "$SESSION_NAME" "$CMD" Enter
 fi
 

@@ -21,6 +21,15 @@ Deploy output behavior:
 - Default deploy output is concise (success/failure summary).
 - Use `--verbose` to show full Netlify CLI logs.
 
+Tmux wrapper behavior:
+- Enables mouse scrolling in the `analysis` session.
+- Increases tmux scrollback history (`history-limit=200000`).
+- Writes run logs to `output/logs/analysis_YYYYMMDD_HHMMSS.log`.
+
+Manual scroll keys (if needed):
+- Enter scroll mode: `Ctrl+B`, then `[`
+- Exit scroll mode: `q`
+
 ---
 
 ## Competitor URL Validation

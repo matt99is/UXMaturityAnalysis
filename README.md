@@ -70,6 +70,11 @@ Always use `./run.sh` for normal operation.
 ./run.sh --deploy --verbose  # full Netlify CLI logs
 ```
 
+`run.sh` tmux quality-of-life defaults:
+- Enables tmux mouse scrolling for the `analysis` session.
+- Raises scrollback history limit for easier review.
+- Captures run output to `output/logs/analysis_YYYYMMDD_HHMMSS.log`.
+
 ## Fresh Analysis Flow
 
 `./run.sh` -> `Fresh analysis` -> select page type -> select competitor set.
