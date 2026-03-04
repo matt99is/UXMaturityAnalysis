@@ -26,7 +26,7 @@ import sys
 import time
 import subprocess
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime
 from dotenv import load_dotenv
 from rich.console import Console
@@ -138,6 +138,26 @@ def deploy_reports(output_dir: Path, skip: bool = False) -> bool:
     return False
 
 
+def resolve_novnc_url() -> Optional[str]:
+    """
+    Resolve noVNC URL for supervised capture mode.
+
+    Resolution order:
+    1. NOVNC_URL (full URL)
+    2. NOVNC_HOST + NOVNC_PORT (defaults to 6080)
+    """
+    explicit = os.getenv("NOVNC_URL")
+    if explicit:
+        return explicit
+
+    host = os.getenv("NOVNC_HOST")
+    if not host:
+        return None
+
+    port = os.getenv("NOVNC_PORT", "6080")
+    return f"http://{host}:{port}/vnc.html"
+
+
 class UXAnalysisOrchestrator:
     """
     Main orchestrator for UX analysis pipeline.
@@ -154,7 +174,9 @@ class UXAnalysisOrchestrator:
         config_path: str = "config.yaml",
         manual_mode: bool = False,
         screenshots_dir: str = None,
-        llm_provider: str = None
+        llm_provider: str = None,
+        interactive_mode: bool = False,
+        novnc_url: str = None,
     ):
         self.console = Console()
         self.analysis_config = AnalysisConfig(config_path)
@@ -198,6 +220,8 @@ class UXAnalysisOrchestrator:
         self.html_report_generator = HTMLReportGenerator(output_dir=str(project_output_dir))
         self.manual_mode = manual_mode
         self.screenshots_dir = screenshots_dir
+        self.interactive_mode = interactive_mode
+        self.novnc_url = novnc_url
 
     async def capture_competitor_screenshots(
         self,
@@ -218,6 +242,8 @@ class UXAnalysisOrchestrator:
         """
         self.console.print(f"\n[bold cyan]Capturing:[/bold cyan] {site_name}")
         self.console.print(f"[dim]URL: {url}[/dim]")
+        if self.interactive_mode and self.novnc_url:
+            self.console.print(f"[green]noVNC:[/green] {self.novnc_url}")
 
         try:
             # Get screenshots (capture or load from directory)
@@ -1043,6 +1069,12 @@ For more examples and documentation, see README.md
     )
 
     parser.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Supervised capture mode: prints noVNC guidance and uses live browser interaction"
+    )
+
+    parser.add_argument(
         "--screenshots-dir",
         default="./manual-screenshots",
         help="Directory containing manually captured screenshots (used with --manual-mode)"
@@ -1055,6 +1087,9 @@ For more examples and documentation, see README.md
     )
 
     args = parser.parse_args()
+
+    if args.manual_mode and args.interactive:
+        parser.error("--manual-mode and --interactive cannot be used together")
 
     # Load environment variables
     load_dotenv()
@@ -1166,7 +1201,7 @@ For more examples and documentation, see README.md
         analysis_type = prompt_for_analysis_type(temp_config)
 
     # Create orchestrator and run analysis
-    mode_desc = "Manual Screenshots" if args.manual_mode else "Interactive Mode"
+    mode_desc = "Manual Screenshots" if args.manual_mode else ("Supervised" if args.interactive else "Interactive Mode")
     console.print(Panel.fit(
         "[bold cyan]E-commerce UX Analysis Agent[/bold cyan]\n\n"
         f"Analysis Type: {get_page_type_display_name(analysis_type)}\n"
@@ -1180,6 +1215,14 @@ For more examples and documentation, see README.md
     if not args.manual_mode:
         console.print("[cyan]🌐 Interactive Mode:[/cyan] Browser will open for each site")
         console.print("[dim]Navigate to the page, close popups, then press Enter to capture[/dim]\n")
+        if args.interactive:
+            novnc_url = resolve_novnc_url()
+            if novnc_url:
+                console.print(f"[green]noVNC URL:[/green] {novnc_url}\n")
+            else:
+                console.print(
+                    "[yellow]noVNC URL not configured. Set NOVNC_URL or NOVNC_HOST (optional NOVNC_PORT).[/yellow]\n"
+                )
 
     if args.manual_mode:
         console.print(f"\n[magenta]📁 Manual Mode Enabled:[/magenta]")
@@ -1191,7 +1234,9 @@ For more examples and documentation, see README.md
         model=selected_model,
         analysis_type=analysis_type,
         manual_mode=args.manual_mode,
-        screenshots_dir=args.screenshots_dir
+        screenshots_dir=args.screenshots_dir,
+        interactive_mode=args.interactive,
+        novnc_url=resolve_novnc_url() if args.interactive else None,
     )
 
     # Create audit directory structure

@@ -18,8 +18,8 @@ UX Maturity Analysis is a Python tool that captures competitor e-commerce pages,
 - Unified entrypoint is `./run.sh` (tmux wrapper) -> `cli.py`.
 - Scoring reliability overhaul is complete on `main` (commit `85baa40`, 2026-03-03).
 - Browser-capture infrastructure (Patchright/Xvfb/noVNC) is still planned, not fully implemented.
-- Fresh-analysis menu labels for `Supervised` / `Automated` are transitional while browser-capture work is pending.
-- Selecting `Supervised` or `Automated` currently shows a clear "not available yet" message and exits cleanly.
+- `Supervised` mode is now wired to interactive capture (`main.py --interactive`) and can show noVNC URL guidance.
+- `Automated` remains unavailable in the unified CLI until Patchright/Xvfb flow is implemented.
 
 ## Quick Start
 

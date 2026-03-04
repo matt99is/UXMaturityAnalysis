@@ -103,8 +103,7 @@ def test_validate_and_correct_urls_skips_invalid_when_non_interactive():
 
 def test_capture_mode_unavailable_message_supervised():
     message = _capture_mode_unavailable_message("Supervised   (watch browser via noVNC URL)")
-    assert message is not None
-    assert "not available yet" in message
+    assert message is None
 
 
 def test_capture_mode_unavailable_message_automated():

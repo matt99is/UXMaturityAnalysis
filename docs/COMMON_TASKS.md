@@ -22,8 +22,8 @@ Always use `./run.sh`. It handles tmux session protection automatically.
 
 During fresh analysis, competitor URLs are loaded from `competitors/*.yaml` and HEAD-checked.
 If a URL is corrected in interactive mode, the new value is saved back into that YAML file.
-Note: selecting `Supervised` / `Automated` capture currently shows a "not available yet" message
-until browser-capture wiring is complete.
+Current status: `Supervised` is wired to interactive capture.
+`Automated` still shows "not available yet" until browser-capture wiring is complete.
 
 For capture rollout, use this order:
 1. `petfood-smoke` (1 competitor) for smoke tests.

@@ -204,11 +204,6 @@ def _capture_mode_unavailable_message(capture_mode: str) -> Optional[str]:
     """
     Return user-facing message when a selected capture mode is not available yet.
     """
-    if capture_mode.startswith("Supervised"):
-        return (
-            "Supervised capture is not available yet in the unified CLI. "
-            "Browser-capture wiring is still in progress."
-        )
     if capture_mode.startswith("Automated"):
         return (
             "Automated capture is not available yet in the unified CLI. "
@@ -260,7 +255,7 @@ def fresh_analysis_menu() -> int:
         "Capture mode?",
         choices=[
             "Supervised   (watch browser via noVNC URL — for basket setup, CAPTCHAs)",
-            "Automated    (fully unattended — Playwright + bot evasion)",
+            "Automated    (coming soon — fully unattended, Patchright + bot evasion)",
         ],
     ).ask()
     if capture_mode is None:
@@ -307,6 +302,8 @@ def fresh_analysis_menu() -> int:
         "--analysis-type", page_type,
         "--no-deploy",  # we handle deploy ourselves below
     ]
+    if is_supervised:
+        cmd.append("--interactive")
 
     console.print(f"\n[bold cyan]Starting analysis — {len(valid_competitors)} competitors[/bold cyan]\n")
     result = subprocess.run(cmd, cwd=PROJECT_ROOT)
