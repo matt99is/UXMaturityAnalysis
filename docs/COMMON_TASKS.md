@@ -25,8 +25,10 @@ If a URL is corrected in interactive mode, the new value is saved back into that
 Note: selecting `Supervised` / `Automated` capture currently shows a "not available yet" message
 until browser-capture wiring is complete.
 
-For canary/vertical-slice capture testing, choose the `petfood-test` competitor set (3 competitors)
-to avoid running the full 16-site `petfood` set.
+For capture rollout, use this order:
+1. `petfood-smoke` (1 competitor) for smoke tests.
+2. `petfood-test` (3 competitors) for canary validation.
+3. `petfood` (16 competitors) only after both pass.
 
 ---
 

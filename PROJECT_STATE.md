@@ -15,7 +15,8 @@ Items currently in progress. Move to Completed when done.
 
 Scoring reliability overhaul is complete on `main` (commit `85baa40`, 2026-03-03).
 
-Canary competitor set is available at `competitors/petfood-test.yaml` (3 competitors) for vertical-slice testing.
+Smoke competitor set is available at `competitors/petfood-smoke.yaml` (1 competitor) for fast checks.
+Canary competitor set is available at `competitors/petfood-test.yaml` (3 competitors) for vertical-slice validation.
 
 ---
 

@@ -75,7 +75,9 @@ Always use `./run.sh` for normal operation.
 Competitor sets come from `competitors/*.yaml` (for example `competitors/petfood.yaml`) and are URL-validated in the CLI.
 If a URL fails validation during interactive runs, the corrected URL is written back to that YAML file for future runs.
 
-For capture-vertical-slice testing, use `petfood-test` (3 competitors) instead of the full 16-site set.
+For capture rollout, use a 2-stage gate:
+- `petfood-smoke` (1 competitor) for fast smoke checks.
+- `petfood-test` (3 competitors) as canary before the full 16-site `petfood` set.
 
 ## Advanced / Direct Entry (Debug Only)
 
