@@ -31,6 +31,10 @@ Optional env:
 - `SUPERVISED_READY_TIMEOUT_SEC` (default `900`)
 - `SUPERVISED_HEARTBEAT_SEC` (default `30`)
 
+UX simplification:
+- The printed session URL now includes noVNC auto-connect defaults (`autoconnect=true`, `resize=remote`, `reconnect=true`).
+- Supervised capture prompt is a 3-step instruction block: open session URL -> prepare page -> press Enter.
+
 For capture rollout, use this order:
 1. `petfood-smoke` (1 competitor) for smoke tests.
 2. `petfood-test` (3 competitors) for canary validation.

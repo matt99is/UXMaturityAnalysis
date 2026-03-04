@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import os
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -68,6 +69,37 @@ def test_supervised_preflight_rejects_invalid_novnc_url():
     ok, reason = orchestrator._run_supervised_preflight()
     assert ok is False
     assert "Invalid noVNC URL" in reason
+
+
+def test_resolve_novnc_url_applies_autoconnect_defaults_for_host_port():
+    main = _import_main_with_stubs(_MockSessionPool)
+    env = {
+        "NOVNC_URL": "",
+        "NOVNC_HOST": "127.0.0.1",
+        "NOVNC_PORT": "6080",
+    }
+    with patch.dict(os.environ, env, clear=False):
+        url = main.resolve_novnc_url()
+
+    assert url is not None
+    assert url.startswith("http://127.0.0.1:6080/vnc.html")
+    assert "autoconnect=true" in url
+    assert "resize=remote" in url
+    assert "reconnect=true" in url
+
+
+def test_resolve_novnc_url_preserves_existing_query_params():
+    main = _import_main_with_stubs(_MockSessionPool)
+    env = {
+        "NOVNC_URL": "http://example.com/vnc.html?token=abc123",
+    }
+    with patch.dict(os.environ, env, clear=False):
+        url = main.resolve_novnc_url()
+
+    assert url is not None
+    assert url.startswith("http://example.com/vnc.html?")
+    assert "token=abc123" in url
+    assert "autoconnect=true" in url
 
 
 @pytest.mark.asyncio

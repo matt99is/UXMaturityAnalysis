@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 from urllib.request import Request, urlopen
 from dotenv import load_dotenv
 from rich.console import Console
@@ -149,17 +149,48 @@ def resolve_novnc_url() -> Optional[str]:
     Resolution order:
     1. NOVNC_URL (full URL)
     2. NOVNC_HOST + NOVNC_PORT (defaults to 6080)
+
+    Returns a user-friendly noVNC URL that auto-connects and resizes to the
+    remote browser session.
     """
+    def _format_novnc_user_url(raw_url: str) -> str:
+        parsed = urlparse(raw_url)
+
+        # Normalize root URL to /vnc.html for convenience.
+        path = parsed.path or "/vnc.html"
+        if path == "/":
+            path = "/vnc.html"
+
+        params = dict(parse_qsl(parsed.query, keep_blank_values=True))
+        defaults = {
+            "autoconnect": "true",
+            "resize": "remote",
+            "reconnect": "true",
+        }
+        for key, value in defaults.items():
+            params.setdefault(key, value)
+
+        return urlunparse(
+            (
+                parsed.scheme,
+                parsed.netloc,
+                path,
+                parsed.params,
+                urlencode(params),
+                parsed.fragment,
+            )
+        )
+
     explicit = os.getenv("NOVNC_URL")
     if explicit:
-        return explicit
+        return _format_novnc_user_url(explicit)
 
     host = os.getenv("NOVNC_HOST")
     if not host:
         return None
 
     port = os.getenv("NOVNC_PORT", "6080")
-    return f"http://{host}:{port}/vnc.html"
+    return _format_novnc_user_url(f"http://{host}:{port}/vnc.html")
 
 
 class UXAnalysisOrchestrator:
@@ -359,8 +390,20 @@ class UXAnalysisOrchestrator:
             first_viewport = {"width": viewports[0]["width"], "height": viewports[0]["height"]}
             await session.start(url, first_viewport)
 
-            self.console.print(f"  [green]→ View/interact at:[/green] {session.get_vnc_url()}")
-            self.console.print("  [yellow]Solve CAPTCHAs/logins or prepare basket state, then continue.[/yellow]")
+            vnc_url = session.get_vnc_url()
+            self.console.print(
+                Panel.fit(
+                    "\n".join(
+                        [
+                            f"[green]1.[/green] Open browser session: {vnc_url}",
+                            "[green]2.[/green] Complete cookies/login/basket setup in that tab",
+                            "[green]3.[/green] Return here and press Enter to capture screenshots",
+                        ]
+                    ),
+                    title=f"Supervised Capture · {site_name}",
+                    border_style="cyan",
+                )
+            )
             ready_timeout = self._get_env_int("SUPERVISED_READY_TIMEOUT_SEC", default=900, minimum=30)
             heartbeat = self._get_env_int("SUPERVISED_HEARTBEAT_SEC", default=30, minimum=5)
             status = self._wait_for_supervised_confirmation(
@@ -1440,7 +1483,8 @@ For more examples and documentation, see README.md
         if args.interactive:
             novnc_url = resolve_novnc_url()
             if novnc_url:
-                console.print(f"[green]noVNC URL:[/green] {novnc_url}\n")
+                console.print("[cyan]Supervised flow:[/cyan] Open session URL → prepare page → press Enter\n")
+                console.print(f"[green]Session URL:[/green] {novnc_url}\n")
             else:
                 console.print(
                     "[yellow]noVNC URL not configured. Set NOVNC_URL or NOVNC_HOST (optional NOVNC_PORT).[/yellow]\n"
