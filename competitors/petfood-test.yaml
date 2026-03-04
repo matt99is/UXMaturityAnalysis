@@ -1,0 +1,11 @@
+name: "UK Pet Food Retail (Test — 3 competitors)"
+competitors:
+  - name: zooplus
+    pages:
+      basket: https://www.zooplus.co.uk/shop/cart
+  - name: jollyes
+    pages:
+      basket: https://www.jollyes.co.uk/basket
+  - name: amazon
+    pages:
+      basket: https://www.amazon.co.uk/gp/cart/view.html

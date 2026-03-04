@@ -15,7 +15,7 @@ Items currently in progress. Move to Completed when done.
 
 Scoring reliability overhaul is complete on `main` (commit `85baa40`, 2026-03-03).
 
-Local note: one untracked file may exist in some environments: `competitors/petfood-test.yaml`.
+Canary competitor set is available at `competitors/petfood-test.yaml` (3 competitors) for vertical-slice testing.
 
 ---
 
