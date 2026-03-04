@@ -1,6 +1,7 @@
 # Browser Capture Infrastructure Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Alignment Note (2026-03-04):** This plan now reflects the unified CLI flow:
+> `./run.sh` -> `cli.py` (menus/automation routing) -> `main.py` (orchestration and capture execution).
 
 **Goal:** Build unified browser capture infrastructure supporting both interactive (human-in-the-loop via VNC) and automated (unattended with bot evasion) screenshot capture on headless Ubuntu server.
 
@@ -1118,7 +1119,7 @@ git commit -m "feat: add persistent context capture method to ScreenshotCapture"
 
 ---
 
-## Phase 4: CLI Integration
+## Phase 4: CLI + Orchestrator Integration
 
 ### Task 4.1: Add CLI Arguments
 
@@ -1423,8 +1424,9 @@ git commit -m "feat: wire interactive and auto modes into capture flow"
 
 **Files:**
 - Modify: `main.py`
+- Modify: `cli.py`
 
-**Step 1: Pass mode flags to orchestrator**
+**Step 1: Pass mode flags to orchestrator (`main.py`)**
 
 Find where `UXAnalysisOrchestrator` is instantiated in `main()`:
 
@@ -1454,11 +1456,33 @@ elif args.auto:
     console.print("Running unattended with stealth delays.")
 ```
 
-**Step 3: Commit**
+**Step 3: Fix unified CLI capture-mode routing (`cli.py`)**
+
+In `fresh_analysis_menu()`, update command flag mapping so menu choices route to the new capture flags:
+
+```python
+# Build main.py command
+cmd = [
+    str(VENV_PYTHON), "main.py",
+    "--config", temp_config,
+    "--analysis-type", page_type,
+    "--no-deploy",
+]
+
+if is_supervised:
+    cmd.append("--interactive")
+else:
+    cmd.append("--auto")
+```
+
+Important: remove the old `is_supervised -> --manual-mode` mapping.
+`--manual-mode` remains only for explicit pre-captured screenshot workflows.
+
+**Step 4: Commit**
 
 ```bash
-git add main.py
-git commit -m "feat: pass mode flags from CLI to orchestrator"
+git add main.py cli.py
+git commit -m "feat: wire unified CLI capture menu to interactive/auto modes"
 ```
 
 ---
@@ -1469,14 +1493,27 @@ git commit -m "feat: pass mode flags from CLI to orchestrator"
 
 **Files:** None (manual testing)
 
-**Step 1: Run interactive capture**
+**Step 1: Run interactive capture through the real entrypoint**
 
 ```bash
 cd /home/matt99is/projects/UXMaturityAnalysis
-python main.py --interactive --config competitors.json --analysis-type basket_pages
+./run.sh
 ```
 
-**Step 2: Verify VNC URL is printed**
+Menu path:
+1. `Fresh analysis`
+2. Select page type
+3. Select competitor set
+4. `Supervised` capture mode
+
+**Step 2: (Optional fast dev loop) run orchestrator directly**
+
+```bash
+cd /home/matt99is/projects/UXMaturityAnalysis
+python main.py --interactive --config /tmp/test_competitors.json --analysis-type basket_pages
+```
+
+**Step 3: Verify VNC URL is printed**
 
 Expected output:
 ```
@@ -1489,9 +1526,9 @@ Expected output:
 Press Enter when ready to capture screenshots...
 ```
 
-**Step 3: Open VNC URL in browser and verify browser is visible**
+**Step 4: Open VNC URL in browser and verify browser is visible**
 
-**Step 4: Press Enter and verify screenshots are captured**
+**Step 5: Press Enter and verify screenshots are captured**
 
 ```bash
 ls output/basket-pages/*/screenshots/tesco/
@@ -1504,14 +1541,27 @@ ls output/basket-pages/*/screenshots/tesco/
 
 **Files:** None (manual testing)
 
-**Step 1: Run automated capture**
+**Step 1: Run automated capture through the real entrypoint**
 
 ```bash
 cd /home/matt99is/projects/UXMaturityAnalysis
-python main.py --auto --config competitors.json --analysis-type basket_pages
+./run.sh
 ```
 
-**Step 2: Verify delays between captures**
+Menu path:
+1. `Fresh analysis`
+2. Select page type
+3. Select competitor set
+4. `Automated` capture mode
+
+**Step 2: (Optional fast dev loop) run orchestrator directly**
+
+```bash
+cd /home/matt99is/projects/UXMaturityAnalysis
+python main.py --auto --config /tmp/test_competitors.json --analysis-type basket_pages
+```
+
+**Step 3: Verify delays between captures**
 
 Expected output:
 ```
@@ -1581,29 +1631,44 @@ Expected: All tests pass including new browser_session tests.
 **Files:**
 - Modify: `README.md`
 
-**Step 1: Add new CLI flags to usage section**
+**Step 1: Add unified CLI capture mode usage section**
+
+Add this content:
 
 ```markdown
 ### Capture Modes
 
 #### Interactive Mode (Human-in-the-Loop)
 For bot-protected sites requiring CAPTCHA solving or login:
-
-```bash
-python main.py --interactive --config competitors.json
 ```
 
+```bash
+./run.sh
+# choose: Fresh analysis -> Supervised
+```
+
+```markdown
 Opens browser accessible via VNC at `http://<server>:6080/vnc.html`.
 Solve challenges, then press Enter to capture.
 
 #### Automated Mode (Unattended)
 For batch runs on sites without heavy bot protection:
-
-```bash
-python main.py --auto --config competitors.json
 ```
 
+```bash
+./run.sh
+# choose: Fresh analysis -> Automated
+```
+
+```markdown
 Runs with stealth delays between captures. Blocked sites are skipped and logged.
+
+Advanced shortcut (developer/debug use):
+```
+
+```bash
+python main.py --interactive --config /tmp/test_competitors.json --analysis-type basket_pages
+python main.py --auto --config /tmp/test_competitors.json --analysis-type basket_pages
 ```
 
 **Step 2: Commit**
@@ -1653,7 +1718,7 @@ git commit -m "docs: mark browser capture infrastructure as complete"
 | 1. Infrastructure Setup | 1.1 - 1.6 | Xvfb, x11vnc, websockify, noVNC, Patchright |
 | 2. Browser Session Module | 2.1 - 2.6 | DisplayAllocator, BrowserSession, BrowserSessionPool |
 | 3. Screenshot Capture Migration | 3.1 - 3.2 | Patchright integration, persistent context |
-| 4. CLI Integration | 4.1 - 4.6 | --interactive, --auto flags, mode routing |
+| 4. CLI + Orchestrator Integration | 4.1 - 4.6 | main.py flags + cli.py menu routing |
 | 5. Integration Testing | 5.1 - 5.4 | Manual and automated verification |
 | 6. Documentation | 6.1 - 6.2 | README, PROJECT_STATE updates |
 
@@ -1665,11 +1730,3 @@ git commit -m "docs: mark browser capture infrastructure as complete"
 ## Execution Handoff
 
 Plan complete and saved to `docs/plans/2026-03-02-browser-capture-infrastructure-impl.md`.
-
-**Two execution options:**
-
-**1. Subagent-Driven (this session)** - I dispatch fresh subagent per task, review between tasks, fast iteration
-
-**2. Parallel Session (separate)** - Open new session with executing-plans, batch execution with checkpoints
-
-**Which approach?**

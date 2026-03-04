@@ -1,6 +1,6 @@
 # Developer Onboarding Guide
 
-**Last Updated:** 2026-03-03
+**Last Updated:** 2026-03-04
 **Project:** UX Maturity Analysis Agent v1.13.0
 
 ---
@@ -15,8 +15,13 @@
 
 2. **Install dependencies:**
    ```bash
-   pip3 install -r requirements.txt
-   python3 -m playwright install chromium
+   # Preferred
+   uv sync
+
+   # Fallback
+   python3 -m venv .venv
+   .venv/bin/pip install -r requirements.txt
+   .venv/bin/python -m playwright install chromium
    ```
 
 3. **Set up environment:**
@@ -27,7 +32,7 @@
 
 4. **Verify setup:**
    ```bash
-   python3 tests/verify_setup.py
+   .venv/bin/python3 tests/verify_setup.py
    ```
 
 ---
@@ -234,7 +239,7 @@ PYTHONPATH=. .venv/bin/pytest tests/
 
 ### Verify Setup
 ```bash
-python3 tests/verify_setup.py
+.venv/bin/python3 tests/verify_setup.py
 ```
 
 ### Regenerate Example Report
@@ -284,7 +289,7 @@ Reports are written to `output/` inside the repository - not to a separate locat
 ### Check Documentation
 - `README.md` - Full feature documentation
 - `docs/ARCHITECTURE.md` - System design
-- `PROJECT_TODO.md` - Active work tracking
+- `PROJECT_STATE.md` - Active work tracking
 
 ### Version Check
 ```bash
@@ -305,4 +310,4 @@ Include in your report:
 - [Architecture & Extensibility Guide](ARCHITECTURE.md)
 - [Quick Start Deployment Guide](docs/deployment/QUICKSTART.md)
 - [Netlify Deployment Guide](docs/deployment/NETLIFY.md)
-- [Bot Detection Guide](docs/BOT_DETECTION_GUIDE.md)
+- [Roadmap](ROADMAP.md)

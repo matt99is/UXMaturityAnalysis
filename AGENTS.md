@@ -28,6 +28,21 @@ Read these files before starting any task:
 
 ---
 
+## Startup Gate (Mandatory)
+
+Before running commands, searching code, or editing files, every agent must:
+
+1. Read this `AGENTS.md`.
+2. Read `PROJECT_STATE.md`.
+3. Read `docs/ROADMAP.md`.
+4. Read vault project note: `/home/matt99is/vault/Projects/UXMaturityAnalysis.md`.
+5. Read vault patterns note: `/home/matt99is/vault/Patterns/design-principles.md`.
+6. In the first response of the session, explicitly confirm these files were loaded.
+
+If any step is missed, stop and complete it before continuing.
+
+---
+
 ## Key commands
 
 ```bash
@@ -53,7 +68,7 @@ pre-commit run --all-files
 - **Always use `PYTHONPATH=.` with pytest.** The test suite imports from `src/`; without it you get `ModuleNotFoundError: No module named 'src'`.
 - **The `.venv` is at the project root.** Use `.venv/bin/python3` and `.venv/bin/pytest` — not system Python.
 - **`run.sh` uses tmux.** If you're already inside a tmux session it runs directly. Don't call `main.py` or scripts directly — use `./run.sh` or `cli.py`.
-- **Uncommitted changes on `main` are intentional.** The scoring reliability overhaul is in progress. Read `PROJECT_STATE.md` → Active Work before assuming the working tree is clean.
+- **Do not assume the working tree is clean.** Verify with `git status` before making assumptions. (As of 2026-03-04, scoring reliability overhaul is complete on `main`.)
 - **`competitors/petfood.yaml` basket URLs are best-guesses.** They are validated and corrected at first run via the inline correction flow in `cli.py`.
 - **`output/` contains generated reports.** The Netlify site ID lives at `output/.netlify/state.json`. If missing: `echo '{"siteId":"4cbfbfea-046c-40aa-9b5c-c40ccd59c95d"}' > output/.netlify/state.json`.
 - **Two-pass pipeline.** Pass 1 (`_observe_screenshots`) produces `observation.json`. Pass 2 (`analyze_screenshots`) scores against it — text only, no images. Evidence must be cited. See `docs/ARCHITECTURE.md`.
@@ -100,4 +115,4 @@ docs/
 
 See `PROJECT_STATE.md` → Active Work.
 
-As of 2026-03-03: **Scoring reliability overhaul** (Phase 1 of roadmap) is in progress. Uncommitted changes exist across `main.py`, `src/analyzers/claude_analyzer.py`, `src/analyzers/glm_analyzer.py`, `src/config_loader.py`, `criteria_config/basket_pages.yaml`, and tests. Read the plan at `docs/plans/2026-03-02-scoring-reliability-overhaul.md` and diff the uncommitted changes to understand what's already done before writing new code.
+As of 2026-03-04: **Scoring reliability overhaul** (Phase 1) is complete on `main` (commit `85baa40`, 2026-03-03). Current implementation focus has shifted to browser capture infrastructure (see `PROJECT_STATE.md` and `docs/ROADMAP.md`).

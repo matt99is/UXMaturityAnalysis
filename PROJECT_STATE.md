@@ -2,7 +2,7 @@
 
 **Version:** 1.13.0
 **Status:** Production Ready
-**Last Updated:** 2026-03-01
+**Last Updated:** 2026-03-04
 **Context Load Priority:** HIGH (load this file first)
 
 ---
@@ -11,31 +11,19 @@
 
 Items currently in progress. Move to Completed when done.
 
-### Scoring Reliability Overhaul (Phase 1)
+### No Active Phase 1 Work (as of 2026-03-04)
 
-Uncommitted changes present on `main` across: `main.py`, `claude_analyzer.py`, `glm_analyzer.py`, `config_loader.py`, `tests/test_claude_analyzer.py`, `tests/test_config_loader.py`, `criteria_config/basket_pages.yaml`.
+Scoring reliability overhaul is complete on `main` (commit `85baa40`, 2026-03-03).
 
-**Plan:** `docs/plans/2026-03-02-scoring-reliability-overhaul.md`
-
-Pick up from the plan — verify which tasks are already done by reading the uncommitted diffs, then continue.
+Local note: one untracked file may exist in some environments: `competitors/petfood-test.yaml`.
 
 ---
 
 ## Next Up
 
-### Scoring Reliability Overhaul
+### Focus Shift After Phase 1 Completion
 
-**Goal:** Fix systematic scoring inconsistency in the two-pass pipeline — token truncation causing hard failures, Pass 1 evidence not aligned to Pass 2 criteria, no scoring anchors causing per-run drift.
-
-**Plan doc:** `docs/plans/2026-03-02-scoring-reliability-overhaul.md`
-
-**Phases:**
-1. Token limits — raise Pass 1 from 8000→16000 (claude_analyzer), 3000→8000 (glm_analyzer)
-2. Infrastructure — `scoring_rubric` field on `EvaluationCriterion`, prompt changes in both analyzers (render rubrics, soften "ONLY this evidence")
-3. basket_pages.yaml — 13 criterion-aligned observation_focus items, rubrics on all 11 criteria
-4. Authoring guide — `docs/criteria-authoring-guide.md` for replication to other page types
-
-**Files:** `src/config_loader.py`, `src/analyzers/claude_analyzer.py`, `src/analyzers/glm_analyzer.py`, `main.py`, `criteria_config/basket_pages.yaml`
+Scoring reliability overhaul is complete (commit `85baa40`, 2026-03-03). Next implementation focus is browser capture infrastructure (Phase 2 and Phase 3 items below).
 
 ---
 
@@ -155,6 +143,7 @@ Last 10 completed items for context.
 - [x] v1.13.0: Rankings — uniform score colour, tier badge CSS classes, colour-coded by tier (_sections.scss + _components.scss)
 - [x] v1.13.0: AI trope removal — decorative icons, teal glow shadow, left border on evidence items
 - [x] v1.13.0: Screenshot display fixed — discovery from disk injected at regeneration time
+- [x] 2026-03-03: Scoring reliability overhaul complete — token limits, criterion-aligned observation focus, scoring rubrics, and authoring guide updates (commit `85baa40`)
 - [x] v1.12.0: GLM analyzer with OpenAI-compatible API support (glm_analyzer.py)
 - [x] v1.12.0: Added openai>=1.0.0 dependency for alternative LLM providers
 - [x] v1.11.0: Index direct links - cards link directly to reports (not type index)

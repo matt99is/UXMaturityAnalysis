@@ -1,6 +1,6 @@
 # Roadmap
 
-**Last updated:** 2026-03-03
+**Last updated:** 2026-03-04
 **Current version:** v1.13.0
 **Live site:** https://analysis.mattlelonek.co.uk
 
@@ -14,7 +14,7 @@ Current workflow: `./run.sh` → choose Fresh analysis or Reanalyse → reports 
 
 ---
 
-## Phase 1 — Scoring Reliability (in progress)
+## Phase 1 — Scoring Reliability (completed)
 
 **Goal:** Make scores consistent and trustworthy across runs and across competitors.
 
@@ -27,7 +27,7 @@ Current workflow: `./run.sh` → choose Fresh analysis or Reanalyse → reports 
 
 **Plan:** `docs/plans/2026-03-02-scoring-reliability-overhaul.md`
 
-**Status:** Implementation in progress (uncommitted changes on main).
+**Status:** Completed on 2026-03-03 and merged to `main` (commit `85baa40`).
 
 ---
 

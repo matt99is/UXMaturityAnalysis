@@ -1,6 +1,7 @@
 # Browser Capture Infrastructure Design
 
 **Date:** 2026-03-02
+**CLI Alignment:** Updated for unified CLI flow on 2026-03-04 (`run.sh` -> `cli.py` -> `main.py`)
 **Status:** Approved
 **Related Research:** `docs/research/remote-human-in-the-loop-browser-capture-2026.md`, `/home/matt99is/projects/Resources/ux-analysis/bot-detection-ecom-screenshots-2026.md`
 
@@ -22,7 +23,7 @@ Unified infrastructure for browser screenshot capture on headless Ubuntu server,
 | User can view/interact with browser | x11vnc + websockify + noVNC |
 | Bypass bot detection | Patchright + persistent profiles + residential IP |
 | Capture desktop and mobile viewports | Playwright viewport resizing on Xvfb display |
-| CLI-first, web UI later | `--interactive` and `--auto` flags |
+| CLI-first, web UI later | `cli.py` capture mode selection routes to `main.py` `--interactive` / `--auto` |
 
 ---
 
@@ -42,10 +43,10 @@ Unified infrastructure for browser screenshot capture on headless Ubuntu server,
 
 ```
 Layer 3: User Interface
-         ┌─────────────────┐
-         │ CLI (main.py)   │
-         └────────┬────────┘
-                  │
+         ┌────────────────────────────────────┐
+         │ run.sh -> cli.py -> main.py flags │
+         └─────────────────┬──────────────────┘
+                          │
 Layer 2: Session Management
          ┌─────────────────┐
          │ BrowserSession  │
@@ -60,10 +61,10 @@ Layer 1: Infrastructure
 
 ### Capture Modes
 
-| Mode | CLI Flag | Use Case | Flow |
-|------|----------|----------|------|
-| Interactive | `--interactive` | Bot-protected sites, login flows | Browser opens → user views via noVNC → presses Enter → capture |
-| Automated | `--auto` | Unattended runs | Browser opens → delays → scroll → capture → next |
+| Mode | CLI Menu Choice | `main.py` Flag | Use Case | Flow |
+|------|------------------|----------------|----------|------|
+| Interactive | `Supervised` | `--interactive` | Bot-protected sites, login flows | Browser opens -> user views via noVNC -> presses Enter -> capture |
+| Automated | `Automated` | `--auto` | Unattended runs | Browser opens -> delays -> scroll -> capture -> next |
 
 ---
 
@@ -82,6 +83,11 @@ User sees full display via noVNC; mobile viewport appears as smaller window cent
 
 ## CLI Interface
 
+Operator entry point is `./run.sh` (tmux wrapper), which launches `cli.py`.
+`cli.py` is responsible for capture mode selection and must map:
+- `Supervised` -> `main.py --interactive`
+- `Automated` -> `main.py --auto`
+
 ### New Arguments
 
 | Flag | Mode | Description |
@@ -92,7 +98,13 @@ User sees full display via noVNC; mobile viewport appears as smaller window cent
 ### Interactive Flow
 
 ```
-$ python main.py --interactive --config competitors.json
+$ ./run.sh
+? What do you want to do?
+  Fresh analysis
+? Capture mode?
+  Supervised   (watch browser via noVNC URL)
+...
+cli.py executes: .venv/bin/python3 main.py ... --interactive
 
 ━━━ UX Maturity Analysis — Interactive Mode ━━━
 
@@ -112,7 +124,13 @@ $ python main.py --interactive --config competitors.json
 ### Automated Flow
 
 ```
-$ python main.py --auto --config competitors.json
+$ ./run.sh
+? What do you want to do?
+  Fresh analysis
+? Capture mode?
+  Automated    (fully unattended)
+...
+cli.py executes: .venv/bin/python3 main.py ... --auto
 
 ━━━ UX Maturity Analysis — Automated Mode ━━━
 
@@ -160,6 +178,7 @@ class BrowserSessionPool:
 |------|---------|
 | `src/analyzers/screenshot_capture.py` | Patchright import, persistent context, remove playwright-stealth |
 | `main.py` | `--interactive` and `--auto` mode handling, session pool integration |
+| `cli.py` | Capture mode routing (`Supervised` -> `--interactive`, `Automated` -> `--auto`) |
 | `requirements.txt` | Add `patchright`, remove `playwright-stealth` |
 
 ---
