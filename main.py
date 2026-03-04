@@ -222,6 +222,87 @@ class UXAnalysisOrchestrator:
         self.screenshots_dir = screenshots_dir
         self.interactive_mode = interactive_mode
         self.novnc_url = novnc_url
+        self.session_pool = None
+        if self.interactive_mode and not self.manual_mode:
+            from src.browser_session import BrowserSessionPool
+            self.session_pool = BrowserSessionPool(max_sessions=1, novnc_url=self.novnc_url)
+
+    async def _capture_with_supervised_session(
+        self,
+        url: str,
+        site_name: str,
+        viewports: List[Dict[str, int]],
+        full_page: bool,
+        screenshots_dir: Optional[Path],
+    ) -> List[Dict[str, Any]]:
+        """
+        Capture screenshots using supervised browser session guidance.
+        """
+        if not self.session_pool:
+            raise RuntimeError("Supervised session pool is not initialized.")
+
+        output_dir = screenshots_dir or (self.screenshot_capturer.output_dir / site_name)
+        output_dir = Path(output_dir)
+
+        session = await self.session_pool.acquire(site_name)
+        try:
+            first_viewport = {"width": viewports[0]["width"], "height": viewports[0]["height"]}
+            await session.start(url, first_viewport)
+
+            self.console.print(f"  [green]→ View/interact at:[/green] {session.get_vnc_url()}")
+            self.console.print("  [yellow]Solve CAPTCHAs/logins or prepare basket state, then continue.[/yellow]")
+
+            try:
+                input("  [Press Enter when ready to capture screenshots...] ")
+            except (EOFError, KeyboardInterrupt):
+                return [
+                    {
+                        "success": False,
+                        "error": "User cancelled",
+                        "url": url,
+                        "interactive_mode": True,
+                    }
+                ]
+
+            results = []
+            for viewport in viewports:
+                vp = {"width": viewport["width"], "height": viewport["height"]}
+                filename = f"{viewport['name']}.png"
+                filepath = await session.capture_screenshot(
+                    viewport=vp,
+                    output_dir=output_dir,
+                    filename=filename,
+                    full_page=full_page,
+                )
+
+                results.append(
+                    {
+                        "success": True,
+                        "filepath": filepath,
+                        "filename": filename,
+                        "url": url,
+                        "final_url": url,
+                        "viewport": vp,
+                        "viewport_name": viewport["name"],
+                        "interactive_mode": True,
+                    }
+                )
+                self.console.print(
+                    f"  [green]✓[/green] Captured {viewport['name']} ({vp['width']}x{vp['height']})"
+                )
+
+            return results
+        except Exception as e:
+            return [
+                {
+                    "success": False,
+                    "error": str(e),
+                    "url": url,
+                    "interactive_mode": True,
+                }
+            ]
+        finally:
+            await self.session_pool.release(site_name)
 
     async def capture_competitor_screenshots(
         self,
@@ -273,6 +354,14 @@ class UXAnalysisOrchestrator:
                         screenshots_dir=self.screenshots_dir,
                         site_name=site_name,
                         viewports=viewports
+                    )
+                elif self.interactive_mode:
+                    screenshot_results = await self._capture_with_supervised_session(
+                        url=url,
+                        site_name=site_name,
+                        viewports=viewports,
+                        full_page=screenshot_config.full_page,
+                        screenshots_dir=Path(screenshots_dir) if screenshots_dir else None,
                     )
                 else:
                     # Interactive mode - always use visible browser with user control
@@ -715,7 +804,7 @@ class UXAnalysisOrchestrator:
         """
         # Initialize browser in visible mode for interactive capture
         # Skip browser initialization if in manual mode
-        if not self.manual_mode:
+        if not self.manual_mode and not self.interactive_mode:
             await self.screenshot_capturer.initialize_browser(headless=False)
 
         total = len(competitors)
@@ -728,7 +817,7 @@ class UXAnalysisOrchestrator:
 
         try:
             for i, competitor in enumerate(competitors, 1):
-                mode_str = "manual" if self.manual_mode else "interactive"
+                mode_str = "manual" if self.manual_mode else ("supervised" if self.interactive_mode else "interactive")
                 self.console.print(f"\n[bold]Progress: {i}/{total}[/bold] [dim]({mode_str})[/dim]")
 
                 # Get competitor-specific paths if audit structure provided
@@ -748,7 +837,7 @@ class UXAnalysisOrchestrator:
                 captured_data.append(capture_result)
 
             # Close browser after all captures complete
-            if not self.manual_mode:
+            if not self.manual_mode and not self.interactive_mode:
                 await self.screenshot_capturer.close_browser()
 
             # PHASE 2: Analyze all screenshots sequentially
@@ -856,7 +945,7 @@ class UXAnalysisOrchestrator:
 
         finally:
             # Ensure browser is closed
-            if not self.manual_mode:
+            if not self.manual_mode and not self.interactive_mode:
                 try:
                     await self.screenshot_capturer.close_browser()
                 except:

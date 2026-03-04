@@ -268,6 +268,7 @@ def fresh_analysis_menu() -> int:
             "[dim]Coming soon: select this mode again once browser-capture infrastructure is wired.[/dim]"
         )
         return 0
+    is_supervised = capture_mode.startswith("Supervised")
 
     # Load competitors and validate URLs
     competitor_set = load_competitor_set(selected_slug)
