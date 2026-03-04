@@ -18,6 +18,13 @@ Always use `./run.sh`. It handles tmux session protection automatically.
 
 ---
 
+## Competitor URL Validation
+
+During fresh analysis, competitor URLs are loaded from `competitors/*.yaml` and HEAD-checked.
+If a URL is corrected in interactive mode, the new value is saved back into that YAML file.
+
+---
+
 ## Add a New Analysis Type (Page Type)
 
 **When:** You want to analyze a new type of page (e.g., search results, product listing, account page)

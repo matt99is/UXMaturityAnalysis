@@ -72,6 +72,7 @@ Always use `./run.sh` for normal operation.
 `./run.sh` -> `Fresh analysis` -> select page type -> select competitor set.
 
 Competitor sets come from `competitors/*.yaml` (for example `competitors/petfood.yaml`) and are URL-validated in the CLI.
+If a URL fails validation during interactive runs, the corrected URL is written back to that YAML file for future runs.
 
 ## Advanced / Direct Entry (Debug Only)
 
