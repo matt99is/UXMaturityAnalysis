@@ -9,6 +9,7 @@ import subprocess
 import json
 import os
 from pathlib import Path
+from typing import Optional, Dict, Any
 
 
 def generate_frontend_index(project_root: Path) -> str:
@@ -54,7 +55,44 @@ def resolve_site_id(project_root: Path) -> str:
     return str(data.get("siteId", "")).strip()
 
 
-def deploy_to_netlify(draft=False):
+def _parse_json_payload(raw: str) -> Optional[Dict[str, Any]]:
+    """Parse JSON from CLI output, tolerating extra non-JSON lines."""
+    if not raw:
+        return None
+
+    text = raw.strip()
+    if not text:
+        return None
+
+    try:
+        parsed = json.loads(text)
+        return parsed if isinstance(parsed, dict) else None
+    except json.JSONDecodeError:
+        pass
+
+    for line in reversed(text.splitlines()):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            parsed = json.loads(line)
+            return parsed if isinstance(parsed, dict) else None
+        except json.JSONDecodeError:
+            continue
+    return None
+
+
+def _tail_lines(text: str, max_lines: int = 15) -> str:
+    """Return the last non-empty lines from output for concise errors."""
+    if not text:
+        return ""
+    lines = [line for line in text.splitlines() if line.strip()]
+    if not lines:
+        return ""
+    return "\n".join(lines[-max_lines:])
+
+
+def deploy_to_netlify(draft=False, verbose=False):
     """Deploy to Netlify."""
 
     print("🚀 Netlify Deployment Preparation\n")
@@ -92,6 +130,8 @@ def deploy_to_netlify(draft=False):
 
     deploy_cmd = ['netlify', 'deploy']
     site_id = resolve_site_id(project_root)
+    if not verbose:
+        deploy_cmd.append('--json')
 
     if not draft:
         deploy_cmd.append('--prod')
@@ -111,17 +151,38 @@ def deploy_to_netlify(draft=False):
         result = subprocess.run(
             deploy_cmd,
             cwd=str(project_root),
-            text=True
+            text=True,
+            capture_output=not verbose,
         )
 
         if result.returncode == 0:
+            deploy_url = ""
+            if not verbose:
+                payload = _parse_json_payload(result.stdout or "")
+                if payload:
+                    deploy_url = (
+                        payload.get("ssl_url")
+                        or payload.get("url")
+                        or payload.get("deploy_ssl_url")
+                        or payload.get("deploy_url")
+                        or ""
+                    )
+
             print("\n✅ Deployment successful!")
-            print("\nNext steps:")
-            print("  • View your site: netlify open:site")
-            print("  • Check deployment: netlify open:admin")
+            if deploy_url:
+                print(f"  URL: {deploy_url}")
+            if verbose:
+                print("\nNext steps:")
+                print("  • View your site: netlify open:site")
+                print("  • Check deployment: netlify open:admin")
             return True
         else:
             print("\n✗ Deployment failed")
+            if not verbose:
+                summary = _tail_lines((result.stderr or "") + "\n" + (result.stdout or ""))
+                if summary:
+                    print("\nError summary:")
+                    print(summary)
             return False
 
     except Exception as e:
@@ -138,10 +199,15 @@ def main():
         action='store_true',
         help='Create draft deployment (not production)'
     )
+    parser.add_argument(
+        '--verbose',
+        action='store_true',
+        help='Show full Netlify CLI output'
+    )
 
     args = parser.parse_args()
 
-    success = deploy_to_netlify(draft=args.draft)
+    success = deploy_to_netlify(draft=args.draft, verbose=args.verbose)
     sys.exit(0 if success else 1)
 
 
