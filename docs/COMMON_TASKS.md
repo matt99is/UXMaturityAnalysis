@@ -32,6 +32,27 @@ Manual scroll keys (if needed):
 
 ---
 
+## Vault Hygiene
+
+The vault project note is startup context only, not a changelog.
+
+- Policy source: `AGENTS.md` -> "Vault Note Contract (Anti-Bloat)".
+- Validation command:
+
+```bash
+python3 scripts/check_vault.py --strict-missing
+```
+
+What the check enforces:
+- hard max size (lines + characters)
+- required section structure
+- per-section bullet caps
+- no changelog-style dated/versioned bullets in `Current status`
+
+This check runs in pre-commit on this repo before commit.
+
+---
+
 ## Competitor URL Validation
 
 During fresh analysis, competitor URLs are loaded from `competitors/*.yaml` and HEAD-checked.

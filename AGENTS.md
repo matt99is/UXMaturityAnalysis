@@ -43,6 +43,49 @@ If any step is missed, stop and complete it before continuing.
 
 ---
 
+## Vault Note Contract (Anti-Bloat)
+
+The vault project note at `/home/matt99is/vault/Projects/UXMaturityAnalysis.md` is startup memory, not history.
+
+### Fixed purpose
+- Keep only current operating truth needed to start work quickly.
+- Keep active decisions, current gotchas, and near-term next steps.
+- Do **not** use it as a changelog, deploy log, or commit diary.
+
+### Hard limits
+- Max 220 lines.
+- Max 14,000 characters.
+- Required `##` sections:
+  - `What it is`
+  - `Current status`
+  - `Active decisions`
+  - `Known gotchas`
+  - `Next steps`
+  - `References`
+- Bullet caps:
+  - `Current status`: 12 bullets max
+  - `Active decisions`: 8 bullets max
+  - `Known gotchas`: 8 bullets max
+  - `Next steps`: 6 bullets max
+  - `References`: 12 bullets max
+
+### Update rule
+- Replace existing bullets when state changes; do not append chronological entries.
+- Keep one bullet per capability/state, written as present tense current truth.
+- Move durable history to repo docs (`PROJECT_STATE.md`, `CHANGELOG.md`, plan docs).
+
+### Archive policy
+- Default: no rolling archive notes.
+- Optional: one manual snapshot before major rewrites, only on explicit user request.
+
+Validation command:
+
+```bash
+python3 scripts/check_vault.py --strict-missing
+```
+
+---
+
 ## Key commands
 
 ```bash

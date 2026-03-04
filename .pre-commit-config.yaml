@@ -2,6 +2,15 @@
 # Run automatically before each git commit
 
 repos:
+  # Vault project note guard - keep startup note bounded and non-changelog.
+  - repo: local
+    hooks:
+      - id: vault-note-guard
+        name: vault-note-guard
+        entry: python3 scripts/check_vault.py --strict-missing
+        language: system
+        pass_filenames: false
+
   # Black - Python code formatter
   - repo: https://github.com/psf/black
     rev: 26.1.0
