@@ -6,6 +6,8 @@ Generates index.html and prepares the audits directory.
 
 import sys
 import subprocess
+import json
+import os
 from pathlib import Path
 
 
@@ -32,6 +34,24 @@ def check_netlify_cli():
         return result.returncode == 0
     except FileNotFoundError:
         return False
+
+
+def resolve_site_id(project_root: Path) -> str:
+    """Resolve Netlify site ID from env or output/.netlify/state.json."""
+    env_site = (os.environ.get("NETLIFY_SITE_ID") or "").strip()
+    if env_site:
+        return env_site
+
+    state_file = project_root / "output" / ".netlify" / "state.json"
+    if not state_file.exists():
+        return ""
+
+    try:
+        with open(state_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return ""
+    return str(data.get("siteId", "")).strip()
 
 
 def deploy_to_netlify(draft=False):
@@ -71,6 +91,7 @@ def deploy_to_netlify(draft=False):
     print("\n[3/3] Deploying to Netlify...")
 
     deploy_cmd = ['netlify', 'deploy']
+    site_id = resolve_site_id(project_root)
 
     if not draft:
         deploy_cmd.append('--prod')
@@ -79,19 +100,14 @@ def deploy_to_netlify(draft=False):
         print("  Creating draft deployment...")
 
     try:
-        # Check if site is linked
-        link_check = subprocess.run(
-            ['netlify', 'status'],
-            capture_output=True,
-            cwd=str(project_root)
-        )
-
-        if link_check.returncode != 0:
-            print("\n⚠️  Site not linked yet. Linking now...")
-            print("  Follow the prompts to create/link a Netlify site\n")
-
         # Deploy from project root so netlify.toml is found correctly
         deploy_cmd += ['--dir', 'output']
+        if site_id:
+            deploy_cmd += ['--site', site_id]
+            print(f"  Using site ID: {site_id}")
+        else:
+            print("  No site ID found in output/.netlify/state.json or NETLIFY_SITE_ID")
+            print("  Falling back to linked-site deploy context")
         result = subprocess.run(
             deploy_cmd,
             cwd=str(project_root),
