@@ -54,6 +54,15 @@ def test_get_page_type_urls_empty_when_none_match(competitors_dir):
     assert urls == []
 
 
+def test_get_page_type_urls_supports_analysis_type_aliases(competitors_dir):
+    competitor_set = load_competitor_set("testretail", competitors_dir)
+    urls = get_page_type_urls(competitor_set, "basket_pages")
+    assert urls == [
+        {"name": "shopA", "url": "https://shopA.com/cart"},
+        {"name": "shopB", "url": "https://shopB.com/basket"},
+    ]
+
+
 def test_save_url_correction(competitors_dir):
     yaml_path = competitors_dir / "testretail.yaml"
     save_url_correction(yaml_path, "shopB", "basket", "https://shopB.com/new-basket")
@@ -73,3 +82,14 @@ def test_save_url_correction_adds_new_page_type(competitors_dir):
         data = yaml.safe_load(f)
     shopB = next(c for c in data["competitors"] if c["name"] == "shopB")
     assert shopB["pages"]["product"] == "https://shopB.com/product/1"
+
+
+def test_save_url_correction_uses_legacy_key_for_analysis_type_alias(competitors_dir):
+    yaml_path = competitors_dir / "testretail.yaml"
+    save_url_correction(yaml_path, "shopB", "basket_pages", "https://shopB.com/new-basket")
+
+    with open(yaml_path) as f:
+        data = yaml.safe_load(f)
+    shopB = next(c for c in data["competitors"] if c["name"] == "shopB")
+    assert shopB["pages"]["basket"] == "https://shopB.com/new-basket"
+    assert "basket_pages" not in shopB["pages"]
