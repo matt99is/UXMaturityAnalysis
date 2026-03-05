@@ -15,14 +15,17 @@ Usage:
     ./run.sh --deploy --verbose                           # silent, verbose deploy logs
 """
 
+import os
 import subprocess
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
 PROJECT_ROOT = Path(__file__).parent
 VENV_PYTHON = PROJECT_ROOT / ".venv" / "bin" / "python3"
+# Avoid prompt-toolkit CPR warnings on remote/limited terminals.
+os.environ.setdefault("PROMPT_TOOLKIT_NO_CPR", "1")
 
 
 # ---------------------------------------------------------------------------
@@ -213,6 +216,21 @@ def _capture_mode_unavailable_message(capture_mode: str) -> Optional[str]:
     return None
 
 
+def _is_truthy(value: str) -> bool:
+    """Return True when a value represents an enabled toggle."""
+    return (value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _automated_url_validation_strict() -> bool:
+    """
+    Whether automated mode should strictly enforce HEAD URL validation.
+
+    Default is False because some ecommerce sites block or redirect HEAD
+    requests even when normal browser navigation succeeds.
+    """
+    return _is_truthy(os.getenv("AUTOMATED_URL_VALIDATION_STRICT", "false"))
+
+
 # ---------------------------------------------------------------------------
 # Interactive menus
 # ---------------------------------------------------------------------------
@@ -282,12 +300,27 @@ def fresh_analysis_menu() -> int:
 
     console.print(f"\n[cyan]Validating {len(competitors)} URLs...[/cyan]")
     yaml_path = PROJECT_ROOT / "competitors" / f"{selected_slug}.yaml"
+    validation_interactive = not is_automated
     valid_competitors, _corrections = validate_and_correct_urls(
         competitors,
-        interactive=True,
+        interactive=validation_interactive,
         yaml_path=yaml_path,
         page_type=page_type,
     )
+
+    if is_automated:
+        failed_count = len(competitors) - len(valid_competitors)
+        if failed_count > 0 and not _automated_url_validation_strict():
+            noun = "URL" if failed_count == 1 else "URLs"
+            console.print(
+                f"[yellow]⚠ {failed_count} {noun} failed HEAD checks. "
+                "Continuing with full set in Automated mode.[/yellow]"
+            )
+            console.print(
+                "[dim]Set AUTOMATED_URL_VALIDATION_STRICT=true to enforce "
+                "HEAD-validation filtering in unattended runs.[/dim]"
+            )
+            valid_competitors = competitors
 
     if not valid_competitors:
         console.print("[red]No valid URLs remaining after validation.[/red]")

@@ -1604,7 +1604,7 @@ For more examples and documentation, see README.md
                 console.print("[red]Please enter a valid number[/red]")
             except KeyboardInterrupt:
                 console.print("\n[yellow]Analysis cancelled[/yellow]")
-                sys.exit(0)
+                return 0
 
     # Always prompt for analysis type unless explicitly provided via CLI
     if not analysis_type:
@@ -1734,12 +1734,42 @@ For more examples and documentation, see README.md
         output_dir = Path("output")
         skip_deploy = args.no_deploy if hasattr(args, 'no_deploy') else False
         deploy_reports(output_dir, skip=skip_deploy)
+        return 0
 
     except (EOFError, KeyboardInterrupt):
         console.print("\n\n[bold yellow]⚠ Analysis cancelled by user[/bold yellow]")
         console.print(f"[dim]Partial results (if any) saved to: {audit_structure['audit_root']}[/dim]")
-        sys.exit(0)
+        return 0
+    except Exception as e:
+        error_text = str(e)
+        summary = error_text.splitlines()[0] if error_text else "Unknown error"
+        console.print("\n[bold red]✗ Analysis failed[/bold red]")
+        console.print(f"[red]{summary}[/red]")
+
+        debug_errors = (os.getenv("DEBUG_AUTOMATED_ERRORS", "") or "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        if debug_errors and error_text:
+            console.print(f"[dim]{error_text}[/dim]")
+
+        if "BrowserType.launch" in summary or "TargetClosedError" in summary:
+            console.print(
+                "[yellow]Browser failed to start. "
+                "Check display/browser setup for this machine.[/yellow]"
+            )
+            console.print(
+                "[dim]- Ensure Xvfb is running and AUTOMATED_DISPLAY points to a valid display[/dim]"
+            )
+            console.print(
+                "[dim]- If no display is available, try AUTOMATED_HEADLESS=true[/dim]"
+            )
+
+        console.print(f"[dim]Audit folder: {audit_structure['audit_root']}[/dim]")
+        return 1
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    sys.exit(asyncio.run(main()))

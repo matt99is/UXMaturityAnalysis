@@ -77,7 +77,14 @@ class ScreenshotCapture:
             launch_env["DISPLAY"] = display
             launch_kwargs["env"] = launch_env
 
-        self.browser = await self.playwright.chromium.launch(**launch_kwargs)
+        try:
+            self.browser = await self.playwright.chromium.launch(**launch_kwargs)
+        except Exception:
+            # Clean up partial playwright runtime on launch failure to avoid
+            # noisy asyncio transport warnings during shutdown.
+            await self.playwright.stop()
+            self.playwright = None
+            raise
 
     async def close_browser(self):
         """Close browser and cleanup."""

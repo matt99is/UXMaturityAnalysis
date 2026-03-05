@@ -18,7 +18,7 @@ Scoring reliability overhaul is complete on `main` (commit `85baa40`, 2026-03-03
 Smoke competitor set is available at `competitors/petfood-smoke.yaml` (1 competitor) for fast checks.
 Canary competitor set is available at `competitors/petfood-test.yaml` (3 competitors) for vertical-slice validation.
 CLI status: `Supervised` routes to interactive capture and `Automated` now routes to unattended capture (`main.py --auto`).
-Automated defaults: headed browser with `DISPLAY=:99`, no per-site prompts, retry/backoff + pacing controls via env vars.
+Automated defaults: headed browser with `DISPLAY=:99`, no per-site prompts, retry/backoff + pacing controls via env vars; HEAD URL validation is soft by default (`AUTOMATED_URL_VALIDATION_STRICT=false`).
 Supervised hardening: startup preflight now validates noVNC URL/reachability, and Enter-wait uses timeout + heartbeat (`SUPERVISED_READY_TIMEOUT_SEC`, `SUPERVISED_HEARTBEAT_SEC`).
 
 ---
@@ -142,7 +142,8 @@ Interactive mode requires a visible browser, which doesn't work on a headless re
 
 Last 10 completed items for context.
 
-- [x] 2026-03-05: Automated capture mode enabled in unified CLI (`Automated` -> `main.py --auto`) with unattended screenshot flow, retry/backoff, and capture pacing controls
+- [x] 2026-03-05: Automated capture mode enabled in unified CLI (`Automated` -> `main.py --auto`) with unattended screenshot flow, retry/backoff, capture pacing controls, and soft URL validation in automated runs
+- [x] 2026-03-05: Automated UX hardening — concise fatal browser-launch messaging, optional verbose diagnostics (`DEBUG_AUTOMATED_ERRORS=true`), and smoke set switched to `jollyes` basket URL
 - [x] v1.13.0: Competitor card redesign — attributed evidence cards, strengths/vulnerabilities split (html_report_generator.py + _components.scss + report.html.jinja2)
 - [x] v1.13.0: Radar chart — all competitors included, top 3 visible, rest legendonly (html_report_generator.py)
 - [x] v1.13.0: Rankings — uniform score colour, tier badge CSS classes, colour-coded by tier (_sections.scss + _components.scss)

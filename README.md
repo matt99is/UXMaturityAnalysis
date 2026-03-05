@@ -90,6 +90,7 @@ Capture modes:
 Automated mode env overrides (optional):
 - `AUTOMATED_DISPLAY` (default `:99`)
 - `AUTOMATED_HEADLESS` (default `false`)
+- `AUTOMATED_URL_VALIDATION_STRICT` (default `false`, keep all URLs if HEAD checks fail)
 - `AUTOMATED_CAPTURE_MAX_ATTEMPTS` (default `2`)
 - `AUTOMATED_CAPTURE_RETRY_BACKOFF_SEC` (default `5`)
 - `AUTOMATED_CAPTURE_DELAY_MIN_SEC` / `AUTOMATED_CAPTURE_DELAY_MAX_SEC` (defaults `3` / `10`)

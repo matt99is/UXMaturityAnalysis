@@ -1,14 +1,18 @@
-import subprocess
+import os
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from cli import SilentArgs, parse_silent_args
+from cli import (
+    _automated_url_validation_strict,
+    _capture_mode_unavailable_message,
+    discover_audits,
+    parse_silent_args,
+    validate_and_correct_urls,
+)
 
 
 def test_parse_reanalyze_flag():
@@ -56,9 +60,6 @@ def test_no_silent_flags_with_other_args_returns_none():
     assert args is None
 
 
-from cli import discover_audits
-
-
 def test_discover_audits(tmp_path):
     # Create fake audit structure
     (tmp_path / "2026-03-02_basket_pages" / "amazon").mkdir(parents=True)
@@ -77,12 +78,6 @@ def test_discover_audits(tmp_path):
 
 def test_discover_audits_empty(tmp_path):
     assert discover_audits(tmp_path) == []
-
-
-from unittest.mock import patch
-
-from cli import _capture_mode_unavailable_message, validate_and_correct_urls
-
 
 def test_validate_and_correct_urls_all_valid():
     competitors = [
@@ -121,3 +116,13 @@ def test_capture_mode_unavailable_message_automated():
 def test_capture_mode_unavailable_message_for_unknown_mode():
     message = _capture_mode_unavailable_message("Legacy Interactive")
     assert message is None
+
+
+def test_automated_url_validation_strict_default_false():
+    with patch.dict(os.environ, {}, clear=False):
+        assert _automated_url_validation_strict() is False
+
+
+def test_automated_url_validation_strict_true_when_enabled():
+    with patch.dict(os.environ, {"AUTOMATED_URL_VALIDATION_STRICT": "true"}, clear=False):
+        assert _automated_url_validation_strict() is True
