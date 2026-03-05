@@ -48,7 +48,7 @@ Current workflow: `./run.sh` → choose Fresh analysis or Reanalyse → reports 
 **New CLI flag:** `./run.sh` → "Automated" capture mode in the fresh analysis menu.
 
 **Current implementation status (2026-03-05):**
-- Unified CLI now routes `Automated` to unattended capture (`main.py --auto`) with retry/backoff and pacing controls.
+- Unified CLI now routes `Automated` to unattended capture (`main.py --auto`) with retry/backoff, pacing controls, and startup preflight checks (display/DNS/browser launch).
 - Current unattended path still uses Playwright defaults; Patchright/proxy hardening remains the next step for stronger bot-bypass coverage.
 
 **Expected coverage:**

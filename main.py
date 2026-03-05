@@ -24,6 +24,7 @@ import os
 import random
 import select
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -338,6 +339,113 @@ class UXAnalysisOrchestrator:
         reachable, reason = self._probe_novnc_url(self.novnc_url)
         if not reachable:
             return False, f"Cannot reach noVNC at {self.novnc_url} ({reason})"
+
+        return True, "ok"
+
+    @staticmethod
+    def _probe_display(display: str) -> Tuple[bool, str]:
+        """
+        Verify that an X display is reachable for headed browser launch.
+
+        Uses `xdpyinfo` when available.
+        """
+        if not display:
+            return False, "Display is empty. Set AUTOMATED_DISPLAY (for example ':99')."
+
+        try:
+            result = subprocess.run(
+                ["xdpyinfo", "-display", display],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+        except FileNotFoundError:
+            # Skip hard failure when xdpyinfo is not installed.
+            return True, "ok"
+        except Exception as exc:
+            return False, f"Display probe failed for {display} ({exc})"
+
+        if result.returncode != 0:
+            details = (result.stderr or result.stdout or "").strip()
+            summary = details.splitlines()[0] if details else "unknown display error"
+            return False, f"Cannot access display {display} ({summary})"
+
+        return True, "ok"
+
+    @staticmethod
+    def _probe_competitor_dns(competitors: List[Dict[str, str]]) -> Tuple[bool, str]:
+        """
+        Ensure competitor URL hostnames resolve before unattended run starts.
+        """
+        failures = []
+        for competitor in competitors:
+            url = competitor.get("url", "")
+            host = urlparse(url).hostname
+            if not host:
+                failures.append(f"{competitor.get('name', 'unknown')}: invalid URL '{url}'")
+                continue
+            try:
+                socket.getaddrinfo(host, 443)
+            except socket.gaierror as exc:
+                failures.append(f"{competitor.get('name', host)} ({host}: {exc})")
+            except Exception as exc:
+                failures.append(f"{competitor.get('name', host)} ({host}: {exc})")
+
+        if failures:
+            return False, "DNS resolution failed for: " + "; ".join(failures)
+        return True, "ok"
+
+    async def _probe_automated_browser_launch(
+        self,
+        headless: bool,
+        display: Optional[str],
+    ) -> Tuple[bool, str]:
+        """
+        Attempt a minimal browser launch/close probe for unattended mode.
+        """
+        try:
+            await self.screenshot_capturer.initialize_browser(
+                headless=headless,
+                display=display,
+            )
+        except Exception as exc:
+            message = str(exc).splitlines()[0] if str(exc) else "Unknown browser launch failure"
+            return False, message
+        finally:
+            try:
+                await self.screenshot_capturer.close_browser()
+            except Exception:
+                pass
+
+        return True, "ok"
+
+    async def _run_automated_preflight(
+        self,
+        competitors: List[Dict[str, str]],
+    ) -> Tuple[bool, str]:
+        """
+        Validate unattended capture prerequisites before capture starts.
+        """
+        if not self.automated_mode or self.manual_mode or self.interactive_mode:
+            return True, "not-applicable"
+
+        headless, display = self._resolve_automated_browser_settings()
+
+        if not headless:
+            display_ok, display_reason = self._probe_display(display)
+            if not display_ok:
+                return False, display_reason
+
+        dns_ok, dns_reason = self._probe_competitor_dns(competitors)
+        if not dns_ok:
+            return False, dns_reason
+
+        launch_ok, launch_reason = await self._probe_automated_browser_launch(
+            headless=headless,
+            display=display,
+        )
+        if not launch_ok:
+            return False, f"Browser launch probe failed ({launch_reason})"
 
         return True, "ok"
 
@@ -1066,6 +1174,21 @@ class UXAnalysisOrchestrator:
                     for competitor in competitors
                 ]
             self.console.print("[green]✓ Supervised preflight checks passed[/green]")
+
+        if self.automated_mode and not self.manual_mode and not self.interactive_mode:
+            auto_ok, auto_reason = await self._run_automated_preflight(competitors)
+            if not auto_ok:
+                self.console.print(f"[bold red]Automated preflight failed:[/bold red] {auto_reason}")
+                return [
+                    {
+                        "success": False,
+                        "site_name": competitor["name"],
+                        "url": competitor["url"],
+                        "error": f"Automated preflight failed: {auto_reason}",
+                    }
+                    for competitor in competitors
+                ]
+            self.console.print("[green]✓ Automated preflight checks passed[/green]")
 
         # Initialize browser for non-manual capture flows.
         # Manual mode uses disk files; supervised uses BrowserSessionPool.

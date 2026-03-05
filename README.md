@@ -21,6 +21,7 @@ UX Maturity Analysis is a Python tool that captures competitor e-commerce pages,
 - `Supervised` mode is now wired to interactive capture (`main.py --interactive`) and can show noVNC URL guidance.
 - `Supervised` mode now runs fail-fast noVNC preflight and uses timeout/heartbeat while waiting for operator readiness.
 - `Automated` mode is wired in the unified CLI (`main.py --auto`) for unattended capture (no per-site prompts).
+- `Automated` mode now runs preflight checks (display probe, DNS resolution, browser launch probe) before capture starts.
 - Current automated implementation uses Playwright with headed browser defaults (`DISPLAY=:99`); Patchright/proxy hardening remains a next step.
 
 ## Quick Start
@@ -91,6 +92,7 @@ Automated mode env overrides (optional):
 - `AUTOMATED_DISPLAY` (default `:99`)
 - `AUTOMATED_HEADLESS` (default `false`)
 - `AUTOMATED_URL_VALIDATION_STRICT` (default `false`, keep all URLs if HEAD checks fail)
+- `DEBUG_AUTOMATED_ERRORS` (default `false`; show full low-level launch error details)
 - `AUTOMATED_CAPTURE_MAX_ATTEMPTS` (default `2`)
 - `AUTOMATED_CAPTURE_RETRY_BACKOFF_SEC` (default `5`)
 - `AUTOMATED_CAPTURE_DELAY_MIN_SEC` / `AUTOMATED_CAPTURE_DELAY_MAX_SEC` (defaults `3` / `10`)

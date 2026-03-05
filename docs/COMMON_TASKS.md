@@ -70,9 +70,15 @@ Automated mode defaults (optional overrides):
 - `AUTOMATED_DISPLAY` (default `:99`)
 - `AUTOMATED_HEADLESS` (default `false`)
 - `AUTOMATED_URL_VALIDATION_STRICT` (default `false`; continue with full set when HEAD checks fail)
+- `DEBUG_AUTOMATED_ERRORS` (default `false`; print full low-level launch errors)
 - `AUTOMATED_CAPTURE_MAX_ATTEMPTS` (default `2`)
 - `AUTOMATED_CAPTURE_RETRY_BACKOFF_SEC` (default `5`)
 - `AUTOMATED_CAPTURE_DELAY_MIN_SEC` / `AUTOMATED_CAPTURE_DELAY_MAX_SEC` (defaults `3` / `10`)
+
+Automated preflight now runs before capture:
+- headed mode display check (`xdpyinfo` probe when available)
+- competitor hostname DNS resolution
+- browser launch/close probe
 
 UX simplification:
 - The printed session URL now includes noVNC auto-connect defaults (`autoconnect=true`, `resize=remote`, `reconnect=true`).

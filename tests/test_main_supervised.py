@@ -158,6 +158,7 @@ async def test_analyze_competitors_routes_automated_capture_branch():
 
     orchestrator.screenshot_capturer.initialize_browser = AsyncMock()
     orchestrator.screenshot_capturer.close_browser = AsyncMock()
+    orchestrator._run_automated_preflight = AsyncMock(return_value=(True, "ok"))
     orchestrator.screenshot_capturer.capture_multiple_viewports = AsyncMock(
         return_value=[
             {
@@ -188,12 +189,37 @@ async def test_analyze_competitors_routes_automated_capture_branch():
 
     assert len(results) == 1
     assert results[0]["success"] is True
+    orchestrator._run_automated_preflight.assert_awaited_once()
     orchestrator.screenshot_capturer.initialize_browser.assert_awaited_once_with(
         headless=False,
         display=":99",
     )
     orchestrator.screenshot_capturer.capture_multiple_viewports.assert_awaited()
     orchestrator.screenshot_capturer.close_browser.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_analyze_competitors_fails_when_automated_preflight_fails():
+    main = _import_main_with_stubs(_MockSessionPool)
+    orchestrator = main.UXAnalysisOrchestrator(
+        api_key="test",
+        analysis_type="basket_pages",
+        automated_mode=True,
+    )
+
+    orchestrator._run_automated_preflight = AsyncMock(
+        return_value=(False, "DNS resolution failed for: example")
+    )
+    orchestrator.screenshot_capturer.initialize_browser = AsyncMock()
+
+    competitors = [{"name": "example", "url": "https://example.com/basket"}]
+    results = await orchestrator.analyze_competitors(competitors)
+
+    assert len(results) == 1
+    assert results[0]["success"] is False
+    assert "Automated preflight failed" in results[0]["error"]
+    orchestrator._run_automated_preflight.assert_awaited_once()
+    orchestrator.screenshot_capturer.initialize_browser.assert_not_called()
 
 
 def test_generate_reports_uses_dated_new_structure_html_path(tmp_path):

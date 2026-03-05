@@ -19,6 +19,7 @@ Smoke competitor set is available at `competitors/petfood-smoke.yaml` (1 competi
 Canary competitor set is available at `competitors/petfood-test.yaml` (3 competitors) for vertical-slice validation.
 CLI status: `Supervised` routes to interactive capture and `Automated` now routes to unattended capture (`main.py --auto`).
 Automated defaults: headed browser with `DISPLAY=:99`, no per-site prompts, retry/backoff + pacing controls via env vars; HEAD URL validation is soft by default (`AUTOMATED_URL_VALIDATION_STRICT=false`).
+Automated preflight now runs display/DNS/browser-launch probes before capture starts to fail fast with operator guidance.
 Supervised hardening: startup preflight now validates noVNC URL/reachability, and Enter-wait uses timeout + heartbeat (`SUPERVISED_READY_TIMEOUT_SEC`, `SUPERVISED_HEARTBEAT_SEC`).
 
 ---
@@ -144,6 +145,7 @@ Last 10 completed items for context.
 
 - [x] 2026-03-05: Automated capture mode enabled in unified CLI (`Automated` -> `main.py --auto`) with unattended screenshot flow, retry/backoff, capture pacing controls, and soft URL validation in automated runs
 - [x] 2026-03-05: Automated UX hardening — concise fatal browser-launch messaging, optional verbose diagnostics (`DEBUG_AUTOMATED_ERRORS=true`), and smoke set switched to `jollyes` basket URL
+- [x] 2026-03-05: Automated preflight checks added — display probe, competitor DNS resolution, and browser launch probe before unattended capture
 - [x] v1.13.0: Competitor card redesign — attributed evidence cards, strengths/vulnerabilities split (html_report_generator.py + _components.scss + report.html.jinja2)
 - [x] v1.13.0: Radar chart — all competitors included, top 3 visible, rest legendonly (html_report_generator.py)
 - [x] v1.13.0: Rankings — uniform score colour, tier badge CSS classes, colour-coded by tier (_sections.scss + _components.scss)
