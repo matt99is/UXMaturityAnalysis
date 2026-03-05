@@ -58,13 +58,20 @@ This check runs in pre-commit on this repo before commit.
 During fresh analysis, competitor URLs are loaded from `competitors/*.yaml` and HEAD-checked.
 If a URL is corrected in interactive mode, the new value is saved back into that YAML file.
 Current status: `Supervised` is wired to interactive capture.
-`Automated` still shows "not available yet" until browser-capture wiring is complete.
+`Automated` now runs unattended capture (`main.py --auto`) with no per-site prompts.
 
 Supervised preflight now fails fast if noVNC is not configured/reachable.
 Required env: `NOVNC_URL` (or `NOVNC_HOST` + optional `NOVNC_PORT`).
 Optional env:
 - `SUPERVISED_READY_TIMEOUT_SEC` (default `900`)
 - `SUPERVISED_HEARTBEAT_SEC` (default `30`)
+
+Automated mode defaults (optional overrides):
+- `AUTOMATED_DISPLAY` (default `:99`)
+- `AUTOMATED_HEADLESS` (default `false`)
+- `AUTOMATED_CAPTURE_MAX_ATTEMPTS` (default `2`)
+- `AUTOMATED_CAPTURE_RETRY_BACKOFF_SEC` (default `5`)
+- `AUTOMATED_CAPTURE_DELAY_MIN_SEC` / `AUTOMATED_CAPTURE_DELAY_MAX_SEC` (defaults `3` / `10`)
 
 UX simplification:
 - The printed session URL now includes noVNC auto-connect defaults (`autoconnect=true`, `resize=remote`, `reconnect=true`).
@@ -90,6 +97,21 @@ Expected behavior:
 - Browser guidance URL is shown
 - Terminal prints heartbeat while waiting for Enter
 - If no Enter is received before timeout, the competitor fails with a clear timeout message
+
+### Automated smoke canary
+
+Use this before larger unattended runs:
+
+```bash
+echo "DISPLAY=${AUTOMATED_DISPLAY:-:99}"
+./run.sh
+# choose: Fresh analysis -> basket_pages -> petfood-smoke -> Automated
+```
+
+Expected behavior:
+- No per-site `Continue? (Y/r/s)` prompt
+- Capture runs unattended competitor-by-competitor
+- Brief pacing delay is printed between competitors
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Version:** 1.13.0
 **Status:** Production ready (Phase 1 scoring reliability complete)
-**Last verified:** 2026-03-04
+**Last verified:** 2026-03-05
 
 UX Maturity Analysis is a Python tool that captures competitor e-commerce pages, runs a two-pass AI analysis (observe -> score), and publishes interactive HTML reports to Netlify.
 
@@ -20,7 +20,8 @@ UX Maturity Analysis is a Python tool that captures competitor e-commerce pages,
 - Browser-capture infrastructure (Patchright/Xvfb/noVNC) is still planned, not fully implemented.
 - `Supervised` mode is now wired to interactive capture (`main.py --interactive`) and can show noVNC URL guidance.
 - `Supervised` mode now runs fail-fast noVNC preflight and uses timeout/heartbeat while waiting for operator readiness.
-- `Automated` remains unavailable in the unified CLI until Patchright/Xvfb flow is implemented.
+- `Automated` mode is wired in the unified CLI (`main.py --auto`) for unattended capture (no per-site prompts).
+- Current automated implementation uses Playwright with headed browser defaults (`DISPLAY=:99`); Patchright/proxy hardening remains a next step.
 
 ## Quick Start
 
@@ -81,6 +82,17 @@ Always use `./run.sh` for normal operation.
 
 Competitor sets come from `competitors/*.yaml` (for example `competitors/petfood.yaml`) and are URL-validated in the CLI.
 If a URL fails validation during interactive runs, the corrected URL is written back to that YAML file for future runs.
+
+Capture modes:
+- `Supervised` — noVNC-assisted human-in-the-loop flow.
+- `Automated` — unattended capture path (no Y/R/S prompt after each competitor).
+
+Automated mode env overrides (optional):
+- `AUTOMATED_DISPLAY` (default `:99`)
+- `AUTOMATED_HEADLESS` (default `false`)
+- `AUTOMATED_CAPTURE_MAX_ATTEMPTS` (default `2`)
+- `AUTOMATED_CAPTURE_RETRY_BACKOFF_SEC` (default `5`)
+- `AUTOMATED_CAPTURE_DELAY_MIN_SEC` / `AUTOMATED_CAPTURE_DELAY_MAX_SEC` (defaults `3` / `10`)
 
 For capture rollout, use a 2-stage gate:
 - `petfood-smoke` (1 competitor) for fast smoke checks.

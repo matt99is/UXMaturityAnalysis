@@ -1,6 +1,6 @@
 # Roadmap
 
-**Last updated:** 2026-03-04
+**Last updated:** 2026-03-05
 **Current version:** v1.13.0
 **Live site:** https://analysis.mattlelonek.co.uk
 
@@ -46,6 +46,10 @@ Current workflow: `./run.sh` → choose Fresh analysis or Reanalyse → reports 
 - Persistent browser profiles (fresh profile = bot signal)
 
 **New CLI flag:** `./run.sh` → "Automated" capture mode in the fresh analysis menu.
+
+**Current implementation status (2026-03-05):**
+- Unified CLI now routes `Automated` to unattended capture (`main.py --auto`) with retry/backoff and pacing controls.
+- Current unattended path still uses Playwright defaults; Patchright/proxy hardening remains the next step for stronger bot-bypass coverage.
 
 **Expected coverage:**
 - Small/mid UK retailers: ✓ works easily

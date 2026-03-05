@@ -147,6 +147,55 @@ async def test_analyze_competitors_routes_supervised_capture_branch():
     assert not orchestrator.screenshot_capturer.close_browser.called
 
 
+@pytest.mark.asyncio
+async def test_analyze_competitors_routes_automated_capture_branch():
+    main = _import_main_with_stubs(_MockSessionPool)
+    orchestrator = main.UXAnalysisOrchestrator(
+        api_key="test",
+        analysis_type="basket_pages",
+        automated_mode=True,
+    )
+
+    orchestrator.screenshot_capturer.initialize_browser = AsyncMock()
+    orchestrator.screenshot_capturer.close_browser = AsyncMock()
+    orchestrator.screenshot_capturer.capture_multiple_viewports = AsyncMock(
+        return_value=[
+            {
+                "success": True,
+                "filepath": "desktop.png",
+                "filename": "desktop.png",
+                "url": "https://example.com/basket",
+                "viewport": {"width": 1920, "height": 1080},
+                "viewport_name": "desktop",
+            }
+        ]
+    )
+    orchestrator.screenshot_capturer.capture_with_interaction = AsyncMock(
+        side_effect=AssertionError("capture_with_interaction should not be called")
+    )
+    orchestrator.analyze_competitor_from_screenshots = AsyncMock(
+        return_value={
+            "success": True,
+            "site_name": "example",
+            "url": "https://example.com/basket",
+            "overall_score": 7.5,
+        }
+    )
+
+    competitors = [{"name": "example", "url": "https://example.com/basket"}]
+    with patch("builtins.input", side_effect=AssertionError("input should not be called")):
+        results = await orchestrator.analyze_competitors(competitors)
+
+    assert len(results) == 1
+    assert results[0]["success"] is True
+    orchestrator.screenshot_capturer.initialize_browser.assert_awaited_once_with(
+        headless=False,
+        display=":99",
+    )
+    orchestrator.screenshot_capturer.capture_multiple_viewports.assert_awaited()
+    orchestrator.screenshot_capturer.close_browser.assert_awaited()
+
+
 def test_generate_reports_uses_dated_new_structure_html_path(tmp_path):
     main = _import_main_with_stubs(_MockSessionPool)
     orchestrator = main.UXAnalysisOrchestrator(

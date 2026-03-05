@@ -1,13 +1,14 @@
 import subprocess
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from cli import parse_silent_args, SilentArgs
+from cli import SilentArgs, parse_silent_args
 
 
 def test_parse_reanalyze_flag():
@@ -79,7 +80,8 @@ def test_discover_audits_empty(tmp_path):
 
 
 from unittest.mock import patch
-from cli import validate_and_correct_urls, _capture_mode_unavailable_message
+
+from cli import _capture_mode_unavailable_message, validate_and_correct_urls
 
 
 def test_validate_and_correct_urls_all_valid():
@@ -113,8 +115,7 @@ def test_capture_mode_unavailable_message_supervised():
 
 def test_capture_mode_unavailable_message_automated():
     message = _capture_mode_unavailable_message("Automated    (fully unattended)")
-    assert message is not None
-    assert "not available yet" in message
+    assert message is None
 
 
 def test_capture_mode_unavailable_message_for_unknown_mode():

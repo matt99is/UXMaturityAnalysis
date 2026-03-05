@@ -15,11 +15,11 @@ Usage:
     ./run.sh --deploy --verbose                           # silent, verbose deploy logs
 """
 
-import sys
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
 PROJECT_ROOT = Path(__file__).parent
 VENV_PYTHON = PROJECT_ROOT / ".venv" / "bin" / "python3"
@@ -132,8 +132,8 @@ def discover_audits(audits_dir: Path = None) -> List[dict]:
 # URL validation
 # ---------------------------------------------------------------------------
 
-import urllib.request
 import urllib.error
+import urllib.request
 
 
 def _head_check(url: str, timeout: int = 5) -> bool:
@@ -207,13 +207,9 @@ def validate_and_correct_urls(
 
 def _capture_mode_unavailable_message(capture_mode: str) -> Optional[str]:
     """
-    Return user-facing message when a selected capture mode is not available yet.
+    Return user-facing message when a selected capture mode is not available.
+    Keep this as an extension point for future gating.
     """
-    if capture_mode.startswith("Automated"):
-        return (
-            "Automated capture is not available yet in the unified CLI. "
-            "Patchright/Xvfb capture flow is still in progress."
-        )
     return None
 
 
@@ -223,12 +219,14 @@ def _capture_mode_unavailable_message(capture_mode: str) -> Optional[str]:
 
 def fresh_analysis_menu() -> int:
     """Guided fresh analysis flow. Returns exit code."""
-    import questionary
-    import tempfile
     import json
-    from src.competitor_config import list_competitor_sets, load_competitor_set, get_page_type_urls
-    from src.config_loader import AnalysisConfig
+    import tempfile
+
+    import questionary
     from rich.console import Console
+
+    from src.competitor_config import get_page_type_urls, list_competitor_sets, load_competitor_set
+    from src.config_loader import AnalysisConfig
     console = Console()
 
     # Page type — read available types from criteria_config/
@@ -260,7 +258,7 @@ def fresh_analysis_menu() -> int:
         "Capture mode?",
         choices=[
             "Supervised   (watch browser via noVNC URL — for basket setup, CAPTCHAs)",
-            "Automated    (coming soon — fully unattended, Patchright + bot evasion)",
+            "Automated    (fully unattended capture — no per-site prompts)",
         ],
     ).ask()
     if capture_mode is None:
@@ -269,11 +267,10 @@ def fresh_analysis_menu() -> int:
     unavailable_message = _capture_mode_unavailable_message(capture_mode)
     if unavailable_message:
         console.print(f"\n[yellow]⚠ {unavailable_message}[/yellow]")
-        console.print(
-            "[dim]Coming soon: select this mode again once browser-capture infrastructure is wired.[/dim]"
-        )
+        console.print("[dim]Adjust setup and retry this capture mode.[/dim]")
         return 0
     is_supervised = capture_mode.startswith("Supervised")
+    is_automated = capture_mode.startswith("Automated")
 
     # Load competitors and validate URLs
     competitor_set = load_competitor_set(selected_slug)
@@ -310,6 +307,8 @@ def fresh_analysis_menu() -> int:
     ]
     if is_supervised:
         cmd.append("--interactive")
+    if is_automated:
+        cmd.append("--auto")
 
     console.print(f"\n[bold cyan]Starting analysis — {len(valid_competitors)} competitors[/bold cyan]\n")
     result = subprocess.run(cmd, cwd=PROJECT_ROOT)

@@ -13,6 +13,7 @@ by sites with anti-bot protection (Cloudflare, DataDome, etc.)
 
 import asyncio
 import base64
+import os
 import random
 from datetime import datetime
 from pathlib import Path
@@ -44,7 +45,11 @@ class ScreenshotCapture:
         self.browser: Optional[Browser] = None
         self.stealth_mode = True  # Enable by default
 
-    async def initialize_browser(self, headless: bool = True):
+    async def initialize_browser(
+        self,
+        headless: bool = True,
+        display: Optional[str] = None,
+    ):
         """
         Initialize Playwright browser with stealth settings.
 
@@ -66,7 +71,13 @@ class ScreenshotCapture:
             "--window-size=1920,1080",
         ]
 
-        self.browser = await self.playwright.chromium.launch(headless=headless, args=launch_args)
+        launch_kwargs = {"headless": headless, "args": launch_args}
+        if display:
+            launch_env = os.environ.copy()
+            launch_env["DISPLAY"] = display
+            launch_kwargs["env"] = launch_env
+
+        self.browser = await self.playwright.chromium.launch(**launch_kwargs)
 
     async def close_browser(self):
         """Close browser and cleanup."""

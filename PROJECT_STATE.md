@@ -2,7 +2,7 @@
 
 **Version:** 1.13.0
 **Status:** Production Ready
-**Last Updated:** 2026-03-04
+**Last Updated:** 2026-03-05
 **Context Load Priority:** HIGH (load this file first)
 
 ---
@@ -17,7 +17,8 @@ Scoring reliability overhaul is complete on `main` (commit `85baa40`, 2026-03-03
 
 Smoke competitor set is available at `competitors/petfood-smoke.yaml` (1 competitor) for fast checks.
 Canary competitor set is available at `competitors/petfood-test.yaml` (3 competitors) for vertical-slice validation.
-CLI status: `Supervised` routes to interactive capture; `Automated` remains gated with explicit "not available yet" messaging.
+CLI status: `Supervised` routes to interactive capture and `Automated` now routes to unattended capture (`main.py --auto`).
+Automated defaults: headed browser with `DISPLAY=:99`, no per-site prompts, retry/backoff + pacing controls via env vars.
 Supervised hardening: startup preflight now validates noVNC URL/reachability, and Enter-wait uses timeout + heartbeat (`SUPERVISED_READY_TIMEOUT_SEC`, `SUPERVISED_HEARTBEAT_SEC`).
 
 ---
@@ -141,6 +142,7 @@ Interactive mode requires a visible browser, which doesn't work on a headless re
 
 Last 10 completed items for context.
 
+- [x] 2026-03-05: Automated capture mode enabled in unified CLI (`Automated` -> `main.py --auto`) with unattended screenshot flow, retry/backoff, and capture pacing controls
 - [x] v1.13.0: Competitor card redesign — attributed evidence cards, strengths/vulnerabilities split (html_report_generator.py + _components.scss + report.html.jinja2)
 - [x] v1.13.0: Radar chart — all competitors included, top 3 visible, rest legendonly (html_report_generator.py)
 - [x] v1.13.0: Rankings — uniform score colour, tier badge CSS classes, colour-coded by tier (_sections.scss + _components.scss)

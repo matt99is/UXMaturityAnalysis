@@ -17,50 +17,52 @@ Usage:
 Author: UX Analysis Agent POC
 """
 
-import asyncio
 import argparse
+import asyncio
 import json
 import os
+import random
 import select
 import signal
+import subprocess
 import sys
 import time
-import subprocess
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from urllib.request import Request, urlopen
+
 from dotenv import load_dotenv
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 from rich.panel import Panel
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.config_loader import AnalysisConfig
-from src.analyzers.screenshot_capture import ScreenshotCapture
 from src.analyzers.claude_analyzer import ClaudeUXAnalyzer
 from src.analyzers.glm_analyzer import GLMUXAnalyzer
-from src.utils.report_generator import ReportGenerator
-from src.utils.html_report_generator import HTMLReportGenerator
+from src.analyzers.screenshot_capture import ScreenshotCapture
+from src.config_loader import AnalysisConfig
 from src.utils.audit_organizer import (
-    extract_competitor_name,
-    create_audit_directory_structure,
-    get_audits_dir,
     build_frontend_report_cards,
+    create_audit_directory_structure,
+    extract_competitor_name,
+    generate_audit_summary,
     generate_reports_index,
-    get_screenshot_path,
     get_analysis_path,
-    get_comparison_report_path,
     get_audit_summary_path,
-    generate_audit_summary
+    get_audits_dir,
+    get_comparison_report_path,
+    get_screenshot_path,
 )
+from src.utils.html_report_generator import HTMLReportGenerator
 from src.utils.page_type_detector import get_page_type_display_name
-from src.version import __version__, __title__
+from src.utils.report_generator import ReportGenerator
+from src.version import __title__, __version__
 
 
 def deploy_reports(output_dir: Path, skip: bool = False) -> bool:
@@ -212,6 +214,7 @@ class UXAnalysisOrchestrator:
         llm_provider: str = None,
         interactive_mode: bool = False,
         novnc_url: str = None,
+        automated_mode: bool = False,
     ):
         self.console = Console()
         self.analysis_config = AnalysisConfig(config_path)
@@ -256,6 +259,7 @@ class UXAnalysisOrchestrator:
         self.manual_mode = manual_mode
         self.screenshots_dir = screenshots_dir
         self.interactive_mode = interactive_mode
+        self.automated_mode = automated_mode
         self.novnc_url = novnc_url
         self.session_pool = None
         if self.interactive_mode and not self.manual_mode:
@@ -271,6 +275,19 @@ class UXAnalysisOrchestrator:
 
         try:
             value = int(raw)
+        except ValueError:
+            return default
+        return max(value, minimum)
+
+    @staticmethod
+    def _get_env_float(name: str, default: float, minimum: float) -> float:
+        """Read float env var with safe fallback and lower bound."""
+        raw = os.getenv(name)
+        if raw is None:
+            return default
+
+        try:
+            value = float(raw)
         except ValueError:
             return default
         return max(value, minimum)
@@ -465,6 +482,70 @@ class UXAnalysisOrchestrator:
         finally:
             await self.session_pool.release(site_name)
 
+    def _resolve_automated_browser_settings(self) -> Tuple[bool, Optional[str]]:
+        """
+        Resolve browser runtime settings for unattended capture mode.
+
+        Defaults:
+        - headed browser (headless=False) for better bot compatibility
+        - DISPLAY=:99 for Xvfb-backed servers
+        """
+        headless_raw = (os.getenv("AUTOMATED_HEADLESS", "false") or "").strip().lower()
+        headless = headless_raw in {"1", "true", "yes", "on"}
+        display = os.getenv("AUTOMATED_DISPLAY", ":99").strip() or ":99"
+        return headless, display
+
+    async def _capture_with_automated_mode(
+        self,
+        url: str,
+        site_name: str,
+        viewports: List[Dict[str, int]],
+        full_page: bool,
+        screenshots_dir: Optional[Path],
+    ) -> List[Dict[str, Any]]:
+        """
+        Capture screenshots without human prompts (unattended mode).
+
+        Retries are per-competitor and only applied when all viewport captures fail.
+        """
+        max_attempts = self._get_env_int(
+            "AUTOMATED_CAPTURE_MAX_ATTEMPTS",
+            default=2,
+            minimum=1,
+        )
+        retry_backoff_sec = self._get_env_float(
+            "AUTOMATED_CAPTURE_RETRY_BACKOFF_SEC",
+            default=5.0,
+            minimum=1.0,
+        )
+
+        last_results: List[Dict[str, Any]] = []
+        for attempt in range(1, max_attempts + 1):
+            if attempt > 1:
+                self.console.print(
+                    f"  [yellow]↻ Automated retry {attempt}/{max_attempts} "
+                    f"(waiting {retry_backoff_sec:.1f}s)[/yellow]"
+                )
+                await asyncio.sleep(retry_backoff_sec)
+
+            results = await self.screenshot_capturer.capture_multiple_viewports(
+                url=url,
+                site_name=site_name,
+                viewports=viewports,
+                full_page=full_page,
+                custom_output_dir=screenshots_dir,
+            )
+            for result in results:
+                result["automated_mode"] = True
+                result["attempt"] = attempt
+            last_results = results
+
+            successful = [r for r in results if r.get("success")]
+            if successful:
+                return results
+
+        return last_results
+
     async def capture_competitor_screenshots(
         self,
         url: str,
@@ -524,6 +605,14 @@ class UXAnalysisOrchestrator:
                         full_page=screenshot_config.full_page,
                         screenshots_dir=Path(screenshots_dir) if screenshots_dir else None,
                     )
+                elif self.automated_mode:
+                    screenshot_results = await self._capture_with_automated_mode(
+                        url=url,
+                        site_name=site_name,
+                        viewports=viewports,
+                        full_page=screenshot_config.full_page,
+                        screenshots_dir=Path(screenshots_dir) if screenshots_dir else None,
+                    )
                 else:
                     # Interactive mode - always use visible browser with user control
                     prompt_text = f"Navigate to the {self.analysis_type_config.name.lower()} and prepare for screenshot"
@@ -569,7 +658,7 @@ class UXAnalysisOrchestrator:
                 self.console.print(f"  [green]✓ Captured {len(screenshot_paths)} screenshot(s)[/green]")
 
                 # Prompt user: Continue, Retry, or Skip
-                if not self.manual_mode:
+                if not self.manual_mode and not self.automated_mode:
                     self.console.print()
                     while True:
                         try:
@@ -595,7 +684,7 @@ class UXAnalysisOrchestrator:
                             self.console.print("\n  [yellow]⊘ Cancelling entire analysis...[/yellow]")
                             raise  # Re-raise to break out of main loop
                 else:
-                    # Manual mode doesn't need retry
+                    # Manual and automated modes don't need prompt-driven retry loop
                     screenshot_retry = False
 
             # Return capture data for later analysis
@@ -978,22 +1067,47 @@ class UXAnalysisOrchestrator:
                 ]
             self.console.print("[green]✓ Supervised preflight checks passed[/green]")
 
-        # Initialize browser in visible mode for interactive capture.
-        # Skip browser initialization in manual and supervised modes.
+        # Initialize browser for non-manual capture flows.
+        # Manual mode uses disk files; supervised uses BrowserSessionPool.
         if not self.manual_mode and not self.interactive_mode:
-            await self.screenshot_capturer.initialize_browser(headless=False)
+            headless = False
+            display = None
+            if self.automated_mode:
+                headless, display = self._resolve_automated_browser_settings()
+                self.console.print(
+                    f"[dim]Automated browser: headless={headless}, DISPLAY={display}[/dim]"
+                )
+            await self.screenshot_capturer.initialize_browser(
+                headless=headless,
+                display=display,
+            )
 
         total = len(competitors)
 
         # PHASE 1: Capture all screenshots
         self.console.print("\n[bold cyan]═══ Phase 1: Screenshot Capture ═══[/bold cyan]")
-        self.console.print("[dim]You'll interact with each competitor site to capture screenshots[/dim]\n")
+        if self.manual_mode:
+            self.console.print("[dim]Loading pre-captured screenshots from disk[/dim]\n")
+        elif self.interactive_mode:
+            self.console.print("[dim]Use noVNC/browser handoff for each competitor capture[/dim]\n")
+        elif self.automated_mode:
+            self.console.print("[dim]Running unattended capture (no per-site prompts)[/dim]\n")
+        else:
+            self.console.print("[dim]You'll interact with each competitor site to capture screenshots[/dim]\n")
 
         captured_data = []
 
         try:
             for i, competitor in enumerate(competitors, 1):
-                mode_str = "manual" if self.manual_mode else ("supervised" if self.interactive_mode else "interactive")
+                mode_str = (
+                    "manual"
+                    if self.manual_mode
+                    else (
+                        "supervised"
+                        if self.interactive_mode
+                        else ("automated" if self.automated_mode else "interactive")
+                    )
+                )
                 self.console.print(f"\n[bold]Progress: {i}/{total}[/bold] [dim]({mode_str})[/dim]")
 
                 # Get competitor-specific paths if audit structure provided
@@ -1011,6 +1125,25 @@ class UXAnalysisOrchestrator:
                 )
 
                 captured_data.append(capture_result)
+
+                if self.automated_mode and i < total:
+                    min_delay = self._get_env_float(
+                        "AUTOMATED_CAPTURE_DELAY_MIN_SEC",
+                        default=3.0,
+                        minimum=0.0,
+                    )
+                    max_delay = self._get_env_float(
+                        "AUTOMATED_CAPTURE_DELAY_MAX_SEC",
+                        default=10.0,
+                        minimum=min_delay,
+                    )
+                    if max_delay < min_delay:
+                        max_delay = min_delay
+                    wait_seconds = random.uniform(min_delay, max_delay)
+                    self.console.print(
+                        f"[dim]Automated pacing: waiting {wait_seconds:.1f}s before next capture[/dim]"
+                    )
+                    await asyncio.sleep(wait_seconds)
 
             # Close browser after all captures complete
             if not self.manual_mode and not self.interactive_mode:
@@ -1340,6 +1473,15 @@ For more examples and documentation, see README.md
     )
 
     parser.add_argument(
+        "--auto",
+        action="store_true",
+        help=(
+            "Automated unattended capture mode (no per-site prompts). "
+            "Uses headed browser by default with DISPLAY from AUTOMATED_DISPLAY (default :99)."
+        ),
+    )
+
+    parser.add_argument(
         "--screenshots-dir",
         default="./manual-screenshots",
         help="Directory containing manually captured screenshots (used with --manual-mode)"
@@ -1355,6 +1497,10 @@ For more examples and documentation, see README.md
 
     if args.manual_mode and args.interactive:
         parser.error("--manual-mode and --interactive cannot be used together")
+    if args.manual_mode and args.auto:
+        parser.error("--manual-mode and --auto cannot be used together")
+    if args.interactive and args.auto:
+        parser.error("--interactive and --auto cannot be used together")
 
     # Load environment variables
     load_dotenv()
@@ -1466,7 +1612,11 @@ For more examples and documentation, see README.md
         analysis_type = prompt_for_analysis_type(temp_config)
 
     # Create orchestrator and run analysis
-    mode_desc = "Manual Screenshots" if args.manual_mode else ("Supervised" if args.interactive else "Interactive Mode")
+    mode_desc = (
+        "Manual Screenshots"
+        if args.manual_mode
+        else ("Supervised" if args.interactive else ("Automated" if args.auto else "Interactive Mode"))
+    )
     console.print(Panel.fit(
         "[bold cyan]E-commerce UX Analysis Agent[/bold cyan]\n\n"
         f"Analysis Type: {get_page_type_display_name(analysis_type)}\n"
@@ -1478,9 +1628,8 @@ For more examples and documentation, see README.md
     ))
 
     if not args.manual_mode:
-        console.print("[cyan]🌐 Interactive Mode:[/cyan] Browser will open for each site")
-        console.print("[dim]Navigate to the page, close popups, then press Enter to capture[/dim]\n")
         if args.interactive:
+            console.print("[cyan]👤 Supervised Mode:[/cyan] Use noVNC/browser handoff before each capture")
             novnc_url = resolve_novnc_url()
             if novnc_url:
                 console.print("[cyan]Supervised flow:[/cyan] Open session URL → prepare page → press Enter\n")
@@ -1489,6 +1638,15 @@ For more examples and documentation, see README.md
                 console.print(
                     "[yellow]noVNC URL not configured. Set NOVNC_URL or NOVNC_HOST (optional NOVNC_PORT).[/yellow]\n"
                 )
+        elif args.auto:
+            console.print("[cyan]🤖 Automated Mode:[/cyan] Unattended capture (no Y/R/S prompts)")
+            console.print(
+                "[dim]Defaults: headed browser, DISPLAY=:99, "
+                "capture pacing=3-10s, retry up to 2 attempts[/dim]\n"
+            )
+        else:
+            console.print("[cyan]🌐 Interactive Mode:[/cyan] Browser will open for each site")
+            console.print("[dim]Navigate to the page, close popups, then press Enter to capture[/dim]\n")
 
     if args.manual_mode:
         console.print(f"\n[magenta]📁 Manual Mode Enabled:[/magenta]")
@@ -1502,6 +1660,7 @@ For more examples and documentation, see README.md
         manual_mode=args.manual_mode,
         screenshots_dir=args.screenshots_dir,
         interactive_mode=args.interactive,
+        automated_mode=args.auto,
         novnc_url=resolve_novnc_url() if args.interactive else None,
     )
 
@@ -1541,8 +1700,9 @@ For more examples and documentation, see README.md
 
         # Update Resources index if configured
         try:
-            from src.utils.audit_organizer import get_resources_config
             import subprocess
+
+            from src.utils.audit_organizer import get_resources_config
 
             resources_config = get_resources_config()
             if resources_config and resources_config.get('update_index', True):
